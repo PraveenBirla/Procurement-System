@@ -1,5 +1,6 @@
 package com.eps.enterprise_procurement_system.controllers;
 
+import com.eps.enterprise_procurement_system.dto.LoginRequestDTO;
 import com.eps.enterprise_procurement_system.dto.RegisterDTO;
 import com.eps.enterprise_procurement_system.services.AuthService;
 import jakarta.validation.Valid;
@@ -23,5 +24,13 @@ public class AuthController {
 
             return ResponseEntity.status(HttpStatus.CREATED)
                     .body(Updated);
+    }
+
+    @PostMapping("/login")
+    public  ResponseEntity<String> login(@Valid @RequestBody LoginRequestDTO dto){
+
+        String s = authService.login(dto);
+
+        return ResponseEntity.ok().body(s);
     }
 }
