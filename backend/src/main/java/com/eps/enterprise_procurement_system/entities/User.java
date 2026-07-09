@@ -1,31 +1,30 @@
 package com.eps.enterprise_procurement_system.entities;
 
-import com.eps.enterprise_procurement_system.config.Role;
 import jakarta.persistence.*;
-import lombok.AllArgsConstructor;
-import lombok.Getter;
-import lombok.NoArgsConstructor;
-import lombok.Setter;
+import lombok.*;
 import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.userdetails.UserDetails;
+
+import com.eps.enterprise_procurement_system.entities.enums.Role;
 
 import java.time.LocalDateTime;
 import java.util.Collection;
 import java.util.List;
 
 @Entity
-@Table(name = "users")
+@Table(name = "user")
 @Getter
 @Setter
 @AllArgsConstructor
 @NoArgsConstructor
+@Builder
 public class User implements UserDetails {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     @Column(name = "id")
-    private long id;
+    private Long id;
 
     @Column(name = "full_name", nullable = false)
     private String fullName;
@@ -39,6 +38,14 @@ public class User implements UserDetails {
     @Enumerated(EnumType.STRING)
     @Column(nullable = false, name = "role")
     private Role role;
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "department_id", nullable = false, foreignKey = @ForeignKey(name = "fk_user_department"))
+    private Department department;
+
+    @Column(name = "is_active", nullable = false)
+    @Builder.Default
+    private Boolean isActive = true;
 
     @Column(nullable = false, name = "created_at" )
     private LocalDateTime localDateTime;
@@ -54,7 +61,12 @@ public class User implements UserDetails {
     }
 
     @Override
-    public String getPassword(){
+    public String getPassword() {
         return this.password;
     }
+    
+    @PrePersist
+    protected void onCreate() {
+        this.localDateTime = LocalDateTime.now();
+    }   
 }

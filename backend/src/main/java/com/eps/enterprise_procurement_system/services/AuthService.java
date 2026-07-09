@@ -3,7 +3,9 @@ package com.eps.enterprise_procurement_system.services;
 
 import com.eps.enterprise_procurement_system.dto.LoginRequestDTO;
 import com.eps.enterprise_procurement_system.dto.RegisterDTO;
+import com.eps.enterprise_procurement_system.entities.Department;
 import com.eps.enterprise_procurement_system.entities.User;
+import com.eps.enterprise_procurement_system.repositories.DepartmentRepo;
 import com.eps.enterprise_procurement_system.repositories.UserRepository;
 import org.modelmapper.ModelMapper;
 import org.springframework.security.authentication.AuthenticationManager;
@@ -18,12 +20,14 @@ public class AuthService {
 
     private final ModelMapper modelMapper;
     private final UserRepository userRepository;
+    private final DepartmentRepo departmentRepo;
     private final PasswordEncoder passwordEncoder;
     private final AuthenticationManager authenticationManager;
 
-    public AuthService(ModelMapper modelMapper, UserRepository userRepository, PasswordEncoder passwordEncoder, AuthenticationManager authenticationManager) {
+    public AuthService(ModelMapper modelMapper, UserRepository userRepository, DepartmentRepo departmentRepo, PasswordEncoder passwordEncoder, AuthenticationManager authenticationManager) {
         this.modelMapper = modelMapper;
         this.userRepository = userRepository;
+        this.departmentRepo = departmentRepo;
         this.passwordEncoder = passwordEncoder;
         this.authenticationManager = authenticationManager;
     }
@@ -31,11 +35,19 @@ public class AuthService {
 
     public RegisterDTO register(RegisterDTO dto){
 
-        User user = modelMapper.map(dto, User.class);
+        Department dept = dto.getDepartmentId() != null
+                ? departmentRepo.findById(dto.getDepartmentId()).orElse(null) : null;
 
-        user.setPassword(passwordEncoder.encode(dto.getPassword()));
+        User user = User.builder()
+            .fullName(dto.getFullName())
+            .email(dto.getEmail())
+            .password(passwordEncoder.encode(dto.getPassword()))
+            .role(dto.getRole())
+            .department(dept)
+            .isActive(true)
+            .build();
         User saved = userRepository.save(user);
-
+        
         return modelMapper.map(saved, RegisterDTO.class);
 
     }
