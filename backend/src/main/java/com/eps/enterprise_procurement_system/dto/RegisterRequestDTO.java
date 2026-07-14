@@ -11,7 +11,7 @@ import java.time.LocalDateTime;
 import com.eps.enterprise_procurement_system.entities.enums.Role;
 
 @Data
-public class  RegisterDTO {
+public class RegisterRequestDTO {
 
     @NotBlank(message = "name is required")
     private String fullName;
@@ -23,9 +23,10 @@ public class  RegisterDTO {
     @Size(min = 8, message = "Password must be at least 8 characters")
     private String password;
 
-    @NotNull(message = "role is required")
+    @NotNull(message = "Role is required")
     private Role role;
 
+    @NotNull(message="select a correct department")
     private Long departmentId;
 
     private LocalDateTime localDateTime = LocalDateTime.now();

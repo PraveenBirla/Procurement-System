@@ -1,5 +1,6 @@
 package com.eps.enterprise_procurement_system.services;
 
+import com.eps.enterprise_procurement_system.entities.User;
 import com.eps.enterprise_procurement_system.repositories.UserRepository;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.core.userdetails.UserDetailsService;
@@ -19,5 +20,9 @@ public class UserService  implements UserDetailsService {
     @Override
     public UserDetails loadUserByUsername(String username) throws UsernameNotFoundException {
         return  userRepository.findByEmail(username).orElseThrow(()->new RuntimeException("user not found"));
+    }
+
+    public User getUserById(Long id){
+        return userRepository.findById(id).orElseThrow(()-> new RuntimeException("user not found"));
     }
 }

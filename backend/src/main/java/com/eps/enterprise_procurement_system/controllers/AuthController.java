@@ -1,10 +1,11 @@
 package com.eps.enterprise_procurement_system.controllers;
 
+import com.eps.enterprise_procurement_system.advices.ApiResponse;
 import com.eps.enterprise_procurement_system.dto.LoginRequestDTO;
-import com.eps.enterprise_procurement_system.dto.RegisterDTO;
+import com.eps.enterprise_procurement_system.dto.RegisterRequestDTO;
+import com.eps.enterprise_procurement_system.dto.RegisterResponseDTO;
 import com.eps.enterprise_procurement_system.services.AuthService;
 import jakarta.validation.Valid;
-import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
@@ -19,11 +20,10 @@ public class AuthController {
     }
 
     @PostMapping("/register")
-    public ResponseEntity<RegisterDTO> register( @Valid @RequestBody RegisterDTO dto){
-           RegisterDTO Updated = authService.register(dto);
+    public ResponseEntity<ApiResponse<RegisterResponseDTO>> register(@Valid @RequestBody RegisterRequestDTO dto){
+           RegisterResponseDTO  response = authService.register(dto);
 
-            return ResponseEntity.status(HttpStatus.CREATED)
-                    .body(Updated);
+            return ResponseEntity.ok(new ApiResponse<>(response));
     }
 
     @PostMapping("/login")
