@@ -1,28 +1,36 @@
 package com.eps.enterprise_procurement_system.entities;
 
 import jakarta.persistence.*;
-import lombok.AllArgsConstructor;
-import lombok.Getter;
-import lombok.NoArgsConstructor;
-import lombok.Setter;
+import lombok.*;
+
+import java.util.ArrayList;
+import java.util.List;
 
 @Entity
-@Table(name = "product_categories")
+@Table(name = "product_category")
 @Getter
 @Setter
-@AllArgsConstructor
 @NoArgsConstructor
+@AllArgsConstructor
+@Builder
 public class ProductCategory {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
-    @Column(name = "id")
-    private long id;
+    private Long id;
 
-    @Column(name = "category_name", nullable = false)
+    @Column(name = "category_name", nullable = false, unique = true, length = 100)
     private String categoryName;
 
+    @Lob
     @Column(name = "description")
     private String description;
 
+    @OneToMany(mappedBy = "category")
+    @Builder.Default
+    private List<Product> products = new ArrayList<>();
+
+    @OneToMany(mappedBy = "category")
+    @Builder.Default
+    private List<Supplier> suppliers = new ArrayList<>();
 }

@@ -1,25 +1,43 @@
 package com.eps.enterprise_procurement_system.entities;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import jakarta.persistence.*;
-import lombok.AllArgsConstructor;
-import lombok.Getter;
-import lombok.NoArgsConstructor;
-import lombok.Setter;
+import lombok.*;
+
+import java.time.LocalDateTime;
+import java.util.ArrayList;
+import java.util.List;
 
 @Entity
-@Table(name = "departments")
+@Table(name = "department")
 @Getter
 @Setter
-@AllArgsConstructor
 @NoArgsConstructor
+@AllArgsConstructor
+@Builder
 public class Department {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
-    @Column(name = "id")
-    private long id;
+    private Long id;
 
-    @Column(name = "department_name", nullable = false)
+    @Column(name = "department_name", nullable = false, unique = true, length = 100)
     private String departmentName;
 
+    @Column(name = "created_at", nullable = false, updatable = false)
+    private LocalDateTime createdAt;
+
+    @OneToMany(mappedBy = "department", cascade = CascadeType.ALL)
+    @Builder.Default
+    @JsonIgnore
+    private List<User> users = new ArrayList<>();
+
+    @OneToMany(mappedBy = "department", cascade = CascadeType.ALL)
+    @Builder.Default
+    private List<Budget> budgets = new ArrayList<>();
+
+    @PrePersist
+    protected void onCreate() {
+        this.createdAt = LocalDateTime.now();
+    }
 }
