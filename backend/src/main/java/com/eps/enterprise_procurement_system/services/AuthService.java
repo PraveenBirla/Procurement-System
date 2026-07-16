@@ -2,6 +2,7 @@ package com.eps.enterprise_procurement_system.services;
 
 
 import com.eps.enterprise_procurement_system.dto.LoginRequestDTO;
+import com.eps.enterprise_procurement_system.dto.LoginResponseDTO;
 import com.eps.enterprise_procurement_system.dto.RegisterRequestDTO;
 import com.eps.enterprise_procurement_system.dto.RegisterResponseDTO;
 import com.eps.enterprise_procurement_system.entities.Department;
@@ -70,19 +71,22 @@ public class AuthService {
 
     }
 
-    public  String login(LoginRequestDTO dto) {
+    public  LoginResponseDTO login(LoginRequestDTO dto) {
 
-        String token;
         try {
             Authentication authentication = authenticationManager.authenticate(
                     new UsernamePasswordAuthenticationToken(dto.getEmail(), dto.getPassword())
             );
 
             User user = (User) authentication.getPrincipal();
-            token = jwtService.generateAceessToken(user);
+            LoginResponseDTO responseDTO = LoginResponseDTO.builder()
+            .accessToken(jwtService.generateAceessToken(user))
+            .message("Login Successful")
+            .build();
+            return responseDTO;
+            
         } catch (BadCredentialsException e) {
             throw new BadCredentialsException("Invalid Email or password");
         }
-        return token;
     }
 }

@@ -2,6 +2,7 @@ package com.eps.enterprise_procurement_system.controllers;
 
 import com.eps.enterprise_procurement_system.advices.ApiResponse;
 import com.eps.enterprise_procurement_system.dto.LoginRequestDTO;
+import com.eps.enterprise_procurement_system.dto.LoginResponseDTO;
 import com.eps.enterprise_procurement_system.dto.RegisterRequestDTO;
 import com.eps.enterprise_procurement_system.dto.RegisterResponseDTO;
 import com.eps.enterprise_procurement_system.services.AuthService;
@@ -27,10 +28,10 @@ public class AuthController {
     }
 
     @PostMapping("/login")
-    public  ResponseEntity<String> login(@Valid @RequestBody LoginRequestDTO dto){
+    public  ResponseEntity<ApiResponse<LoginResponseDTO>> login(@Valid @RequestBody LoginRequestDTO dto){
 
-        String s = authService.login(dto);
+        LoginResponseDTO s = authService.login(dto);
 
-        return ResponseEntity.ok().body(s);
+        return ResponseEntity.ok(new ApiResponse<>(s));
     }
 }
