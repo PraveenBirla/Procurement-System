@@ -52,7 +52,7 @@ export default function LoginPage() {
         // The backend response only contains token + message; 
         // additional user details would come from a /me endpoint
         fullName: payload.email.split('@')[0].replace(/[._]/g, ' '),
-        role: 'EMPLOYEE', // Default; in production, decode JWT or fetch /me
+        role: response.role || 'EMPLOYEE', // Default; in production, decode JWT or fetch /me
       };
 
       login(userData, token);
