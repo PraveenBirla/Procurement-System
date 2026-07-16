@@ -1,5 +1,5 @@
 import { Routes, Route, Navigate } from 'react-router-dom';
-import AuthLayout from './components/layout/AuthLayout';
+
 import LoginPage from './pages/LoginPage';
 import RegisterPage from './pages/RegisterPage';
 import DashboardPage from './pages/DashboardPage';
@@ -19,10 +19,8 @@ function App() {
   return (
     <Routes>
       {/* Public routes */}
-      <Route element={<AuthLayout />}>
-        <Route path="/login" element={!user ? <LoginPage /> : <Navigate to="/dashboard" replace />} />
-        <Route path="/register" element={!user ? <RegisterPage /> : <Navigate to="/dashboard" replace />} />
-      </Route>
+      <Route path="/login" element={!user ? <LoginPage /> : <Navigate to="/dashboard" replace />} />
+      <Route path="/register" element={!user ? <RegisterPage /> : <Navigate to="/dashboard" replace />} />
 
       {/* Protected routes */}
       <Route 
