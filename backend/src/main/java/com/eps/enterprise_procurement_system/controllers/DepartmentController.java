@@ -11,6 +11,7 @@ import java.util.List;
 @RestController
 @RequestMapping("/depts")
 @RequiredArgsConstructor
+@CrossOrigin(origins = "http://localhost:5173")
 public class DepartmentController {
     private final DepartmentRepo repo;
 

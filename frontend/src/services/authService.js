@@ -13,6 +13,7 @@ const authService = {
    */
   async register(data) {
     const response = await api.post('/auth/register', data);
+    console.log(response)
     return response.data?.data;
   },
 
@@ -24,6 +25,7 @@ const authService = {
    */
   async login(data) {
     const response = await api.post('/auth/login', data);
+    console.log(response.data?.data);
     return response.data?.data;
   },
 

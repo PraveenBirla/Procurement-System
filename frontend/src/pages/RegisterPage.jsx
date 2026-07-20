@@ -27,9 +27,9 @@ export default function RegisterPage() {
     async function fetchDepartments() {
       try {
         const response = await api.get('/depts');
-        const deptOptions = response.data.map(dept => ({
+        const deptOptions = response.data.data.map(dept => ({
           value: dept.id.toString(),
-          label: dept.name
+          label: dept.departmentName
         }));
         setDepartments(deptOptions);
       } catch (error) {

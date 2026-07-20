@@ -47,10 +47,10 @@ public class AuthService {
                 ? departmentRepo.findById(dto.getDepartmentId()).orElse(null) : null;
 
         Optional<User> user1  = userRepository.findByEmail(dto.getEmail());
-        if(user1.isPresent()) {
+        if (user1.isPresent()) {
             throw new ResponseStatusException(HttpStatus.CONFLICT, "User with email already present");
         }
-
+        
         User user = User.builder()
             .fullName(dto.getFullName())
             .email(dto.getEmail())
@@ -60,8 +60,8 @@ public class AuthService {
             .isActive(true)
             .build();
         User saved = userRepository.save(user);
-        
-         RegisterResponseDTO responseDTO =
+       
+        RegisterResponseDTO responseDTO =
                  RegisterResponseDTO.builder()
                          .accesToken(jwtService.generateAceessToken(saved))
                          .message("Register Succesfully")
