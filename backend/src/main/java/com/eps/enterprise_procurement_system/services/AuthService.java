@@ -63,9 +63,10 @@ public class AuthService {
        
         RegisterResponseDTO responseDTO =
                  RegisterResponseDTO.builder()
-                         .accesToken(jwtService.generateAceessToken(saved))
-                         .message("Register Succesfully")
-                         .build();
+                        .accesToken(jwtService.generateAceessToken(saved))
+                        .refreshToken(jwtService.generateRefreshToken(saved))
+                        .message("Register Succesfully")
+                        .build();
 
          return responseDTO;
 
@@ -80,9 +81,10 @@ public class AuthService {
 
             User user = (User) authentication.getPrincipal();
             LoginResponseDTO responseDTO = LoginResponseDTO.builder()
-            .accessToken(jwtService.generateAceessToken(user))
-            .message("Login Successful")
-            .build();
+                .accessToken(jwtService.generateAceessToken(user))
+                .refreshToken(jwtService.generateRefreshToken(user))
+                .message("Login Successful")
+                .build();
             return responseDTO;
             
         } catch (BadCredentialsException e) {

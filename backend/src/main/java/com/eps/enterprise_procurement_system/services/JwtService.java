@@ -16,8 +16,17 @@ public class JwtService {
     @Value("${jwt.secret_key}")
     private String secret_key;
 
-    public SecretKey getSecretKey(){
-        return   Keys.hmacShaKeyFor(secret_key.getBytes(StandardCharsets.UTF_8));
+    public SecretKey getSecretKey() {
+        return Keys.hmacShaKeyFor(secret_key.getBytes(StandardCharsets.UTF_8));
+    }
+
+    public String generateRefreshToken(User user) {
+        return Jwts.builder()
+                .subject(user.getId().toString())
+                .issuedAt(new Date())
+                .expiration(new Date(System.currentTimeMillis() + 7L * 24 * 60 * 60 * 1000))
+                .signWith(getSecretKey())
+                .compact();
     }
 
     public String generateAceessToken(User user){

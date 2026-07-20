@@ -9,12 +9,12 @@ export const AuthContext = createContext(null);
 
 export function AuthProvider({ children }) {
   const [user, setUser] = useState(() => authService.getUser());
-  const [isAuthenticated, setIsAuthenticated] = useState(() => !!authService.getToken());
+  const [isAuthenticated, setIsAuthenticated] = useState(() => !!authService.getAccessToken());
   const [isLoading, setIsLoading] = useState(true);
 
   // Hydrate auth state from localStorage on mount
   useEffect(() => {
-    const token = authService.getToken();
+    const token = authService.getAccessToken();
     const storedUser = authService.getUser();
     if (token && storedUser) {
       setUser(storedUser);
@@ -29,9 +29,10 @@ export function AuthProvider({ children }) {
   /**
    * Store user + token after successful login.
    */
-  const login = useCallback((userData, token) => {
-    authService.setToken(token);
+  const login = useCallback((userData, accessToken, refreshToken) => {
+    authService.setTokens(accessToken, refreshToken);
     authService.setUser(userData);
+
     setUser(userData);
     setIsAuthenticated(true);
   }, []);

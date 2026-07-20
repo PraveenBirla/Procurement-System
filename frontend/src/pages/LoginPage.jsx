@@ -46,7 +46,8 @@ export default function LoginPage() {
       const response = await authService.login(payload);
 
       // Store auth state
-      const token = response.accessToken;
+      const accessToken = response.accessToken;
+      const refreshToken = response.refreshToken;
       const userData = {
         email: payload.email,
         // The backend response only contains token + message; 
@@ -54,8 +55,12 @@ export default function LoginPage() {
         fullName: payload.email.split('@')[0].replace(/[._]/g, ' '),
         role: response.role || 'EMPLOYEE', // Default; in production, decode JWT or fetch /me
       };
+      authService.setTokens(
+          response.accessToken,
+          response.refreshToken
+      );
 
-      login(userData, token);
+      login(userData, authService.getAccessToken, authService.getRefreshToken); 
 
       toast.success('Welcome back!', {
         duration: 3000,

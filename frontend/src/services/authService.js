@@ -9,7 +9,7 @@ const authService = {
    * Register a new user.
    * POST /auth/register
    * @param {{ fullName: string, email: string, password: string, role: string, departmentId: number }} data
-   * @returns {Promise<{ accesToken: string, message: string }>}
+   * @returns {Promise<{ accesToken: string, refreshToken: string, message: string }>}
    */
   async register(data) {
     const response = await api.post('/auth/register', data);
@@ -21,7 +21,7 @@ const authService = {
    * Log in an existing user.
    * POST /auth/login
    * @param {{ email: string, password: string }} data
-   * @returns {Promise<{ accessToken: string, message: string }>}
+   * @returns {Promise<{ accessToken: string, refreshToken: string, message: string }>}
    */
   async login(data) {
     const response = await api.post('/auth/login', data);
@@ -32,22 +32,28 @@ const authService = {
   /**
    * Store the access token in localStorage.
    */
-  setToken(token) {
-    localStorage.setItem('accessToken', token);
+  setTokens(accessToken, refreshToken) {
+    localStorage.setItem('accessToken', accessToken);
+    localStorage.setItem('refreshToken', refreshToken);
+  },
+
+  getRefreshToken() {
+    return localStorage.getItem('refreshToken');
   },
 
   /**
    * Retrieve the stored access token.
    */
-  getToken() {
+  getAccessToken() {
     return localStorage.getItem('accessToken');
   },
 
   /**
    * Remove the access token (logout).
    */
-  removeToken() {
+  removeTokens() {
     localStorage.removeItem('accessToken');
+    localStorage.removeItem('refreshToken');
   },
 
   /**
@@ -70,6 +76,7 @@ const authService = {
    */
   clearAuth() {
     localStorage.removeItem('accessToken');
+    localStorage.removeItem('refreshToken');
     localStorage.removeItem('user');
   },
 };

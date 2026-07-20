@@ -8,6 +8,6 @@ import lombok.Data;
 public class RegisterResponseDTO {
 
     private String accesToken;
-
+    private String refreshToken;
     private String message;
 }

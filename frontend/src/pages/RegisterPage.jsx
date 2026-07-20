@@ -74,7 +74,12 @@ export default function RegisterPage() {
         departmentId: Number(data.departmentId),
       };
 
-      await authService.register(payload);
+      const response = await authService.register(payload);
+
+      authService.setTokens(
+          response.accessToken,
+          response.refreshToken
+      );
 
       toast.success('Account created successfully! Please log in.', {
         duration: 4000,
