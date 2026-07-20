@@ -19,8 +19,6 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.web.server.ResponseStatusException;
 
-import java.util.Optional;
-
 @Service
 public class AuthService {
 
@@ -46,8 +44,8 @@ public class AuthService {
         Department dept = dto.getDepartmentId() != null
                 ? departmentRepo.findById(dto.getDepartmentId()).orElse(null) : null;
 
-        Optional<User> user1  = userRepository.findByEmail(dto.getEmail());
-        if (user1.isPresent()) {
+        User user1 = userRepository.findByEmail(dto.getEmail());
+        if (user1!=null) {
             throw new ResponseStatusException(HttpStatus.CONFLICT, "User with email already present");
         }
         
