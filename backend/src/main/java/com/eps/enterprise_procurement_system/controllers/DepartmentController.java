@@ -6,6 +6,7 @@ import com.eps.enterprise_procurement_system.dto.DepartmentResponseDTO;
 import com.eps.enterprise_procurement_system.entities.Department;
 import com.eps.enterprise_procurement_system.repositories.DepartmentRepo;
 import com.eps.enterprise_procurement_system.services.DepartmentService;
+import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -40,14 +41,14 @@ public class DepartmentController {
 
     @PostMapping
     @PreAuthorize("hasAnyRole('ADMIN')")
-    public  ResponseEntity<ApiResponse<Map<String,String>>> create(@RequestBody DepartmentRequestDTO dto) {
+    public  ResponseEntity<ApiResponse<Map<String,String>>> create( @Valid  @RequestBody DepartmentRequestDTO dto) {
          String message = departmentService.createDepartment(dto);
          return new ResponseEntity<>(new ApiResponse<>(Map.of("message", message)), HttpStatus.CREATED);
     }
 
     @PutMapping("/{id}")
     @PreAuthorize("hasAnyRole('ADMIN')")
-    public  ResponseEntity<ApiResponse<DepartmentResponseDTO>>update(@PathVariable Long id, @RequestBody   DepartmentRequestDTO dto) {
+    public  ResponseEntity<ApiResponse<DepartmentResponseDTO>>update(@Valid @PathVariable Long id, @RequestBody   DepartmentRequestDTO dto) {
          DepartmentResponseDTO  responseDTO = departmentService.updateDepartment(id, dto);
 
          return new ResponseEntity<>(new ApiResponse<>(responseDTO), HttpStatus.OK);
