@@ -1,6 +1,7 @@
 package com.eps.enterprise_procurement_system.entities;
 
 import com.eps.enterprise_procurement_system.entities.enums.RequisitionStatus;
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import jakarta.persistence.*;
 import lombok.*;
 
@@ -27,6 +28,7 @@ public class PurchaseRequisition {
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "employee_id", nullable = false, foreignKey = @ForeignKey(name = "fk_requisition_employee"))
+    @JsonIgnore
     private User employee;
 
     @Column(name = "title", nullable = false, length = 200)
@@ -56,10 +58,12 @@ public class PurchaseRequisition {
 
     @OneToMany(mappedBy = "requisition", cascade = CascadeType.ALL, orphanRemoval = true)
     @Builder.Default
+    @JsonIgnore
     private List<RequisitionItem> items = new ArrayList<>();
 
     @OneToMany(mappedBy = "requisition", cascade = CascadeType.ALL, orphanRemoval = true)
     @Builder.Default
+    @JsonIgnore
     private List<RequisitionStatusHistory> statusHistory = new ArrayList<>();
 
     @OneToMany(mappedBy = "requisition", cascade = CascadeType.ALL, orphanRemoval = true)

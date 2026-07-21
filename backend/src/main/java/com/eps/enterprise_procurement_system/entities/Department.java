@@ -36,8 +36,5 @@ public class Department {
     @Builder.Default
     private List<Budget> budgets = new ArrayList<>();
 
-    @PrePersist
-    protected void onCreate() {
-        this.createdAt = LocalDateTime.now();
-    }
+
 }

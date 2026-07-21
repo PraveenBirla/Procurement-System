@@ -107,7 +107,7 @@ export default function RegisterPage() {
         setApiError(message);
       }
 
-      toast.error('Registration failed', {
+      toast.error( message, {
         style: {
           background: '#FEF2F2',
           color: '#B91C1C',
