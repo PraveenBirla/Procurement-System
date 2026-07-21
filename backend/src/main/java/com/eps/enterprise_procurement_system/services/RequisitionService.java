@@ -78,42 +78,47 @@ public class RequisitionService {
     }
 
     @Transactional
-    public PurchaseRequisition decide(Long id, String approvalType, DecisionRequest dec, User approver) {
+    public PurchaseRequisition decide(Long id, ApprovalType approvalType, DecisionRequest dec, User approver) {
         PurchaseRequisition pr = reqRepo.findById(id).orElseThrow();
         RequisitionStatus old = pr.getStatus();
         boolean approved = "approved".equalsIgnoreCase(dec.decision);
-        String next;
+        RequisitionStatus next;
         if (!approved) {
-            next = approvalType + "_rejected";
+            switch (approvalType) {
+                case ApprovalType.MANAGER -> next = RequisitionStatus.MANAGER_REJECTED;
+                case ApprovalType.FINANCE -> next = RequisitionStatus.FINANCE_REJECTED;
+                case ApprovalType.HIGHER_AUTHORITY -> next = RequisitionStatus.ADMIN_REJECTED;
+                default -> throw new IllegalArgumentException("Unknown approval type");
+            }
         } else {
             switch (approvalType) {
-                case "manager" -> next = "pending_finance";
-                case "finance" -> next = "pending_admin";
-                case "higher_authority" -> next = "approved";
+                case ApprovalType.MANAGER -> next = RequisitionStatus.PENDING_FINANCE;
+                case ApprovalType.FINANCE -> next = RequisitionStatus.PENDING_ADMIN;
+                case ApprovalType.HIGHER_AUTHORITY -> next = RequisitionStatus.APPROVED;
                 default -> throw new IllegalArgumentException("Unknown approval type");
             }
         }
-        pr.setStatus(RequisitionStatus.valueOf(next));
+        pr.setStatus(next);
         pr.setUpdatedAt(LocalDateTime.now());
         reqRepo.save(pr);
         approvalRepo.save(Approval.builder()
-                .requisition(pr).approver(approver).approvalType(ApprovalType.valueOf(approvalType))
+                .requisition(pr).approver(approver).approvalType(approvalType)
                 .status(approved ? ApprovalStatus.APPROVED : ApprovalStatus.REJECTED).remarks(dec.remarks)
                 .decidedAt(LocalDateTime.now()).build());
         historyRepo.save(RequisitionStatusHistory.builder()
-                .requisition(pr).oldStatus(old).newStatus(RequisitionStatus.valueOf(next)).changedBy(approver).remarks(dec.remarks).build());
+                .requisition(pr).oldStatus(old).newStatus(next).changedBy(approver).remarks(dec.remarks).build());
         notify.notify(pr.getEmployee(), pr, null, approved ? NotificationType.APPROVAL : NotificationType.REJECTION,
                 "Requisition " + pr.getRequisitionNo() + ": " + next);
         // Notify next role
         Role nextRole = switch (next) {
-            case "pending_finance" -> Role.FINANCE;
-            case "pending_admin" -> Role.ADMIN;
-            case "approved" -> Role.PROCUREMENT;
+            case RequisitionStatus.PENDING_FINANCE -> Role.FINANCE;
+            case RequisitionStatus.PENDING_ADMIN -> Role.ADMIN;
+            case RequisitionStatus.APPROVED -> Role.PROCUREMENT;
             default -> null;
         };
         if (nextRole != null) userRepo.findByRole(nextRole).forEach(u ->
                 notify.notify(u, pr, null, NotificationType.APPROVAL, NotificationType.REJECTION + pr.getRequisitionNo() + " awaits your action"));
-        audit.log("PurchaseRequisition", pr.getId(), "DECIDE_" + approvalType.toUpperCase(), approver, dec.remarks);
+        audit.log("PurchaseRequisition", pr.getId(), "DECIDE_" + approvalType, approver, dec.remarks);
         return pr;
     }
 

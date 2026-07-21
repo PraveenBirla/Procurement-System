@@ -15,6 +15,7 @@ import com.eps.enterprise_procurement_system.dto.RequisitionDTO.CreateRequest;
 import com.eps.enterprise_procurement_system.dto.RequisitionDTO.DecisionRequest;
 import com.eps.enterprise_procurement_system.entities.PurchaseRequisition;
 import com.eps.enterprise_procurement_system.entities.RequisitionItem;
+import com.eps.enterprise_procurement_system.entities.enums.ApprovalType;
 import com.eps.enterprise_procurement_system.services.RequisitionService;
 import com.eps.enterprise_procurement_system.util.CurrentUser;
 
@@ -54,18 +55,18 @@ public class RequisitionController {
     @PostMapping("/{id}/manager-decision")
     @PreAuthorize("hasRole('MANAGER')")
     public PurchaseRequisition manager(@PathVariable Long id, @Valid @RequestBody DecisionRequest req) {
-        return service.decide(id, "manager", req, currentUser.get());
+        return service.decide(id, ApprovalType.MANAGER, req, currentUser.get());
     }
 
     @PostMapping("/{id}/finance-decision")
     @PreAuthorize("hasRole('FINANCE')")
     public PurchaseRequisition finance(@PathVariable Long id, @Valid @RequestBody DecisionRequest req) {
-        return service.decide(id, "finance", req, currentUser.get());
+        return service.decide(id, ApprovalType.FINANCE, req, currentUser.get());
     }
 
     @PostMapping("/{id}/admin-decision")
     @PreAuthorize("hasRole('ADMIN')")
     public PurchaseRequisition admin(@PathVariable Long id, @Valid @RequestBody DecisionRequest req) {
-        return service.decide(id, "higher_authority", req, currentUser.get());
+        return service.decide(id, ApprovalType.HIGHER_AUTHORITY, req, currentUser.get());
     }
 }
