@@ -7,6 +7,7 @@ import org.springframework.security.authentication.BadCredentialsException;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
+import org.springframework.web.server.ResponseStatusException;
 
 @RestControllerAdvice
 public class GlobalExceptionHandler {
@@ -39,9 +40,27 @@ public class GlobalExceptionHandler {
 
     }
 
+
+    @ExceptionHandler(ResponseStatusException.class)
+    public ResponseEntity<ApiResponse<?>> handleResponseStatusException(
+            ResponseStatusException ex) {
+
+
+        String message = ex.getReason();
+
+        ApiError apiError = ApiError.builder()
+                .message(message)
+                .status((HttpStatus) ex.getStatusCode())
+                .build();
+
+        return buildErrorResponseEntity(apiError);
+
+    }
+
     private ResponseEntity<ApiResponse<?>> buildErrorResponseEntity(ApiError apiError) {
         return new ResponseEntity<>(new ApiResponse<>(apiError), apiError.getStatus());
     }
+
 
 
 }
