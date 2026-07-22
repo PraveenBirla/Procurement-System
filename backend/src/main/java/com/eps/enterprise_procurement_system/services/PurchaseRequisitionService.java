@@ -130,8 +130,40 @@ public class PurchaseRequisitionService {
             return list;
          }
 
-    public PurchaseRequisition getRequisitionById(Long id) {
-        return repo.findById(id).orElseThrow(() -> new RuntimeException("Requisition not found"));
+
+    public  List<PurchaseRequisitionResponseDTO> getRequisitionByEmployeeId(Long id) {
+
+        List<PurchaseRequisitionResponseDTO> list= purchaseRequisitionRepo.findByEmployee_Id(id)
+                .stream().map(
+                        purchaseRequisition -> {
+                            PurchaseRequisitionResponseDTO  dto = new PurchaseRequisitionResponseDTO();
+                            dto.setId(purchaseRequisition.getId());
+                            dto.setRequitionNo(purchaseRequisition.getRequisitionNo());
+                            dto.setEmployeeName(purchaseRequisition.getEmployee().getFullName());
+                            dto.setTitle(purchaseRequisition.getTitle());
+                            dto.setDescription(purchaseRequisition.getDescription());
+                            dto.setTotalEstimatedAmount(purchaseRequisition.getTotalEstimatedAmount());
+                            dto.setStatus(purchaseRequisition.getStatus());
+                            dto.setIsDuplicate(purchaseRequisition.getIsDuplicate());
+                            dto.setCreatedAt(purchaseRequisition.getCreatedAt());
+
+                            List<RequisitionItemResponseDTO> itemsDTOs = purchaseRequisition.getItems()
+                                    .stream().map(item -> {
+                                        RequisitionItemResponseDTO itemDto = new RequisitionItemResponseDTO();
+                                        itemDto.setId(item.getId());
+                                        itemDto.setProductId(item.getProduct().getId());
+                                        itemDto.setProductName((item.getProduct().getName()));
+                                        itemDto.setQuantity(item.getQuantity());
+                                        itemDto.setUnitPrice(item.getUnitPrice());
+
+                                        return itemDto;
+                                    }).toList();
+
+                            dto.setItems(itemsDTOs);
+                            return dto;
+                        }
+                ).toList();
+        return list;
     }
 
 
@@ -139,5 +171,42 @@ public class PurchaseRequisitionService {
     @Transactional
     public void deleteRequisition(Long id) {
         repo.deleteById(id);
+    }
+
+    public List<PurchaseRequisitionResponseDTO> getRequisitionByStatus(String status) {
+
+
+        List<PurchaseRequisitionResponseDTO> list= purchaseRequisitionRepo.findByStatus(status)
+                .stream().map(
+                        purchaseRequisition -> {
+                            PurchaseRequisitionResponseDTO  dto = new PurchaseRequisitionResponseDTO();
+                            dto.setId(purchaseRequisition.getId());
+                            dto.setRequitionNo(purchaseRequisition.getRequisitionNo());
+                            dto.setEmployeeName(purchaseRequisition.getEmployee().getFullName());
+                            dto.setTitle(purchaseRequisition.getTitle());
+                            dto.setDescription(purchaseRequisition.getDescription());
+                            dto.setTotalEstimatedAmount(purchaseRequisition.getTotalEstimatedAmount());
+                            dto.setStatus(purchaseRequisition.getStatus());
+                            dto.setIsDuplicate(purchaseRequisition.getIsDuplicate());
+                            dto.setCreatedAt(purchaseRequisition.getCreatedAt());
+
+                            List<RequisitionItemResponseDTO> itemsDTOs = purchaseRequisition.getItems()
+                                    .stream().map(item -> {
+                                        RequisitionItemResponseDTO itemDto = new RequisitionItemResponseDTO();
+                                        itemDto.setId(item.getId());
+                                        itemDto.setProductId(item.getProduct().getId());
+                                        itemDto.setProductName((item.getProduct().getName()));
+                                        itemDto.setQuantity(item.getQuantity());
+                                        itemDto.setUnitPrice(item.getUnitPrice());
+
+                                        return itemDto;
+                                    }).toList();
+
+                            dto.setItems(itemsDTOs);
+                            return dto;
+                        }
+                ).toList();
+        return list;
+
     }
 }
