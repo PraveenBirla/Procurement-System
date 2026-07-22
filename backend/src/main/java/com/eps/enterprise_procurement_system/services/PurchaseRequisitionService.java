@@ -1,7 +1,9 @@
 package com.eps.enterprise_procurement_system.services;
 
 import com.eps.enterprise_procurement_system.dto.PurchaseRequisitionRequestDTO;
+import com.eps.enterprise_procurement_system.dto.PurchaseRequisitionResponseDTO;
 import com.eps.enterprise_procurement_system.dto.RequisitionItemRequestDTO;
+import com.eps.enterprise_procurement_system.dto.RequisitionItemResponseDTO;
 import com.eps.enterprise_procurement_system.entities.*;
 import com.eps.enterprise_procurement_system.entities.enums.RequisitionStatus;
 import com.eps.enterprise_procurement_system.repositories.ProductRepo;
@@ -42,7 +44,7 @@ public class PurchaseRequisitionService {
                 .employee(employee)
                 .title(dto. getTitle())
                 .description(dto.getDescription())
-                .status(RequisitionStatus.DRAFT)
+                .status(RequisitionStatus.PENDING_MANAGER)
                 .isDuplicate(false)
                 .build();
 
@@ -92,9 +94,41 @@ public class PurchaseRequisitionService {
     }
 
 
-    public List<PurchaseRequisition> getAllRequisitions() {
-        return repo.findAll();
-    }
+    @Transactional
+    public List<PurchaseRequisitionResponseDTO> getAllRequisitions() {
+
+         List<PurchaseRequisitionResponseDTO> list= purchaseRequisitionRepo.findAll()
+                 .stream().map(
+                         purchaseRequisition -> {
+                             PurchaseRequisitionResponseDTO  dto = new PurchaseRequisitionResponseDTO();
+                             dto.setId(purchaseRequisition.getId());
+                             dto.setRequitionNo(purchaseRequisition.getRequisitionNo());
+                             dto.setEmployeeName(purchaseRequisition.getEmployee().getFullName());
+                             dto.setTitle(purchaseRequisition.getTitle());
+                             dto.setDescription(purchaseRequisition.getDescription());
+                             dto.setTotalEstimatedAmount(purchaseRequisition.getTotalEstimatedAmount());
+                             dto.setStatus(purchaseRequisition.getStatus());
+                             dto.setIsDuplicate(purchaseRequisition.getIsDuplicate());
+                             dto.setCreatedAt(purchaseRequisition.getCreatedAt());
+
+                             List<RequisitionItemResponseDTO> itemsDTOs = purchaseRequisition.getItems()
+                                     .stream().map(item -> {
+                                         RequisitionItemResponseDTO itemDto = new RequisitionItemResponseDTO();
+                                         itemDto.setId(item.getId());
+                                         itemDto.setProductId(item.getProduct().getId());
+                                         itemDto.setProductName((item.getProduct().getName()));
+                                         itemDto.setQuantity(item.getQuantity());
+                                         itemDto.setUnitPrice(item.getUnitPrice());
+
+                                         return itemDto;
+                                     }).toList();
+
+                             dto.setItems(itemsDTOs);
+                             return dto;
+                         }
+                 ).toList();
+            return list;
+         }
 
     public PurchaseRequisition getRequisitionById(Long id) {
         return repo.findById(id).orElseThrow(() -> new RuntimeException("Requisition not found"));

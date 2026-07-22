@@ -2,6 +2,7 @@ package com.eps.enterprise_procurement_system.controllers;
 
 import com.eps.enterprise_procurement_system.advices.ApiResponse;
 import com.eps.enterprise_procurement_system.dto.PurchaseRequisitionRequestDTO;
+import com.eps.enterprise_procurement_system.dto.PurchaseRequisitionResponseDTO;
 import com.eps.enterprise_procurement_system.entities.PurchaseRequisition;
 import com.eps.enterprise_procurement_system.services.PurchaseRequisitionService;
 import lombok.RequiredArgsConstructor;
@@ -29,8 +30,10 @@ public class PurchaseRequisitionController {
 
     @GetMapping
     @PreAuthorize("hasAnyRole('ADMIN', 'MANAGER', 'PROCUREMENT_OFFICER', 'EMPLOYEE')")
-    public List<PurchaseRequisition> getAllRequisitions() {
-        return service.getAllRequisitions();
+    public  ResponseEntity<ApiResponse<List<PurchaseRequisitionResponseDTO>>> getAllRequisitions() {
+         List<PurchaseRequisitionResponseDTO>  list= service.getAllRequisitions();
+
+         return ResponseEntity.ok(new ApiResponse<>(list));
     }
 
     @GetMapping("/{id}")

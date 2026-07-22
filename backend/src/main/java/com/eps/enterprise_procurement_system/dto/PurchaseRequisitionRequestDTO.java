@@ -18,6 +18,7 @@ public class PurchaseRequisitionRequestDTO {
     @NotBlank(message = "enter a description")
     private String description;
 
+    @NotBlank(message="select a products")
     private List<RequisitionItemRequestDTO> items;
 
 
