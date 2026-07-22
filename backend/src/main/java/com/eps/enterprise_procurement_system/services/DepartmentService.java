@@ -4,6 +4,8 @@ import com.eps.enterprise_procurement_system.dto.DepartmentRequestDTO;
 import com.eps.enterprise_procurement_system.dto.DepartmentResponseDTO;
 import com.eps.enterprise_procurement_system.entities.Department;
 import com.eps.enterprise_procurement_system.repositories.DepartmentRepo;
+
+import org.modelmapper.ModelMapper;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.web.server.ResponseStatusException;
@@ -14,26 +16,27 @@ import java.util.Optional;
 
 @Service
 public class DepartmentService {
-   private final DepartmentRepo departmentRepo;
+    private final DepartmentRepo departmentRepo;
+   private final ModelMapper modelMapper;
 
-    public DepartmentService(DepartmentRepo departmentRepo) {
-        this.departmentRepo = departmentRepo;
+   public DepartmentService(ModelMapper modelMapper, DepartmentRepo departmentRepo) {
+       this.departmentRepo = departmentRepo;
+       this.modelMapper = modelMapper;
+   }
+    
+  public DepartmentResponseDTO getDepartment(Long id) {
+        Department d = departmentRepo.findById(id)
+                        .orElseThrow(() -> new ResponseStatusException(
+                                HttpStatus.NOT_FOUND,
+                                "Department not found"
+                ));
+        return modelMapper.map(d, DepartmentResponseDTO.class);
     }
 
     public List<DepartmentResponseDTO> getDepartments(){
-
-          List<DepartmentResponseDTO> list = departmentRepo.findAll()
-                  .stream()
-                  .map(department -> {
-                      DepartmentResponseDTO dto = new DepartmentResponseDTO();
-                      dto.setId(department.getId());
-                      dto.setDeparmentName(department.getDepartmentName());
-                      dto.setCreatedAt(department.getCreatedAt());
-                      return dto;
-                  })
-                  .toList();
-
-          return  list;
+        return departmentRepo.findAll().stream()
+            .map(dept -> modelMapper.map(dept, DepartmentResponseDTO.class))
+            .toList();
     }
 
     public String createDepartment(DepartmentRequestDTO dto){
@@ -74,12 +77,7 @@ public class DepartmentService {
         department.setDepartmentName(dto.getDepartmentName());
         Department updatedDepartment = departmentRepo.save(department);
 
-        DepartmentResponseDTO response = new DepartmentResponseDTO();
-        response.setId(updatedDepartment.getId());
-        response.setDeparmentName(updatedDepartment.getDepartmentName());
-        response.setCreatedAt(updatedDepartment.getCreatedAt());
-
-        return response;
+        return modelMapper.map(updatedDepartment, DepartmentResponseDTO.class);
     }
 
 }

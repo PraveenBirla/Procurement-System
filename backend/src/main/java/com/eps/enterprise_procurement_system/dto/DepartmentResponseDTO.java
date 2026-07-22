@@ -9,7 +9,7 @@ public class DepartmentResponseDTO {
 
     private  Long id;
 
-    private String deparmentName;
+    private String departmentName;
 
     private LocalDateTime createdAt;
 

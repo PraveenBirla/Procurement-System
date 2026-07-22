@@ -9,11 +9,11 @@ public class ApiResponse<T> {
      private ApiError error;
 
     public ApiResponse( ApiError apiError) {
-       this();
-        this.  error = apiError;
+        this();
+        this.error = apiError;
     }
 
-    public  ApiResponse(T data){
+    public ApiResponse(T data){
         this();
         this.data = data;
     }

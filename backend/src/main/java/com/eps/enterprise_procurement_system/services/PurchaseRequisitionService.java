@@ -1,212 +1,292 @@
 package com.eps.enterprise_procurement_system.services;
 
-import com.eps.enterprise_procurement_system.dto.PurchaseRequisitionRequestDTO;
-import com.eps.enterprise_procurement_system.dto.PurchaseRequisitionResponseDTO;
-import com.eps.enterprise_procurement_system.dto.RequisitionItemRequestDTO;
-import com.eps.enterprise_procurement_system.dto.RequisitionItemResponseDTO;
-import com.eps.enterprise_procurement_system.entities.*;
-import com.eps.enterprise_procurement_system.entities.enums.RequisitionStatus;
-import com.eps.enterprise_procurement_system.repositories.ProductRepo;
-import com.eps.enterprise_procurement_system.repositories.PurchaseRequisitionRepo;
-import com.eps.enterprise_procurement_system.repositories.RequisitionStatusHistoryRepo;
-import com.eps.enterprise_procurement_system.repositories.UserRepository;
-import lombok.RequiredArgsConstructor;
+import java.math.BigDecimal;
+import java.time.LocalDateTime;
+import java.util.List;
+import java.util.UUID;
+
+import org.modelmapper.ModelMapper;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.server.ResponseStatusException;
 
-import java.math.BigDecimal;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.UUID;
+import com.eps.enterprise_procurement_system.dto.DecisionRequestDTO;
+import com.eps.enterprise_procurement_system.dto.PurchaseRequisitionRequestDTO;
+import com.eps.enterprise_procurement_system.dto.RequisitionItemResponseDTO;
+import com.eps.enterprise_procurement_system.dto.PurchaseRequisitionResponseDTO;
+import com.eps.enterprise_procurement_system.entities.Approval;
+import com.eps.enterprise_procurement_system.entities.Product;
+import com.eps.enterprise_procurement_system.entities.PurchaseRequisition;
+import com.eps.enterprise_procurement_system.entities.RequisitionItem;
+import com.eps.enterprise_procurement_system.entities.RequisitionStatusHistory;
+import com.eps.enterprise_procurement_system.entities.User;
+import com.eps.enterprise_procurement_system.entities.enums.ApprovalStatus;
+import com.eps.enterprise_procurement_system.entities.enums.ApprovalType;
+import com.eps.enterprise_procurement_system.entities.enums.NotificationType;
+import com.eps.enterprise_procurement_system.entities.enums.RequisitionStatus;
+import com.eps.enterprise_procurement_system.entities.enums.Role;
+import com.eps.enterprise_procurement_system.repositories.ApprovalRepo;
+import com.eps.enterprise_procurement_system.repositories.ProductRepo;
+import com.eps.enterprise_procurement_system.repositories.PurchaseRequisitionRepo;
+import com.eps.enterprise_procurement_system.repositories.RequisitionStatusHistoryRepo;
+import com.eps.enterprise_procurement_system.repositories.UserRepository;
+
+import lombok.RequiredArgsConstructor;
 
 @Service
 @RequiredArgsConstructor
 public class PurchaseRequisitionService {
 
-    private final PurchaseRequisitionRepo repo;
-    private final UserRepository userRepository;
+    private final PurchaseRequisitionRepo reqRepo;
+    private final RequisitionItemService itemService;
+    private final RequisitionStatusHistoryRepo historyRepo;
+    private final ApprovalRepo approvalRepo;
     private final ProductRepo productRepo;
-    private final PurchaseRequisitionRepo purchaseRequisitionRepo;
-    private final RequisitionStatusHistoryRepo statusHistoryRepo;
+    private final UserRepository userRepo;
+    private final NotificationService notificationService;
+    private final AuditService auditService;
+    private final ModelMapper modelMapper;
+
+    public PurchaseRequisitionResponseDTO mapToDto(PurchaseRequisition saved) {
+        PurchaseRequisitionResponseDTO response = modelMapper.map(saved, PurchaseRequisitionResponseDTO.class);
+
+        response.setEmployeeName(saved.getEmployee().getFullName());
+
+        response.setDepartmentName(
+                saved.getEmployee()
+                    .getDepartment()
+                    .getDepartmentName()
+        );
+
+        response.setItems(
+                saved.getItems()
+                    .stream()
+                    .map(item -> {
+
+                        RequisitionItemResponseDTO dto = new RequisitionItemResponseDTO();
+
+                        dto.setId(item.getId());
+                        dto.setProductId(item.getProduct().getId());
+                        dto.setProductName(item.getProduct().getName());
+                        dto.setQuantity(item.getQuantity());
+                        dto.setUnitPrice(item.getUnitPrice());
+
+                        return dto;
+                    })
+                    .toList()
+        );
+
+        return response;
+    }
+
+    private RequisitionStatus getNextStatus(ApprovalType approvalType, boolean approved) {
+
+        if (!approved) {
+            return switch (approvalType) {
+                case MANAGER -> RequisitionStatus.MANAGER_REJECTED;
+                case FINANCE -> RequisitionStatus.FINANCE_REJECTED;
+                case HIGHER_AUTHORITY -> RequisitionStatus.ADMIN_REJECTED;
+            };
+        }
+
+        return switch (approvalType) {
+            case MANAGER -> RequisitionStatus.PENDING_FINANCE;
+            case FINANCE -> RequisitionStatus.PENDING_ADMIN;
+            case HIGHER_AUTHORITY -> RequisitionStatus.APPROVED;
+        };
+    }
+
+    private void notifyNextApprover(PurchaseRequisition requisition, RequisitionStatus status){
+
+        Role role = switch (status){
+            case PENDING_FINANCE -> Role.FINANCE;
+            case PENDING_ADMIN -> Role.ADMIN;
+            case APPROVED -> Role.PROCUREMENT;
+            default -> null;
+        };
+
+        if(role==null)
+            return;
+
+        userRepo.findByRole(role)
+                .forEach(user ->
+                    notificationService.notify(
+                            user,
+                            requisition,
+                            null,
+                            NotificationType.APPROVAL,
+                            requisition.getRequisitionNo()
+                    )
+                );
+    }
+
 
     @Transactional
-    public  String createRequisition(Long id, PurchaseRequisitionRequestDTO dto) {
-        User employee =  userRepository.findById(id)
-                .orElseThrow(() -> new ResponseStatusException(
-                        HttpStatus.NOT_FOUND,
-                        "Employee not found"
-                ));
+    public PurchaseRequisitionResponseDTO createRequisition(PurchaseRequisitionRequestDTO dto, User employee) {
 
         PurchaseRequisition requisition = PurchaseRequisition.builder()
-                .requisitionNo("REQ-" + UUID.randomUUID().toString().substring(0, 8).toUpperCase())
+                .requisitionNo("REQ-" + UUID.randomUUID().toString().replace("-", "").toUpperCase().substring(0, 8))
                 .employee(employee)
-                .title(dto. getTitle())
+                .title(dto.getTitle())
                 .description(dto.getDescription())
                 .status(RequisitionStatus.PENDING_MANAGER)
                 .isDuplicate(false)
                 .build();
 
-        List<RequisitionItem> items = new ArrayList<>();
+        BigDecimal total = BigDecimal.ZERO;
 
-         BigDecimal total = BigDecimal.ZERO;
+        for (var itemDTO : dto.getItems()) {
 
-         for(RequisitionItemRequestDTO  itemRequestDTO : dto.getItems()){
+            Product product = productRepo.findById(itemDTO.getProductId())
+                    .orElseThrow(() -> new ResponseStatusException(
+                            HttpStatus.NOT_FOUND,
+                            "Product not found"));
 
-             Product product = productRepo.findById(itemRequestDTO.getProductId())
-                     .orElseThrow(() -> new ResponseStatusException(
-                             HttpStatus.NOT_FOUND,
-                             "Product not found"
-                     ));
+            RequisitionItem item = RequisitionItem.builder()
+                    .requisition(requisition)
+                    .product(product)
+                    .quantity(itemDTO.getQuantity())
+                    .unitPrice(itemDTO.getUnitPrice())
+                    .build();
 
-              RequisitionItem item = RequisitionItem.builder()
-                      .requisition(requisition)
-                      .product(product)
-                      .quantity(itemRequestDTO.getQuantity())
-                      .unitPrice(itemRequestDTO.getUnitPrice())
-                      .build();
+            requisition.getItems().add(item);
 
-             items.add(item);
+            total = total.add(
+                    item.getUnitPrice().multiply(
+                            BigDecimal.valueOf(item.getQuantity())));
+        }
 
-             total = total.add(
-                      itemRequestDTO.getUnitPrice()
-                             .multiply(BigDecimal.valueOf(itemRequestDTO.getQuantity()))
-             );
+        requisition.setTotalEstimatedAmount(total);
 
+        PurchaseRequisition saved = reqRepo.save(requisition);
 
-         }
+        historyRepo.save(RequisitionStatusHistory.builder().requisition(saved)
+                .oldStatus(RequisitionStatus.DRAFT)
+                .newStatus(RequisitionStatus.PENDING_MANAGER).changedBy(employee).remarks("Submitted").build());
 
-         requisition.setItems(items);
-         requisition.setTotalEstimatedAmount(total);
-         purchaseRequisitionRepo.save(requisition);
+        userRepo.findByDepartmentAndRole(employee.getDepartment(), Role.MANAGER)
+            .forEach(manager -> notificationService.notify(
+                            manager,
+                            saved,
+                            null,
+                            NotificationType.APPROVAL,
+                            "New Requisition Waiting"
+                        )
+                );
+        
+        
 
+        auditService.log("PurchaseRequisition", saved.getId(), "CREATE", employee, "Requisition Created");
 
-         statusHistoryRepo.save(RequisitionStatusHistory.builder()
-                 .requisition(requisition)
-                 .newStatus(RequisitionStatus.PENDING_MANAGER)
-                 .changedBy(employee)
-                 .remarks("Submitted for manager approval")
-                 .build());
-
-
-         return "requition submited";
+        return mapToDto(saved);
     }
-
 
     @Transactional
-    public List<PurchaseRequisitionResponseDTO> getAllRequisitions() {
+    public PurchaseRequisitionResponseDTO decideRequisition(Long requisitionId, ApprovalType approvalType,DecisionRequestDTO dto, User approver
+    ){
 
-         List<PurchaseRequisitionResponseDTO> list= purchaseRequisitionRepo.findAll()
-                 .stream().map(
-                         purchaseRequisition -> {
-                             PurchaseRequisitionResponseDTO  dto = new PurchaseRequisitionResponseDTO();
-                             dto.setId(purchaseRequisition.getId());
-                             dto.setRequitionNo(purchaseRequisition.getRequisitionNo());
-                             dto.setEmployeeName(purchaseRequisition.getEmployee().getFullName());
-                             dto.setTitle(purchaseRequisition.getTitle());
-                             dto.setDescription(purchaseRequisition.getDescription());
-                             dto.setTotalEstimatedAmount(purchaseRequisition.getTotalEstimatedAmount());
-                             dto.setStatus(purchaseRequisition.getStatus());
-                             dto.setIsDuplicate(purchaseRequisition.getIsDuplicate());
-                             dto.setCreatedAt(purchaseRequisition.getCreatedAt());
+        PurchaseRequisition requisition =
+                reqRepo.findById(requisitionId)
+                        .orElseThrow(() -> 
+                        new ResponseStatusException(
+                                        HttpStatus.NOT_FOUND,
+                                        "Requisition not found"));
 
-                             List<RequisitionItemResponseDTO> itemsDTOs = purchaseRequisition.getItems()
-                                     .stream().map(item -> {
-                                         RequisitionItemResponseDTO itemDto = new RequisitionItemResponseDTO();
-                                         itemDto.setId(item.getId());
-                                         itemDto.setProductId(item.getProduct().getId());
-                                         itemDto.setProductName((item.getProduct().getName()));
-                                         itemDto.setQuantity(item.getQuantity());
-                                         itemDto.setUnitPrice(item.getUnitPrice());
+        RequisitionStatus oldStatus = requisition.getStatus();
 
-                                         return itemDto;
-                                     }).toList();
+        boolean approved = dto.getDecision().equalsIgnoreCase("approved");
 
-                             dto.setItems(itemsDTOs);
-                             return dto;
-                         }
-                 ).toList();
-            return list;
-         }
+        RequisitionStatus newStatus = getNextStatus(approvalType, approved);
 
+        requisition.setStatus(newStatus);
+        requisition.setUpdatedAt(LocalDateTime.now());
 
-    public  List<PurchaseRequisitionResponseDTO> getRequisitionByEmployeeId(Long id) {
+        PurchaseRequisition saved = reqRepo.save(requisition);
 
-        List<PurchaseRequisitionResponseDTO> list= purchaseRequisitionRepo.findByEmployee_Id(id)
-                .stream().map(
-                        purchaseRequisition -> {
-                            PurchaseRequisitionResponseDTO  dto = new PurchaseRequisitionResponseDTO();
-                            dto.setId(purchaseRequisition.getId());
-                            dto.setRequitionNo(purchaseRequisition.getRequisitionNo());
-                            dto.setEmployeeName(purchaseRequisition.getEmployee().getFullName());
-                            dto.setTitle(purchaseRequisition.getTitle());
-                            dto.setDescription(purchaseRequisition.getDescription());
-                            dto.setTotalEstimatedAmount(purchaseRequisition.getTotalEstimatedAmount());
-                            dto.setStatus(purchaseRequisition.getStatus());
-                            dto.setIsDuplicate(purchaseRequisition.getIsDuplicate());
-                            dto.setCreatedAt(purchaseRequisition.getCreatedAt());
+        approvalRepo.save(Approval.builder()
+                    .requisition(saved)
+                    .approver(approver)
+                    .approvalType(approvalType)
+                    .status(approved? ApprovalStatus.APPROVED : ApprovalStatus.REJECTED)
+                    .remarks(dto.getRemarks())
+                    .decidedAt(LocalDateTime.now())
+                    .build()
+        );
 
-                            List<RequisitionItemResponseDTO> itemsDTOs = purchaseRequisition.getItems()
-                                    .stream().map(item -> {
-                                        RequisitionItemResponseDTO itemDto = new RequisitionItemResponseDTO();
-                                        itemDto.setId(item.getId());
-                                        itemDto.setProductId(item.getProduct().getId());
-                                        itemDto.setProductName((item.getProduct().getName()));
-                                        itemDto.setQuantity(item.getQuantity());
-                                        itemDto.setUnitPrice(item.getUnitPrice());
+        historyRepo.save(RequisitionStatusHistory.builder()
+                .requisition(saved)
+                .oldStatus(oldStatus)
+                .newStatus(newStatus)
+                .changedBy(approver)
+                .remarks(dto.getRemarks())
+                .build()
+        );
+        
+        notificationService.notify(requisition.getEmployee(),
+                saved,
+                null,
+                approved? NotificationType.APPROVAL : NotificationType.REJECTION,
+                requisition.getRequisitionNo()
+        );
 
-                                        return itemDto;
-                                    }).toList();
+        notifyNextApprover(requisition, newStatus);
 
-                            dto.setItems(itemsDTOs);
-                            return dto;
-                        }
-                ).toList();
-        return list;
+        auditService.log(
+                "PurchaseRequisition",
+                saved.getId(),
+                "DECISION",
+                approver,
+                dto.getRemarks()
+        );
+
+        return mapToDto(saved);
     }
 
+    public List<PurchaseRequisitionResponseDTO> getAllRequisitions(){
+        return reqRepo.findAll()
+                .stream()
+                .map(requisition -> mapToDto(requisition))
+                .toList();
+    }
 
+    public List<PurchaseRequisitionResponseDTO> getByStatus(RequisitionStatus status){
+
+        return reqRepo.findByStatus(status)
+                .stream()
+                .map(requisition -> mapToDto(requisition))
+                .toList();
+    }
+
+    public List<PurchaseRequisitionResponseDTO> getEmployeeRequisitions(Long employeeId) {
+
+        return reqRepo.findByEmployee_Id(employeeId)
+                .stream()
+                .map(requisition -> mapToDto(requisition))
+                .toList();
+    }
+
+    public PurchaseRequisitionResponseDTO getById(Long id) {
+
+        PurchaseRequisition requisition = reqRepo.findById(id)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Requisition not found"));
+
+        return mapToDto(requisition);
+    }
+
+    public List<RequisitionItemResponseDTO> getItemsOfRequisition(Long id) {
+        return itemService.getItems(id);
+    }
 
     @Transactional
     public void deleteRequisition(Long id) {
-        repo.deleteById(id);
-    }
+            PurchaseRequisition requisition = reqRepo.findById(id)
+            .orElseThrow(() ->
+                new ResponseStatusException(
+                        HttpStatus.NOT_FOUND,
+                        "Requisition not found"));
 
-    public List<PurchaseRequisitionResponseDTO> getRequisitionByStatus(String status) {
-
-
-        List<PurchaseRequisitionResponseDTO> list= purchaseRequisitionRepo.findByStatus(status)
-                .stream().map(
-                        purchaseRequisition -> {
-                            PurchaseRequisitionResponseDTO  dto = new PurchaseRequisitionResponseDTO();
-                            dto.setId(purchaseRequisition.getId());
-                            dto.setRequitionNo(purchaseRequisition.getRequisitionNo());
-                            dto.setEmployeeName(purchaseRequisition.getEmployee().getFullName());
-                            dto.setTitle(purchaseRequisition.getTitle());
-                            dto.setDescription(purchaseRequisition.getDescription());
-                            dto.setTotalEstimatedAmount(purchaseRequisition.getTotalEstimatedAmount());
-                            dto.setStatus(purchaseRequisition.getStatus());
-                            dto.setIsDuplicate(purchaseRequisition.getIsDuplicate());
-                            dto.setCreatedAt(purchaseRequisition.getCreatedAt());
-
-                            List<RequisitionItemResponseDTO> itemsDTOs = purchaseRequisition.getItems()
-                                    .stream().map(item -> {
-                                        RequisitionItemResponseDTO itemDto = new RequisitionItemResponseDTO();
-                                        itemDto.setId(item.getId());
-                                        itemDto.setProductId(item.getProduct().getId());
-                                        itemDto.setProductName((item.getProduct().getName()));
-                                        itemDto.setQuantity(item.getQuantity());
-                                        itemDto.setUnitPrice(item.getUnitPrice());
-
-                                        return itemDto;
-                                    }).toList();
-
-                            dto.setItems(itemsDTOs);
-                            return dto;
-                        }
-                ).toList();
-        return list;
-
+        auditService.log("PurchaseRequisition", id, "DELETE", null, "Requisition deleted");
+        reqRepo.delete(requisition);
     }
 }

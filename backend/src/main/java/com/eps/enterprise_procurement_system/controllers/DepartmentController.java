@@ -3,8 +3,6 @@ package com.eps.enterprise_procurement_system.controllers;
 import com.eps.enterprise_procurement_system.advices.ApiResponse;
 import com.eps.enterprise_procurement_system.dto.DepartmentRequestDTO;
 import com.eps.enterprise_procurement_system.dto.DepartmentResponseDTO;
-import com.eps.enterprise_procurement_system.entities.Department;
-import com.eps.enterprise_procurement_system.repositories.DepartmentRepo;
 import com.eps.enterprise_procurement_system.services.DepartmentService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
@@ -21,7 +19,6 @@ import java.util.Map;
 @RequiredArgsConstructor
 @CrossOrigin(origins = "http://localhost:5173")
 public class DepartmentController {
-    private final DepartmentRepo repo;
 
     private final DepartmentService departmentService;
 
@@ -35,9 +32,10 @@ public class DepartmentController {
     }
 
     @GetMapping("/{id}")
-    public Department get(@PathVariable Long id) {
-        return repo.findById(id).orElseThrow();
-    }
+    public ResponseEntity<ApiResponse<DepartmentResponseDTO>> get(@PathVariable Long id) {
+        return ResponseEntity.ok(new ApiResponse<>(departmentService.getDepartment(id))
+    );
+}
 
     @PostMapping
     @PreAuthorize("hasAnyRole('ADMIN')")

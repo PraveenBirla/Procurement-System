@@ -8,4 +8,6 @@ import org.springframework.data.jpa.repository.JpaRepository;
 
 public interface RequisitionItemRepo extends JpaRepository<RequisitionItem, Long> {
     List<RequisitionItem> findByRequisition_Id(Long id);
+    
+    void deleteByRequisition_Id(Long requisitionId);
 }

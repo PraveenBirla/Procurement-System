@@ -12,21 +12,25 @@ public class PurchaseRequisitionResponseDTO {
 
     private Long id;
 
-    private String requitionNo;
-
-    private String employeeName;
+    private String requisitionNo;
 
     private String title;
 
     private String description;
 
-    private BigDecimal totalEstimatedAmount;
+    private String employeeName;
+
+    private String departmentName;
 
     private RequisitionStatus status;
+
+    private BigDecimal totalEstimatedAmount;
 
     private Boolean isDuplicate;
 
     private LocalDateTime createdAt;
+
+    private LocalDateTime updatedAt;
 
     private List<RequisitionItemResponseDTO> items;
 }
