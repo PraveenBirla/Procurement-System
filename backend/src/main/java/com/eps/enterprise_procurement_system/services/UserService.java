@@ -2,8 +2,7 @@ package com.eps.enterprise_procurement_system.services;
 
 import com.eps.enterprise_procurement_system.entities.User;
 import com.eps.enterprise_procurement_system.repositories.UserRepository;
-import org.modelmapper.internal.bytebuddy.implementation.bytecode.Throw;
-import org.springframework.boot.context.config.ConfigDataResourceNotFoundException;
+
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
@@ -23,14 +22,14 @@ public class UserService implements UserDetailsService {
     }
 
     @Override
-    public UserDetails loadUserByUsername(String  email) throws UsernameNotFoundException {
-         User user = userRepository.findByEmail(email);
+    public UserDetails loadUserByUsername(String email) throws UsernameNotFoundException {
+        User user = userRepository.findByEmail(email);
 
-          if(user == null){
-              throw  new  UsernameNotFoundException("user not found");
-          }
+        if (user == null) {
+            throw new UsernameNotFoundException("user not found");
+        }
 
-          return user;
+        return user;
     }
     
 }

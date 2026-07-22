@@ -2,13 +2,16 @@ package com.eps.enterprise_procurement_system.controllers;
 
 import org.springframework.web.bind.annotation.RestController;
 
-import com.eps.enterprise_procurement_system.entities.ProductCategory;
-import com.eps.enterprise_procurement_system.repositories.ProductCategoryRepo;
+import com.eps.enterprise_procurement_system.advices.ApiResponse;
+import com.eps.enterprise_procurement_system.dto.ProductCategoryRequestDTO;
+import com.eps.enterprise_procurement_system.dto.ProductCategoryResponseDTO;
+import com.eps.enterprise_procurement_system.services.ProductCategoryService;
 
 import lombok.RequiredArgsConstructor;
 
 import java.util.List;
 
+import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -23,33 +26,33 @@ import org.springframework.web.bind.annotation.RequestMapping;
 @RequestMapping("/product-categories")
 @RequiredArgsConstructor
 public class ProductCategoryController {
-    private final ProductCategoryRepo repo;
+    private final ProductCategoryService service;
 
     @GetMapping
-    public List<ProductCategory> list() {
-        return repo.findAll();
+    public ResponseEntity<ApiResponse<List<ProductCategoryResponseDTO>>> list() {
+        return ResponseEntity.ok(new ApiResponse<>(service.getAllCategories()));
     }
 
     @GetMapping("/{id}")
-    public ProductCategory get(@PathVariable Long id) {
-        return repo.findById(id).orElseThrow();
+    public ResponseEntity<ApiResponse<ProductCategoryResponseDTO>> get(@PathVariable Long id) {
+        return ResponseEntity.ok(new ApiResponse<>(service.getCategoryById(id)));
     }
 
     @PostMapping
     @PreAuthorize("hasAnyRole('ADMIN')")
-    public ProductCategory create(@RequestBody ProductCategory body) {
-        return repo.save(body);
+    public ResponseEntity<ApiResponse<ProductCategoryResponseDTO>> create(@RequestBody ProductCategoryRequestDTO body) {
+        return ResponseEntity.ok(new ApiResponse<>(service.createCategory(body)));
     }
 
     @PutMapping("/{id}")
     @PreAuthorize("hasAnyRole('ADMIN')")
-    public ProductCategory update(@PathVariable Long id, @RequestBody ProductCategory body) {
-        body.setId(id); return repo.save(body);
+    public ResponseEntity<ApiResponse<ProductCategoryResponseDTO>> update(@PathVariable Long id, @RequestBody ProductCategoryRequestDTO dto) {
+        return ResponseEntity.ok(new ApiResponse<>(service.updateCategory(id, dto)));
     }
 
     @DeleteMapping("/{id}")
     @PreAuthorize("hasAnyRole('ADMIN')")
-    public void delete(@PathVariable Long id) {
-        repo.deleteById(id);
+    public void ResponseEntdelete(@PathVariable Long id) {
+        service.deleteCategory(id);
     }
 }
