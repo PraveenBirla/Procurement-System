@@ -42,32 +42,38 @@ public class PurchaseRequisitionController {
         return ResponseEntity.ok(new ApiResponse<>(service.createRequisition(req, currentUser.get())));
     }
 
-    @GetMapping()
+    @GetMapping("/all")
     @PreAuthorize("hasAnyRole('ADMIN', 'MANAGER', 'PROCUREMENT_OFFICER', 'EMPLOYEE')")
-    public ResponseEntity<ApiResponse<List<PurchaseRequisitionResponseDTO>>> getAllRequisitions(@RequestParam(required=false) RequisitionStatus status) {
-        return ResponseEntity.ok(new ApiResponse<>(status == null ? service.getAllRequisitions() : service.getByStatus(status)));
+    public ResponseEntity<ApiResponse<List<PurchaseRequisitionResponseDTO>>> getAll(){
+        return ResponseEntity.ok(new ApiResponse<>(service.getAllRequisitions()));
+    }
+
+    @GetMapping
+    @PreAuthorize("hasAnyRole('ADMIN', 'MANAGER', 'PROCUREMENT_OFFICER', 'EMPLOYEE')")
+    public ResponseEntity<ApiResponse<List<PurchaseRequisitionResponseDTO>>> getRequisitionsByStatus(@RequestParam(required=true) RequisitionStatus status) {
+        return ResponseEntity.ok(new ApiResponse<>( service.getByStatus(status)));
     }
 
     @GetMapping("/mine")
+    @PreAuthorize("hasAnyRole('EMPLOYEE')")
     public ResponseEntity<ApiResponse<List<PurchaseRequisitionResponseDTO>>> mine() {
         return ResponseEntity.ok(new ApiResponse<>(service.getEmployeeRequisitions(currentUser.get().getId())));
     }
 
-    @GetMapping("/employee")
-    @PreAuthorize("hasAnyRole('EMPLOYEE')")
-    public  ResponseEntity<ApiResponse<List<PurchaseRequisitionResponseDTO>>> getRequisitionByEmployeeId(Authentication authentication) {
+    @GetMapping("/{employeeId}/")
+    @PreAuthorize("hasAnyRole('ADMIN', 'MANAGER', 'PROCUREMENT_OFFICER', 'EMPLOYEE')")
+    public  ResponseEntity<ApiResponse<List<PurchaseRequisitionResponseDTO>>> getRequisitionByEmployeeId(@PathVariable Long employeeId) {
 
-        User user = (User) authentication.getPrincipal();
 
-         List<PurchaseRequisitionResponseDTO> list = service.getEmployeeRequisitions(user.getId());
+         List<PurchaseRequisitionResponseDTO> list = service.getEmployeeRequisitions(employeeId);
          return ResponseEntity.ok(new ApiResponse<>(list));
 
     }
 
-    @GetMapping("/status")
+    @GetMapping("/{id}")
     @PreAuthorize("hasAnyRole('ADMIN', 'MANAGER', 'PROCUREMENT_OFFICER', 'EMPLOYEE')")
-    public ResponseEntity<ApiResponse<PurchaseRequisitionResponseDTO>> getRequisitionById(@PathVariable Long id) {
-        return ResponseEntity.ok(new ApiResponse<>(service.getById(id)));
+    public ResponseEntity<ApiResponse<PurchaseRequisitionResponseDTO>> getRequisitionByRequisitionId(@PathVariable Long id) {
+        return ResponseEntity.ok(new ApiResponse<>(service.getByRequisitionId(id)));
     }
 
     @GetMapping("/{id}/items")
