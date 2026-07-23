@@ -47,6 +47,7 @@ public class PurchaseRequisitionService {
     private final NotificationService notificationService;
     private final AuditService auditService;
     private final ModelMapper modelMapper;
+    private final DuplicateCheckService duplicateCheckService;
 
     public PurchaseRequisitionResponseDTO mapToDto(PurchaseRequisition saved) {
         PurchaseRequisitionResponseDTO response = modelMapper.map(saved, PurchaseRequisitionResponseDTO.class);
@@ -125,14 +126,17 @@ public class PurchaseRequisitionService {
     @Transactional
     public PurchaseRequisitionResponseDTO createRequisition(PurchaseRequisitionRequestDTO dto, User employee) {
 
+        DuplicateCheckService.Result dup = duplicateCheckService.check(employee, dto.getItems());
+
         PurchaseRequisition requisition = PurchaseRequisition.builder()
                 .requisitionNo("REQ-" + UUID.randomUUID().toString().replace("-", "").toUpperCase().substring(0, 8))
                 .employee(employee)
                 .title(dto.getTitle())
                 .description(dto.getDescription())
                 .status(RequisitionStatus.PENDING_MANAGER)
-                .isDuplicate(false)
+                .isDuplicate(dup.isDuplicate())
                 .build();
+
 
         BigDecimal total = BigDecimal.ZERO;
 

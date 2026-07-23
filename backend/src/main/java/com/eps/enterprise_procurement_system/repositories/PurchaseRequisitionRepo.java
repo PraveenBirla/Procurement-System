@@ -1,8 +1,11 @@
 package com.eps.enterprise_procurement_system.repositories;
 
+import com.eps.enterprise_procurement_system.entities.Department;
 import com.eps.enterprise_procurement_system.entities.PurchaseRequisition;
+import com.eps.enterprise_procurement_system.entities.User;
 import com.eps.enterprise_procurement_system.entities.enums.RequisitionStatus;
 
+import java.time.LocalDateTime;
 import java.util.List;
 
 import org.springframework.data.jpa.repository.JpaRepository;
@@ -28,6 +31,12 @@ public interface PurchaseRequisitionRepo extends JpaRepository<PurchaseRequisiti
     );
 
     List<PurchaseRequisition> findAllByOrderByCreatedAtDesc();
+
+    List<PurchaseRequisition> findByEmployeeAndCreatedAtAfterAndStatusNotIn(
+        User employee, LocalDateTime since, List<RequisitionStatus> excludedStatuses);
+
+    List<PurchaseRequisition> findByEmployee_DepartmentAndCreatedAtAfterAndStatusNotIn(
+        Department department, LocalDateTime since, List<RequisitionStatus> excludedStatuses);
 
     void deleteById(Long id);
 }
