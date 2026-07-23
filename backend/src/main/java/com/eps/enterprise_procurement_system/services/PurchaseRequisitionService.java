@@ -117,7 +117,7 @@ public class PurchaseRequisitionService {
                             requisition,
                             null,
                             NotificationType.APPROVAL,
-                            requisition.getRequisitionNo()
+                            requisition.getRequisitionNo()+"\nStatus: "+requisition.getStatus()+"\nApproval Type: "+requisition.getApprovals()
                     )
                 );
     }
@@ -188,14 +188,34 @@ public class PurchaseRequisitionService {
 
     @Transactional
     public PurchaseRequisitionResponseDTO decideRequisition(Long requisitionId, ApprovalType approvalType,DecisionRequestDTO dto, User approver
-    ){
+    ) {
 
         PurchaseRequisition requisition =
                 reqRepo.findById(requisitionId)
                         .orElseThrow(() -> 
                         new ResponseStatusException(
                                         HttpStatus.NOT_FOUND,
-                                        "Requisition not found"));
+                                "Requisition not found"));
+
+        // Employee cannot approve own request
+        if (requisition.getEmployee().getId().equals(approver.getId())) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST,
+                    "You cannot approve your own requisition");
+        }
+        
+        // Already completed
+        if (requisition.getStatus() == RequisitionStatus.APPROVED || requisition.getStatus().name().contains("REJECTED")) {
+
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST,
+                    "Workflow already completed");
+        }
+
+        // Duplicate approval
+        if (approvalRepo.existsByRequisitionAndApprovalType(requisition, approvalType)) {
+
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST,
+                    "Approval already recorded");
+        }
 
         RequisitionStatus oldStatus = requisition.getStatus();
 

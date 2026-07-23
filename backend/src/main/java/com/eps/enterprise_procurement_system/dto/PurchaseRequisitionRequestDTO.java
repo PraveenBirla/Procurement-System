@@ -16,7 +16,6 @@ import java.util.List;
 @NoArgsConstructor
 public class PurchaseRequisitionRequestDTO {
 
-    @NotBlank(message = "enter a requisitionNo")
     private String requisitionNo;
 
     @NotBlank(message = "enter a title")
