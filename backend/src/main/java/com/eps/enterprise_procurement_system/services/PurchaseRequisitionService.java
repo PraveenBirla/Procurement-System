@@ -270,7 +270,7 @@ public class PurchaseRequisitionService {
                 .toList();
     }
 
-    public PurchaseRequisitionResponseDTO getById(Long id) {
+    public PurchaseRequisitionResponseDTO getByRequisitionId(Long id) {
 
         PurchaseRequisition requisition = reqRepo.findById(id)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Requisition not found"));
