@@ -82,6 +82,7 @@ public class AuthService {
                 .accessToken(jwtService.generateAceessToken(user))
                 .refreshToken(jwtService.generateRefreshToken(user))
                 .message("Login Successful")
+                    .role(user.getRole())
                 .build();
             return responseDTO;
             

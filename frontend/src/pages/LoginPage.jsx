@@ -45,22 +45,14 @@ export default function LoginPage() {
 
       const response = await authService.login(payload);
 
-      // Store auth state
+      
       const accessToken = response.accessToken;
       const refreshToken = response.refreshToken;
       const userData = {
-        email: payload.email,
-        // The backend response only contains token + message; 
-        // additional user details would come from a /me endpoint
-        fullName: payload.email.split('@')[0].replace(/[._]/g, ' '),
-        role: response.role || 'EMPLOYEE', // Default; in production, decode JWT or fetch /me
+        role: response.role  
       };
-      authService.setTokens(
-          response.accessToken,
-          response.refreshToken
-      );
-
-      login(userData, authService.getAccessToken, authService.getRefreshToken); 
+     
+      login(userData, accessToken,  refreshToken); 
 
       toast.success('Welcome back!', {
         duration: 3000,
@@ -71,7 +63,26 @@ export default function LoginPage() {
         },
       });
 
-      navigate('/dashboard');
+       switch (response.role) {
+    case "ADMIN":
+        navigate("/admin");
+        break;
+
+    case "EMPLOYEE":
+        navigate("/employee");
+        break;
+
+        case "FINANCE":
+        navigate("/finance");
+        break;
+
+    case "PROCUREMENT":
+        navigate("/procurement");
+        break;
+
+    default:
+        navigate("/login");
+   }
     } catch (error) {
       const message =
         error.response?.data?.error?.message ||

@@ -5,7 +5,7 @@ const BASE_URL = import.meta.env.VITE_API_BASE_URL || "http://localhost:8080";
 let isRefreshing = false;
 let failedQueue = [];
 
-// Axios instance
+ 
 const api = axios.create({
   baseURL: BASE_URL,
   timeout: 15000,
@@ -14,9 +14,7 @@ const api = axios.create({
   },
 });
 
-/**
- * Resolve/reject all queued requests
- */
+ 
 const processQueue = (error, token = null) => {
   failedQueue.forEach((promise) => {
     if (error) {
@@ -29,10 +27,7 @@ const processQueue = (error, token = null) => {
   failedQueue = [];
 };
 
-/**
- * REQUEST INTERCEPTOR
- * Attach JWT Access Token
- */
+  
 api.interceptors.request.use(
   (config) => {
     const token = localStorage.getItem("accessToken");
@@ -46,18 +41,13 @@ api.interceptors.request.use(
   (error) => Promise.reject(error)
 );
 
-/**
- * RESPONSE INTERCEPTOR
- * Automatically refresh expired access tokens
- */
+ 
 api.interceptors.response.use(
   (response) => response,
 
   async (error) => {
     const originalRequest = error.config;
-
-    // If refresh endpoint itself fails,
-    // don't try refreshing again
+ 
     if (originalRequest.url.includes("/auth/refresh")) {
       return Promise.reject(error);
     }
@@ -67,10 +57,7 @@ api.interceptors.response.use(
       !originalRequest._retry
     ) {
 
-      /**
-       * Another refresh request is already running.
-       * Wait until it finishes.
-       */
+       
       if (isRefreshing) {
         return new Promise((resolve, reject) => {
           failedQueue.push({ resolve, reject });
@@ -94,7 +81,7 @@ api.interceptors.response.use(
           throw new Error("Refresh token missing");
         }
 
-        // Call refresh endpoint
+       
         const response = await axios.post(
           `${BASE_URL}/auth/refresh`,
           {
@@ -104,7 +91,7 @@ api.interceptors.response.use(
 
         const tokens = response.data.data;
 
-        // Save new tokens
+         
         localStorage.setItem(
           "accessToken",
           tokens.accessToken
@@ -117,10 +104,10 @@ api.interceptors.response.use(
           );
         }
 
-        // Retry queued requests
+        
         processQueue(null, tokens.accessToken);
 
-        // Retry original request
+         
         originalRequest.headers.Authorization =
           "Bearer " + tokens.accessToken;
 
@@ -130,7 +117,7 @@ api.interceptors.response.use(
 
         processQueue(err, null);
 
-        // Logout
+        
         localStorage.removeItem("accessToken");
         localStorage.removeItem("refreshToken");
         localStorage.removeItem("user");
