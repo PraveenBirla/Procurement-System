@@ -4,7 +4,8 @@ import LoginPage from './pages/LoginPage';
 import RegisterPage from './pages/RegisterPage';
 import DashboardPage from './pages/DashboardPage';
 import { useAuth } from './hooks/useAuth';
-
+import { AdminDashboardPage } from './pages/AdminDashboardPage';
+import { EmployeeDashboard } from './components/employee/EmployeeDashboard';
 function App() {
   const { user, loading } = useAuth();
 
@@ -14,22 +15,38 @@ function App() {
         <div className="text-gray-500">Loading...</div>
       </div>
     );
-  }
+  } 
+
+  const getDashboardPath = () => {
+    if (!user) return "/login";
+
+    switch (user.role) {
+      case "ADMIN":
+        return "/admin";
+
+      case "EMPLOYEE":
+        return "/employee";
+
+      case "FINANCE":
+        return "/finance";
+
+      case "PROCUREMENT":
+        return "/procurement";
+
+      default:
+        return "/login";
+    }
+  };
 
   return (
     <Routes>
-      {/* Public routes */}
-      <Route path="/login" element={!user ? <LoginPage /> : <Navigate to="/dashboard" replace />} />
+     
+      <Route path="/login" element={ !user ? (<LoginPage /> ) : (<Navigate to={getDashboardPath()} replace /> )}/>
       <Route path="/register" element={!user ? <RegisterPage /> : <Navigate to="/dashboard" replace />} />
-
-      {/* Protected routes */}
-      <Route 
-        path="/dashboard" 
-        element={user ? <DashboardPage /> : <Navigate to="/login" replace />} 
-      />
-
-      {/* Default redirect */}
-      <Route path="/" element={<Navigate to={user ? "/dashboard" : "/login"} replace />} />
+ 
+      <Route path="/admin" element={user?.role === "ADMIN" ? <AdminDashboardPage/>: <Navigate to="/login" replace />}/>
+      <Route path="/employee" element={user?.role === "EMPLOYEE" ? <EmployeeDashboard/>: <Navigate to="/login" replace />}/>
+      <Route path="/" element={<Navigate to={getDashboardPath()} replace/>}/>
     </Routes>
   );
 }

@@ -1,10 +1,7 @@
 import { createContext, useState, useCallback, useEffect } from 'react';
 import authService from '../services/authService';
 
-/**
- * AuthContext provides authentication state and helpers
- * to all components in the tree.
- */
+ 
 export const AuthContext = createContext(null);
 
 export function AuthProvider({ children }) {
@@ -12,7 +9,7 @@ export function AuthProvider({ children }) {
   const [isAuthenticated, setIsAuthenticated] = useState(() => !!authService.getAccessToken());
   const [isLoading, setIsLoading] = useState(true);
 
-  // Hydrate auth state from localStorage on mount
+   
   useEffect(() => {
     const token = authService.getAccessToken();
     const storedUser = authService.getUser();
@@ -26,9 +23,7 @@ export function AuthProvider({ children }) {
     setIsLoading(false);
   }, []);
 
-  /**
-   * Store user + token after successful login.
-   */
+   
   const login = useCallback((userData, accessToken, refreshToken) => {
     authService.setTokens(accessToken, refreshToken);
     authService.setUser(userData);
@@ -37,9 +32,7 @@ export function AuthProvider({ children }) {
     setIsAuthenticated(true);
   }, []);
 
-  /**
-   * Clear auth state on logout.
-   */
+  
   const logout = useCallback(() => {
     authService.clearAuth();
     setUser(null);

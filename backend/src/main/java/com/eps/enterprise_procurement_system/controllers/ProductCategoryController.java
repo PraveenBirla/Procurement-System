@@ -23,7 +23,7 @@ import org.springframework.web.bind.annotation.RequestMapping;
 
 
 @RestController
-@RequestMapping("/product-categories")
+    @RequestMapping("/product-categories")
 @RequiredArgsConstructor
 public class ProductCategoryController {
     private final ProductCategoryService service;
