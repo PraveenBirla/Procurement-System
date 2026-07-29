@@ -4,7 +4,6 @@ import java.util.List;
 
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
-import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -19,7 +18,6 @@ import com.eps.enterprise_procurement_system.dto.DecisionRequestDTO;
 import com.eps.enterprise_procurement_system.dto.RequisitionItemResponseDTO;
 import com.eps.enterprise_procurement_system.dto.PurchaseRequisitionRequestDTO;
 import com.eps.enterprise_procurement_system.dto.PurchaseRequisitionResponseDTO;
-import com.eps.enterprise_procurement_system.entities.User;
 import com.eps.enterprise_procurement_system.entities.enums.ApprovalType;
 import com.eps.enterprise_procurement_system.entities.enums.RequisitionStatus;
 import com.eps.enterprise_procurement_system.services.PurchaseRequisitionService;

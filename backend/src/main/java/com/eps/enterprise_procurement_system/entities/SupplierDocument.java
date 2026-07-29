@@ -30,6 +30,18 @@ public class SupplierDocument {
     @Column(name = "document_number", length = 100)
     private String documentNumber;
 
+    @Column(name = "file_name")
+    private String fileName;
+
+    @Column(name = "file_path")
+    private String filePath;
+
+    @Column(name = "file_size")
+    private Long fileSize;
+
+    @Column(name = "content_type")
+    private String contentType;
+
     @Column(name = "expiry_date")
     private LocalDate expiryDate;
 
