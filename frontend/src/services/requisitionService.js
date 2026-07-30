@@ -12,10 +12,48 @@ const requisitionService = {
        return res.data.data;
      },
 
-
-
      async getRequisitionHistory(id){
        const res = await api.get(`/history/${id}`);
+       return res.data.data;
+     }, 
+
+     async getRequisitionsByStatus(status){
+      const res = await api.get("/requisitions",{
+        params: {
+         status,
+        }
+      }
+      );
+       return res.data.data;
+     }, 
+
+     async getManagerRequisitionsByStatus(status){
+      const res = await api.get("/approvals/manager",{
+        params: {
+         status,
+        }
+      }
+      );
+       return res.data.data;
+     }, 
+
+     async getFinanceRequisitionsByStatus(status){
+      const res = await api.get("/approvals/finance",{
+        params: {
+         status,
+        }
+      }
+      );
+       return res.data.data;
+     }, 
+
+     async managerUpdate(id, data){
+      const res = await api.post(`/requisitions/${id}/manager-decision`, data);
+       return res.data.data;
+     },
+
+    async  financeUpdate(id, data){
+      const res = await api.post(`/requisitions/${id}/finance-decision`, data);
        return res.data.data;
      }
 } 

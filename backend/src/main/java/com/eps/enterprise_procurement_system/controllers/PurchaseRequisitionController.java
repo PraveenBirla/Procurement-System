@@ -49,7 +49,7 @@ public class PurchaseRequisitionController {
     }
 
     @GetMapping
-    @PreAuthorize("hasAnyRole('ADMIN', 'MANAGER', 'PROCUREMENT_OFFICER', 'EMPLOYEE')")
+    @PreAuthorize("hasAnyRole('ADMIN', 'MANAGER', 'FINANCE', 'PROCUREMENT_OFFICER', 'EMPLOYEE')")
     public ResponseEntity<ApiResponse<List<PurchaseRequisitionResponseDTO>>> getRequisitionsByStatus(@RequestParam(required=true) RequisitionStatus status) {
         return ResponseEntity.ok(new ApiResponse<>( service.getByStatus(status)));
     }

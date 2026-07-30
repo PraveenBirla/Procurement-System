@@ -87,13 +87,15 @@ public class PurchaseRequisitionService {
             return switch (approvalType) {
                 case MANAGER -> RequisitionStatus.MANAGER_REJECTED;
                 case FINANCE -> RequisitionStatus.FINANCE_REJECTED;
+                case PROCUREMENT -> RequisitionStatus.PROCUREMENT_REJECTED;
                 case HIGHER_AUTHORITY -> RequisitionStatus.ADMIN_REJECTED;
             };
         }
 
         return switch (approvalType) {
             case MANAGER -> RequisitionStatus.PENDING_FINANCE;
-            case FINANCE -> RequisitionStatus.PENDING_ADMIN;
+            case FINANCE -> RequisitionStatus.PENDING_PROCUREMENT;
+            case PROCUREMENT -> RequisitionStatus.APPROVED;
             case HIGHER_AUTHORITY -> RequisitionStatus.APPROVED;
         };
     }
@@ -197,20 +199,20 @@ public class PurchaseRequisitionService {
                                         HttpStatus.NOT_FOUND,
                                 "Requisition not found"));
 
-        // Employee cannot approve own request
+
         if (requisition.getEmployee().getId().equals(approver.getId())) {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST,
                     "You cannot approve your own requisition");
         }
         
-        // Already completed
+
         if (requisition.getStatus() == RequisitionStatus.APPROVED || requisition.getStatus().name().contains("REJECTED")) {
 
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST,
                     "Workflow already completed");
         }
 
-        // Duplicate approval
+
         if (approvalRepo.existsByRequisitionAndApprovalType(requisition, approvalType)) {
 
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST,

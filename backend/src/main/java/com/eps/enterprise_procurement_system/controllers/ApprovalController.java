@@ -3,6 +3,8 @@ package com.eps.enterprise_procurement_system.controllers;
 import com.eps.enterprise_procurement_system.advices.ApiResponse;
 import com.eps.enterprise_procurement_system.dto.ApprovalRequestDTO;
 import com.eps.enterprise_procurement_system.dto.ApprovalResponseDTO;
+import com.eps.enterprise_procurement_system.dto.PurchaseRequisitionResponseDTO;
+import com.eps.enterprise_procurement_system.entities.enums.ApprovalStatus;
 import com.eps.enterprise_procurement_system.services.ApprovalService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
@@ -59,4 +61,26 @@ public class ApprovalController {
 
         return ResponseEntity.ok(new ApiResponse<>(Map.of("message", approvalService.deleteApproval(id))));
     }
+
+    @GetMapping("/manager")
+    public ResponseEntity<ApiResponse<List<PurchaseRequisitionResponseDTO>>> getManagerRequisitions(
+            @RequestParam ApprovalStatus status) {
+
+        List<PurchaseRequisitionResponseDTO> result= approvalService.getManagerRequisitions(status);
+        return ResponseEntity.ok(new ApiResponse<>(result));
+
+    }
+
+    @GetMapping("/finance")
+    public ResponseEntity<ApiResponse<List<PurchaseRequisitionResponseDTO>>> getFinanceRequisitions(
+            @RequestParam ApprovalStatus status) {
+
+        List<PurchaseRequisitionResponseDTO> result= approvalService.getFinanceRequisitions(status);
+        return ResponseEntity.ok(new ApiResponse<>(result));
+
+    }
+
+
+
+
 }

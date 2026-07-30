@@ -5,7 +5,9 @@ import RegisterPage from './pages/RegisterPage';
 import DashboardPage from './pages/DashboardPage';
 import { useAuth } from './hooks/useAuth';
 import { AdminDashboardPage } from './pages/AdminDashboardPage';
-import { EmployeeDashboard } from './components/employee/EmployeeDashboard';
+import { EmployeeDashboardPage } from './pages/EmployeeDashboardPage';
+import { ManagerDashboardPage } from './pages/ManagerDashboardPage';
+import { FinanceDashboardPage } from './pages/FinanceDashboardPage';
 function App() {
   const { user, loading } = useAuth();
 
@@ -30,6 +32,9 @@ function App() {
       case "FINANCE":
         return "/finance";
 
+          case "MANAGER":
+        return "/manager";
+
       case "PROCUREMENT":
         return "/procurement";
 
@@ -45,7 +50,10 @@ function App() {
       <Route path="/register" element={!user ? <RegisterPage /> : <Navigate to="/dashboard" replace />} />
  
       <Route path="/admin" element={user?.role === "ADMIN" ? <AdminDashboardPage/>: <Navigate to="/login" replace />}/>
-      <Route path="/employee" element={user?.role === "EMPLOYEE" ? <EmployeeDashboard/>: <Navigate to="/login" replace />}/>
+      <Route path="/employee" element={user?.role === "EMPLOYEE" ? <EmployeeDashboardPage/>: <Navigate to="/login" replace />}/>
+      <Route path="/manager" element={user?.role === "MANAGER" ? <ManagerDashboardPage/>: <Navigate to="/login" replace />}/>
+      <Route path="/finance" element={user?.role === "FINANCE" ? <FinanceDashboardPage/>: <Navigate to="/login" replace />}/>
+
       <Route path="/" element={<Navigate to={getDashboardPath()} replace/>}/>
     </Routes>
   );

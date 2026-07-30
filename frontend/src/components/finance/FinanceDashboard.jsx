@@ -6,7 +6,7 @@ import {
 import authService from "../../services/authService";
 import { RequisitionSection } from "./RequisitionSection";
 
-export const EmployeeDashboard = () => {
+export const FinanceDashboard = () => {
   const [activeSection, setActiveSection] = useState("requition");
 
   const menuItems = [
@@ -17,8 +17,8 @@ export const EmployeeDashboard = () => {
     <div className="admin-dashboard">
        
       <aside className="sidebar">
-        <div className="sidebar-header">Procurement  Employee</div>
-        <nav className="menu">
+        <div className="sidebar-header">Procurement Finance</div>
+        <nav className="menu"> 
           {menuItems.map((item) => (
             <button
               key={item.id}

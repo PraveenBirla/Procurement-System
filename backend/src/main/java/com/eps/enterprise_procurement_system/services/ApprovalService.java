@@ -2,9 +2,12 @@ package com.eps.enterprise_procurement_system.services;
 
 import com.eps.enterprise_procurement_system.dto.ApprovalRequestDTO;
 import com.eps.enterprise_procurement_system.dto.ApprovalResponseDTO;
+import com.eps.enterprise_procurement_system.dto.PurchaseRequisitionResponseDTO;
 import com.eps.enterprise_procurement_system.entities.Approval;
 import com.eps.enterprise_procurement_system.entities.PurchaseRequisition;
 import com.eps.enterprise_procurement_system.entities.User;
+import com.eps.enterprise_procurement_system.entities.enums.ApprovalStatus;
+import com.eps.enterprise_procurement_system.entities.enums.ApprovalType;
 import com.eps.enterprise_procurement_system.repositories.ApprovalRepo;
 import com.eps.enterprise_procurement_system.repositories.PurchaseRequisitionRepo;
 import com.eps.enterprise_procurement_system.repositories.UserRepository;
@@ -127,5 +130,47 @@ public class ApprovalService {
         approvalRepo.delete(approval);
 
         return "Approval deleted successfully";
+    }
+
+    public List<PurchaseRequisitionResponseDTO> getManagerRequisitions(
+            ApprovalStatus status) {
+
+        List<PurchaseRequisition>  requisitions =  approvalRepo.findRequisitionsByApprovalTypeAndStatus(
+                ApprovalType.MANAGER,
+                status
+        );
+
+        List<PurchaseRequisitionResponseDTO> response = requisitions.stream()
+                .map(this::mapToResponseDTO)
+                .toList();
+
+        return response;
+    }
+
+    private PurchaseRequisitionResponseDTO mapToResponseDTO(PurchaseRequisition req) {
+        return PurchaseRequisitionResponseDTO.builder()
+                .id(req.getId())
+                .requisitionNo(req.getRequisitionNo())
+                .title(req.getTitle())
+                .description(req.getDescription())
+                .totalEstimatedAmount(req.getTotalEstimatedAmount())
+                .status(req.getStatus())
+                .createdAt(req.getCreatedAt())
+                .employeeName(req.getEmployee().getFullName())
+                .build();
+    }
+
+    public List<PurchaseRequisitionResponseDTO> getFinanceRequisitions(ApprovalStatus status) {
+
+        List<PurchaseRequisition>  requisitions =  approvalRepo.findRequisitionsByApprovalTypeAndStatus(
+                ApprovalType.FINANCE,
+                status
+        );
+
+        List<PurchaseRequisitionResponseDTO> response = requisitions.stream()
+                .map(this::mapToResponseDTO)
+                .toList();
+
+        return response;
     }
 }

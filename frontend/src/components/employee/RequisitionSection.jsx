@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { createPortal } from "react-dom";
 import requisitionService from "../../services/requisitionService";
 import productService from "../../services/productService";
 import "./RequisitionSection.css";
@@ -196,12 +197,13 @@ export const RequisitionSection = () => {
     }
   };
 
-  return (
+  return ( 
+    <> 
     <div className="requisition-section">
       <div className="section-header">
         <h2 className="section-title">My Requisitions</h2>
         <button className="btn-primary" onClick={openCreateModal}>
-          + Create Requisition
+          + Create Requition
         </button>
       </div>
 
@@ -258,7 +260,7 @@ export const RequisitionSection = () => {
                         disabled={trackingId === req.id}
                         onClick={() => handleTrack(req)}
                       >
-                        {trackingId === req.id ? "…" : "Track"}
+                        {trackingId === req.id ? "��" : "Track"}
                       </button>
                     </div>
                   </td>
@@ -274,9 +276,10 @@ export const RequisitionSection = () => {
           </tbody>
         </table>
       </div>
+    </div>
 
-      {/* View Modal */}
-      {selectedRequisition && (
+      {/* View Modal - using React Portal */}
+      {selectedRequisition && createPortal(
         <div className="modal-overlay" onClick={() => setSelectedRequisition(null)}>
           <div className="modal-content" onClick={(e) => e.stopPropagation()}>
             <div className="modal-header">
@@ -324,11 +327,12 @@ export const RequisitionSection = () => {
               </button>
             </div>
           </div>
-        </div>
+        </div>,
+        document.body
       )}
 
-      {/* Track Requisition Modal */}
-      {showTrackModal && (
+      {/* Track Requisition Modal - using React Portal */}
+      {showTrackModal && createPortal(
         <div className="modal-overlay" onClick={closeTrackModal}>
           <div className="modal-content" onClick={(e) => e.stopPropagation()}>
             <div className="modal-header">
@@ -364,11 +368,12 @@ export const RequisitionSection = () => {
               </button>
             </div>
           </div>
-        </div>
+        </div>,
+        document.body
       )}
 
-      {/* Create Requisition Modal */}
-      {showCreateModal && (
+      {/* Create Requisition Modal - using React Portal */}
+      {showCreateModal && createPortal(
         <div className="modal-overlay" onClick={closeCreateModal}>
           <div className="modal-content" onClick={(e) => e.stopPropagation()}>
             <div className="modal-header">
@@ -480,8 +485,10 @@ export const RequisitionSection = () => {
               </div>
             </form>
           </div>
-        </div>
+        </div>,
+        document.body
       )}
-    </div>
+    </>
+
   );
 };

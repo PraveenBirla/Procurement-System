@@ -64,16 +64,20 @@ export default function LoginPage() {
       });
 
        switch (response.role) {
-    case "ADMIN":
+       case "ADMIN":
         navigate("/admin");
         break;
 
-    case "EMPLOYEE":
+       case "EMPLOYEE":
         navigate("/employee");
         break;
 
         case "FINANCE":
         navigate("/finance");
+        break;
+
+        case "MANAGER":
+        navigate("/manager");
         break;
 
     case "PROCUREMENT":
