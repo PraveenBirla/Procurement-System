@@ -3,6 +3,7 @@ package com.eps.enterprise_procurement_system.entities.enums;
 public enum RequisitionStatus {
     DRAFT,
     SUBMITTED,
+    PARTIALLY_ORDERED,
     DUPLICATE_FLAGGED,
     PENDING_MANAGER,
     MANAGER_REJECTED,

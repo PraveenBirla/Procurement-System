@@ -1,5 +1,7 @@
 package com.eps.enterprise_procurement_system.dto;
 
+import java.util.List;
+
 import java.time.LocalDate;
 
 import jakarta.validation.constraints.FutureOrPresent;
@@ -17,4 +19,6 @@ public class PurchaseOrderRequestDTO {
 
     @FutureOrPresent(message = "Expected delivery date cannot be in the past")
     private LocalDate expectedDeliveryDate;
+
+    private List<PoItemRequestDTO> poItems;
 }

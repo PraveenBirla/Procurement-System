@@ -48,11 +48,32 @@ public class PurchaseOrder {
     @JoinColumn(name = "generated_by", foreignKey = @ForeignKey(name = "fk_po_generated_by"))
     private User generatedBy;
 
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "completed_by", foreignKey = @ForeignKey(name = "fk_completed_by"))
+    private User completedBy;
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "cancelled_by", foreignKey = @ForeignKey(name = "fk_completed_by"))
+    private User cancelledBy;
+
     @Column(name = "expected_delivery_date")
     private LocalDate expectedDeliveryDate;
 
+    @Column(name = "delivered_at")
+    private LocalDateTime deliveredAt;
+
+    @Column(name = "completed_at")
+    private LocalDateTime completedAt;
+
+    @Column(name = "cancelled_at")
+    private LocalDateTime cancelledAt;
+
     @Column(name = "created_at", nullable = false, updatable = false)
     private LocalDateTime createdAt;
+
+    @Column(name = "replacement_count")
+    @Builder.Default
+    private Integer replacementCount = 0;
 
     @OneToMany(mappedBy = "purchaseOrder", cascade = CascadeType.ALL, orphanRemoval = true)
     @Builder.Default

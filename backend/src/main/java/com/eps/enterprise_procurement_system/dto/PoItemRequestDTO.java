@@ -10,7 +10,7 @@ import lombok.Data;
 public class PoItemRequestDTO {
 
     @NotNull
-    private Long productId;
+    private Long requisitionItemId;
 
     @NotNull
     @Min(1)

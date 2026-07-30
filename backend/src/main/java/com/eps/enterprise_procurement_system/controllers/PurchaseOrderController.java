@@ -3,12 +3,16 @@ package com.eps.enterprise_procurement_system.controllers;
 import java.util.List;
 
 import org.springframework.http.HttpHeaders;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.server.ResponseStatusException;
 
 import com.eps.enterprise_procurement_system.advices.ApiResponse;
+import com.eps.enterprise_procurement_system.dto.GoodsReceiptItemRequestDTO;
 import com.eps.enterprise_procurement_system.dto.PurchaseOrderRequestDTO;
 import com.eps.enterprise_procurement_system.dto.PurchaseOrderResponseDTO;
 import com.eps.enterprise_procurement_system.dto.PurchaseOrderStatusRequestDTO;
@@ -17,6 +21,7 @@ import com.eps.enterprise_procurement_system.services.PurchaseOrderService;
 import com.eps.enterprise_procurement_system.util.CurrentUser;
 
 import jakarta.validation.Valid;
+import jakarta.validation.constraints.NotNull;
 import lombok.RequiredArgsConstructor;
 
 @RestController
@@ -71,7 +76,7 @@ public class PurchaseOrderController {
     // Get Orders of Supplier
 
     @GetMapping("/supplier/{supplierId}")
-    @PreAuthorize("hasAnyRole('ADMIN','PROCUREMENT','FINANCE')")
+    @PreAuthorize("hasAnyRole('ADMIN','PROCUREMENT','FINANCE', 'SUPPLIER')")
     public ResponseEntity<ApiResponse<List<PurchaseOrderResponseDTO>>> getSupplierOrders(@PathVariable Long supplierId) {
 
         return ResponseEntity.ok(new ApiResponse<>(purchaseOrderService.getSupplierOrders(supplierId)));
@@ -89,11 +94,15 @@ public class PurchaseOrderController {
     // Update Status
 
     @PutMapping("/{id}/status")
-    @PreAuthorize("hasAnyRole('PROCUREMENT','ADMIN')")
+    @PreAuthorize("hasAnyRole('PROCUREMENT','ADMIN', 'SUPPLIER')")
     public ResponseEntity<ApiResponse<PurchaseOrderResponseDTO>> updateStatus(
             @PathVariable Long id,
             @Valid @RequestBody PurchaseOrderStatusRequestDTO dto) {
 
+        if (dto.getStatus() == null) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Status is required");
+        }
+        
         return ResponseEntity.ok(new ApiResponse<>(purchaseOrderService.updateStatus(
                 id,
                 dto.getStatus(),
@@ -106,9 +115,9 @@ public class PurchaseOrderController {
 
     @PutMapping("/{id}/cancel")
     @PreAuthorize("hasAnyRole('PROCUREMENT','ADMIN')")
-    public String cancelPurchaseOrder(@PathVariable Long id) {
+    public ResponseEntity<ApiResponse<String>> cancelPurchaseOrder(@PathVariable Long id) {
 
-        return purchaseOrderService.cancelPurchaseOrder(id, currentUser.get());
+        return ResponseEntity.ok(new ApiResponse<>(purchaseOrderService.cancelPurchaseOrder(id, currentUser.get())));
 
     }
 
@@ -116,16 +125,16 @@ public class PurchaseOrderController {
 
     @DeleteMapping("/{id}")
     @PreAuthorize("hasRole('ADMIN')")
-    public String deletePurchaseOrder(@PathVariable Long id) {
+    public ResponseEntity<ApiResponse<String>> deletePurchaseOrder(@PathVariable Long id) {
 
-        return purchaseOrderService.deletePurchaseOrder(id);
+        return ResponseEntity.ok(new ApiResponse<>(purchaseOrderService.deletePurchaseOrder(id)));
     }
 
     // Download Purchase Order PDF
 
     @GetMapping("/{id}/pdf")
     @PreAuthorize("hasAnyRole('ADMIN','PROCUREMENT','FINANCE','MANAGER')")
-    public ResponseEntity<byte[]> downloadPurchaseOrderPdf(@PathVariable Long id) {
+    public ResponseEntity<byte[]> downloadPurchaseOrderPdf(@PathVariable @NotNull Long id) {
 
         byte[] pdf = purchaseOrderService.generatePurchaseOrderPdf(id);
 
@@ -153,31 +162,17 @@ public class PurchaseOrderController {
 
     // Download Goods Receipt PDF
 
-    // @GetMapping("/{id}/grn")
-    // @PreAuthorize("hasAnyRole('ADMIN','PROCUREMENT','WAREHOUSE')")
-    // public ResponseEntity<byte[]> downloadGRN(@PathVariable Long id) {
+    @PostMapping("/{id}/receive")
+    @PreAuthorize("hasAnyRole('WAREHOUSE','ADMIN')")
+    @Transactional
+    public ResponseEntity<byte[]> receiveGoods(@PathVariable Long id,
+            @Valid @RequestBody List<GoodsReceiptItemRequestDTO> dto) {
 
-    //     byte[] pdf = purchaseOrderService.receiveGoodsReceipt(id);
-
-    //     return ResponseEntity.ok()
-    //             .header(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=GRN_" + id + ".pdf")
-    //             .contentType(MediaType.APPLICATION_PDF)
-    //             .body(pdf);
-    // }
-
-    // Export All Purchase Orders Excel
-
-    @GetMapping("/export")
-    @PreAuthorize("hasAnyRole('ADMIN','PROCUREMENT','FINANCE')")
-    public ResponseEntity<byte[]> exportPurchaseOrders() {
-
-        byte[] excel = purchaseOrderService.exportPurchaseOrders();
-
+        byte[] pdf = purchaseOrderService.receiveGoods(id, dto, currentUser.get());
         return ResponseEntity.ok()
-                .header(HttpHeaders.CONTENT_DISPOSITION,
-                        "attachment; filename=PurchaseOrders.xlsx")
-                .contentType(MediaType.APPLICATION_OCTET_STREAM)
-                .body(excel);
+                .header(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=GRN_" + id + ".pdf")
+                .contentType(MediaType.APPLICATION_PDF)
+                .body(pdf);
     }
 
     // Export Purchase Orders By Status
@@ -208,6 +203,33 @@ public class PurchaseOrderController {
         return ResponseEntity.ok()
                 .header(HttpHeaders.CONTENT_DISPOSITION,
                         "attachment; filename=SupplierOrders.xlsx")
+                .contentType(MediaType.APPLICATION_OCTET_STREAM)
+                .body(excel);
+    }
+
+    // Export All Purchase Orders Excel
+
+    @GetMapping("/export")
+    @PreAuthorize("hasAnyRole('ADMIN','PROCUREMENT','FINANCE')")
+    public ResponseEntity<byte[]> exportPurchaseOrders() {
+
+        byte[] excel = purchaseOrderService.exportPurchaseOrders();
+
+        return ResponseEntity.ok()
+                .header(HttpHeaders.CONTENT_DISPOSITION,
+                        "attachment; filename=PurchaseOrders.xlsx")
+                .contentType(MediaType.APPLICATION_OCTET_STREAM)
+                .body(excel);
+    }
+
+    @GetMapping("/{id}/excel")
+    @PreAuthorize("hasAnyRole('ADMIN','PROCUREMENT','FINANCE')")
+    public ResponseEntity<byte[]> exportPoItems(@PathVariable Long id) {
+
+        byte[] excel = purchaseOrderService.exportPoItems(id);
+
+        return ResponseEntity.ok()
+                .header(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=PO_" + id + ".xlsx")
                 .contentType(MediaType.APPLICATION_OCTET_STREAM)
                 .body(excel);
     }
