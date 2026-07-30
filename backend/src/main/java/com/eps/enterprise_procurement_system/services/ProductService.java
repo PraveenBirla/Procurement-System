@@ -111,4 +111,11 @@ public class ProductService {
         productRepo.delete(product);
     }
 
+    public List<ProductResponseDTO> getProductByCategoryId(Long categoryId) {
+
+        return productRepo.findByCategoryIdAndIsActiveTrue(categoryId)
+                .stream()
+                .map(product -> modelMapper.map(product,ProductResponseDTO.class))
+                .toList();
+    }
 }

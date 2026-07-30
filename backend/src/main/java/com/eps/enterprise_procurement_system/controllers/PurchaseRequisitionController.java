@@ -90,6 +90,13 @@ public class PurchaseRequisitionController {
         return ResponseEntity.ok(new ApiResponse<>(service.decideRequisition(id, ApprovalType.FINANCE, req, currentUser.get())));
     }
 
+    @PostMapping("/{id}/procurement-decision")
+    @PreAuthorize("hasRole('FINANCE')")
+    public ResponseEntity<ApiResponse<PurchaseRequisitionResponseDTO>>  procurement(@PathVariable Long id, @Valid @RequestBody DecisionRequestDTO req) {
+        return ResponseEntity.ok(new ApiResponse<>(service.decideRequisition(id, ApprovalType.PROCUREMENT, req, currentUser.get())));
+    }
+
+
     @PostMapping("/{id}/admin-decision")
     @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<ApiResponse<PurchaseRequisitionResponseDTO>> admin(@PathVariable Long id,

@@ -8,6 +8,7 @@ import { AdminDashboardPage } from './pages/AdminDashboardPage';
 import { EmployeeDashboardPage } from './pages/EmployeeDashboardPage';
 import { ManagerDashboardPage } from './pages/ManagerDashboardPage';
 import { FinanceDashboardPage } from './pages/FinanceDashboardPage';
+import { ProcurementDashboardPage } from './pages/ProcurementDashboardPage';
 function App() {
   const { user, loading } = useAuth();
 
@@ -53,7 +54,8 @@ function App() {
       <Route path="/employee" element={user?.role === "EMPLOYEE" ? <EmployeeDashboardPage/>: <Navigate to="/login" replace />}/>
       <Route path="/manager" element={user?.role === "MANAGER" ? <ManagerDashboardPage/>: <Navigate to="/login" replace />}/>
       <Route path="/finance" element={user?.role === "FINANCE" ? <FinanceDashboardPage/>: <Navigate to="/login" replace />}/>
-
+      <Route path="/procurement" element={user?.role === "PROCUREMENT" ? <ProcurementDashboardPage/>: <Navigate to="/login" replace />}/>
+      
       <Route path="/" element={<Navigate to={getDashboardPath()} replace/>}/>
     </Routes>
   );

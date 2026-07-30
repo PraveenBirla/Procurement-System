@@ -1,30 +1,12 @@
 package com.eps.enterprise_procurement_system.services;
 
-import com.eps.enterprise_procurement_system.dto.PoItemResponseDTO;
-import com.eps.enterprise_procurement_system.dto.PurchaseOrderRequestDTO;
-import com.eps.enterprise_procurement_system.dto.PurchaseOrderResponseDTO;
-import com.eps.enterprise_procurement_system.dto.ReceiveGoodsRequestDTO;
-import com.eps.enterprise_procurement_system.dto.ReceivedItemDTO;
-import com.eps.enterprise_procurement_system.entities.GoodsReceipt;
-import com.eps.enterprise_procurement_system.entities.Inventory;
-import com.eps.enterprise_procurement_system.entities.PoItem;
-import com.eps.enterprise_procurement_system.entities.Product;
-import com.eps.enterprise_procurement_system.entities.PurchaseOrder;
-import com.eps.enterprise_procurement_system.entities.PurchaseRequisition;
-import com.eps.enterprise_procurement_system.entities.ReturnReplacement;
-import com.eps.enterprise_procurement_system.entities.Supplier;
-import com.eps.enterprise_procurement_system.entities.User;
+import com.eps.enterprise_procurement_system.dto.*;
+import com.eps.enterprise_procurement_system.entities.*;
 import com.eps.enterprise_procurement_system.entities.enums.NotificationType;
 import com.eps.enterprise_procurement_system.entities.enums.PurchaseOrderStatus;
 import com.eps.enterprise_procurement_system.entities.enums.RequisitionStatus;
 import com.eps.enterprise_procurement_system.entities.enums.ReturnStatus;
-import com.eps.enterprise_procurement_system.repositories.GoodsReceiptRepo;
-import com.eps.enterprise_procurement_system.repositories.InventoryRepo;
-import com.eps.enterprise_procurement_system.repositories.PurchaseOrderRepo;
-import com.eps.enterprise_procurement_system.repositories.PurchaseRequisitionRepo;
-import com.eps.enterprise_procurement_system.repositories.ReturnReplacementRepo;
-import com.eps.enterprise_procurement_system.repositories.SupplierRepo;
-import com.eps.enterprise_procurement_system.repositories.UserRepository;
+import com.eps.enterprise_procurement_system.repositories.*;
 
 import lombok.RequiredArgsConstructor;
 
@@ -35,6 +17,7 @@ import org.springframework.web.server.ResponseStatusException;
 
 import java.math.BigDecimal;
 import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
@@ -56,6 +39,7 @@ public class PurchaseOrderService {
 
     private final NotificationService notificationService;
     private final AuditService auditService;
+    private final PurchaseOrderHistoryRepo historyRepo;
 
     private String generatePONumber() {
 
@@ -199,6 +183,14 @@ public class PurchaseOrderService {
                 .toList();
     }
 
+    public List<PurchaseOrderHistoryResponseDTO> getPurchaseOrderHistory(Long poId) {
+
+        return historyRepo.findByPurchaseOrderIdOrderByChangedAtAsc(poId)
+                .stream()
+                .map(this::convertHistoryToDTO)
+                .toList();
+    }
+
     @Transactional
     public PurchaseOrderResponseDTO generatePurchaseOrder(
             PurchaseOrderRequestDTO dto,
@@ -262,7 +254,7 @@ public class PurchaseOrderService {
 
             Inventory inventory = getInventory(reqItem.getProduct());
 
-            // Enough stock already exists
+
             if (inventory.getQuantityOnHand() >= reqItem.getQuantity()) {
 
                 throw new ResponseStatusException(
@@ -321,9 +313,22 @@ public class PurchaseOrderService {
                 .orElseThrow(() -> new ResponseStatusException(
                         HttpStatus.NOT_FOUND, "Purchase Order not found"));
 
+        PurchaseOrderStatus oldStatus = order.getStatus();
+
         order.setStatus(status);
 
         PurchaseOrder saved = purchaseOrderRepo.save(order);
+
+        historyRepo.save(
+                PurchaseOrderHistory.builder()
+                        .purchaseOrder(saved)
+                        .oldStatus(oldStatus)
+                        .newStatus(status)
+                        .changedBy(user)
+                        .remarks("Status changed to " + status)
+                        .changedAt(LocalDateTime.now())
+                        .build()
+        );
 
         notificationService.notify(
                 saved.getSupplier(),
@@ -568,6 +573,50 @@ public class PurchaseOrderService {
 
         return excelService.exportPurchaseOrders(orders);
     }
+
+    private PurchaseOrderHistoryResponseDTO convertHistoryToDTO(PurchaseOrderHistory history) {
+
+        return PurchaseOrderHistoryResponseDTO.builder()
+                .id(history.getId())
+                .purchaseOrderId(history.getPurchaseOrder().getId())
+                .poNumber(history.getPurchaseOrder().getPoNumber())
+                .oldStatus(history.getOldStatus())
+                .newStatus(history.getNewStatus())
+                .changedById(history.getChangedBy().getId())
+                .changedByName(history.getChangedBy().getFullName())
+                .remarks(history.getRemarks())
+                .changedAt(history.getChangedAt())
+                .build();
+    }
+
+//    @Transactional
+//    public PurchaseOrderResponseDTO updateHIstoryStatus(
+//            Long poId,
+//            PurchaseOrderStatus newStatus,
+//            String remarks,
+//            User user) {
+//
+//        PurchaseOrder po = purchaseOrderRepo.findById(poId)
+//                .orElseThrow();
+//
+//        PurchaseOrderStatus oldStatus = po.getStatus();
+//
+//        po.setStatus(newStatus);
+//
+//        purchaseOrderRepo.save(po);
+//
+//        historyRepo.save(
+//                PurchaseOrderHistory.builder()
+//                        .purchaseOrder(po)
+//                        .oldStatus(oldStatus)
+//                        .newStatus(newStatus)
+//                        .changedBy(user)
+//                        .remarks(remarks)
+//                        .changedAt(LocalDateTime.now())
+//                        .build());
+//
+//        return  convertToDTO(po);
+//    }
 
     
 }

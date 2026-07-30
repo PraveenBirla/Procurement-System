@@ -4,6 +4,7 @@ import com.eps.enterprise_procurement_system.advices.ApiResponse;
 import com.eps.enterprise_procurement_system.dto.SupplierRequestDTO;
 import com.eps.enterprise_procurement_system.dto.SupplierResponseDTO;
 import com.eps.enterprise_procurement_system.services.SupplierService;
+import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 
 import org.springframework.http.ResponseEntity;
@@ -20,10 +21,18 @@ public class SupplierController {
     private final SupplierService service;
 
     @GetMapping
-    @PreAuthorize("hasAnyRole('ADMIN', 'MANAGER', 'PROCUREMENT_OFFICER', 'FINANCE')")
+    @PreAuthorize("hasAnyRole('ADMIN',  'PROCUREMENT_OFFICER')")
     public ResponseEntity<ApiResponse<List<SupplierResponseDTO>>> getAllSuppliers() {
         return ResponseEntity.ok(new ApiResponse<>(service.getAllSuppliers()));
     }
+
+    @GetMapping("/{categoryId}/category")
+    @PreAuthorize("hasAnyRole('ADMIN',  'PROCUREMENT_OFFICER')")
+    public ResponseEntity<ApiResponse<List<SupplierResponseDTO>>> getSuppliersByCategoryId(@Valid  @PathVariable Long categoryId) {
+        return ResponseEntity.ok(new ApiResponse<>(service.getSuppliersByCategoryId(categoryId)));
+    }
+
+
 
     @GetMapping("/{id}")
     @PreAuthorize("hasAnyRole('ADMIN', 'MANAGER', 'PROCUREMENT_OFFICER', 'FINANCE')")

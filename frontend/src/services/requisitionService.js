@@ -45,7 +45,9 @@ const requisitionService = {
       }
       );
        return res.data.data;
-     }, 
+     },
+     
+     
 
      async managerUpdate(id, data){
       const res = await api.post(`/requisitions/${id}/manager-decision`, data);
@@ -55,7 +57,13 @@ const requisitionService = {
     async  financeUpdate(id, data){
       const res = await api.post(`/requisitions/${id}/finance-decision`, data);
        return res.data.data;
-     }
+     },
+
+       async procurementUpdate(id, data){
+      const res = await api.post(`/requisitions/${id}/procurement-decision`, data);
+       return res.data.data;
+     } 
+
 } 
 
 export default requisitionService;

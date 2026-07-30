@@ -1,0 +1,444 @@
+import { useEffect, useState } from "react";
+import { createPortal } from "react-dom";
+import procurementService from "../../services/requisitionService";
+
+ 
+
+const PENDING_STATUS = "PENDING_PROCUREMENT";
+
+const PROCUREMENT_DECIDED = ["APPROVED", "PROCUREMENT_REJECTED"];
+
+export const RequisitionSection = () => {
+  const [requisitions, setRequisitions] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState("");
+
+  const [selectedRequisition, setSelectedRequisition] = useState(null);
+
+  const [showTrackModal, setShowTrackModal] = useState(false);
+  const [history, setHistory] = useState([]);
+  const [trackedReq, setTrackedReq] = useState(null);
+  const [trackingId, setTrackingId] = useState(null);
+  const [loadingHistory, setLoadingHistory] = useState(false);
+
+  const [actionModal, setActionModal] = useState(null); // { req, type: "approved" | "rejected" }
+  const [remarks, setRemarks] = useState("");
+  const [remarkError, setRemarkError] = useState("");
+  const [submittingAction, setSubmittingAction] = useState(false);
+
+  const [processedIds, setProcessedIds] = useState({});
+
+  useEffect(() => {
+    loadRequisitions();
+  }, []);
+
+  useEffect(() => {
+    const anyOpen = !!selectedRequisition || showTrackModal || !!actionModal;
+    document.body.style.overflow = anyOpen ? "hidden" : "";
+
+    const handleKey = (e) => {
+      if (e.key === "Escape") {
+        setSelectedRequisition(null);
+        closeTrackModal();
+        closeActionModal();
+      }
+    };
+
+    document.addEventListener("keydown", handleKey);
+    return () => {
+      document.body.style.overflow = "";
+      document.removeEventListener("keydown", handleKey);
+    };
+  }, [selectedRequisition, showTrackModal, actionModal]);
+
+  const loadRequisitions = async () => {
+    setLoading(true);
+    try {
+      const pending = await procurementService.getRequisitionsByStatus(PENDING_STATUS);
+
+      const processed = await Promise.all(
+        PROCUREMENT_DECIDED.map((status) =>
+          procurementService.getRequisitionsByStatus(status)
+        )
+      );
+
+      const merged = [...pending, ...processed.flat()];
+
+      const unique = Array.from(new Map(merged.map((r) => [r.id, r])).values());
+      unique.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
+
+      setRequisitions(unique);
+      setError("");
+    } catch (err) {
+      setError(err.message);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleView = (req) => setSelectedRequisition(req);
+
+  const openActionModal = (req, type) => {
+    setActionModal({ req, type });
+    setRemarks("");
+    setRemarkError("");
+  };
+
+  const closeActionModal = () => {
+    if (submittingAction) return;
+    setActionModal(null);
+    setRemarks("");
+    setRemarkError("");
+  };
+
+  const isActionable = (req) => {
+    if (processedIds[req.id]) return false;
+    return req.status === PENDING_STATUS;
+  };
+
+  const handleSubmitAction = async (e) => {
+    e.preventDefault();
+
+    if (!remarks.trim()) {
+      setRemarkError("Remarks required");
+      return;
+    }
+
+    const { req, type } = actionModal;
+
+    try {
+      setSubmittingAction(true);
+
+      await procurementService.procurementUpdate(req.id, {
+        decision: type,
+        remarks: remarks.trim(),
+      });
+
+      setProcessedIds((prev) => ({ ...prev, [req.id]: type }));
+
+      closeActionModal();
+      await loadRequisitions();
+    } catch (err) {
+      setError(err.message);
+    } finally {
+      setSubmittingAction(false);
+    }
+  };
+
+  const handleTrack = async (req) => {
+    setTrackingId(req.id);
+    setTrackedReq(req);
+    setShowTrackModal(true);
+    setLoadingHistory(true);
+    setHistory([]);
+
+    try {
+      const res = await procurementService.getRequisitionHistory(req.id);
+      setHistory(res);
+    } catch (err) {
+      setError(err.message);
+      setShowTrackModal(false);
+    } finally {
+      setLoadingHistory(false);
+      setTrackingId(null);
+    }
+  };
+
+  const closeTrackModal = () => {
+    setTrackedReq(null);
+    setHistory([]);
+    setShowTrackModal(false);
+  };
+
+  return (
+    <div className="admin-requisition-section">
+      <div className="section-header">
+        <h2 className="section-title">Procurement Requisitions</h2>
+      </div>
+
+      {error && (
+        <div className="error-box">
+          <span>{error}</span>
+          <button className="error-dismiss" onClick={() => setError("")} aria-label="Dismiss error">
+            ×
+          </button>
+        </div>
+      )}
+
+      <div className="table-wrapper">
+        <table className="table">
+          <thead>
+            <tr>
+              <th>Req No</th>
+              <th>Title</th>
+              <th>Department</th>
+              <th>Status</th>
+              <th>Amount</th>
+              <th>Created</th>
+              <th>Action</th>
+            </tr>
+          </thead>
+
+          <tbody>
+            {loading ? (
+              <tr>
+                <td colSpan="7" className="no-data">
+                  Loading…
+                </td>
+              </tr>
+            ) : requisitions.length > 0 ? (
+              requisitions.map((req) => {
+                const actionable = isActionable(req);
+                return (
+                  <tr key={req.id}>
+                    <td data-label="Req No">{req.requisitionNo}</td>
+                    <td data-label="Title">{req.title}</td>
+                    <td data-label="Department">{req.departmentName}</td>
+                    <td data-label="Status">
+                      <span className={`status-badge ${req.status.toLowerCase()}`}>
+                        {req.status.replaceAll("_", " ")}
+                      </span>
+                    </td>
+                    <td data-label="Amount">₹{Number(req.totalEstimatedAmount).toLocaleString()}</td>
+                    <td data-label="Created">{new Date(req.createdAt).toLocaleDateString()}</td>
+                    <td data-label="Action">
+                      <div className="action-group">
+                        <button className="view-btn" onClick={() => handleView(req)}>
+                          View
+                        </button>
+
+                        {actionable ? (
+                          <>
+                            <button className="approve-btn" onClick={() => openActionModal(req, "approved")}>
+                              Approve
+                            </button>
+                            <button className="reject-btn" onClick={() => openActionModal(req, "rejected")}>
+                              Reject
+                            </button>
+                             <button
+                      className="track-btn"
+                     onClick={() => handleTrack(req)}
+                      disabled={trackingId === req.id}
+                    >
+                     {trackingId === req.id ? "…" : "Track"}
+                     </button>
+                          </>
+                        ) : (
+                          <button
+                            className="track-btn"
+                            onClick={() => handleTrack(req)}
+                            disabled={trackingId === req.id}
+                          >
+                            {trackingId === req.id ? "…" : "Track"}
+                          </button>
+                        )}
+                      </div>
+                    </td>
+                  </tr>
+                );
+              })
+            ) : (
+              <tr>
+                <td colSpan="7" className="no-data">
+                  No Requisitions Found
+                </td>
+              </tr>
+            )}
+          </tbody>
+        </table>
+      </div>
+
+      {/* View Modal */}
+      {selectedRequisition &&
+        createPortal(
+          <div className="modal-overlay" onClick={() => setSelectedRequisition(null)}>
+            <div className="modal-content" onClick={(e) => e.stopPropagation()}>
+              <div className="modal-header">
+                <h2>{selectedRequisition.requisitionNo}</h2>
+                <button
+                  className="modal-close"
+                  onClick={() => setSelectedRequisition(null)}
+                  aria-label="Close"
+                >
+                  ×
+                </button>
+              </div>
+
+              <p>
+                <strong>Title:</strong> {selectedRequisition.title}
+              </p>
+              <p>
+                <strong>Description:</strong> {selectedRequisition.description}
+              </p>
+              <p>
+                <strong>Department:</strong> {selectedRequisition.departmentName}
+              </p>
+              <p>
+                <strong>Status:</strong>{" "}
+                <span className={`status-badge ${selectedRequisition.status.toLowerCase()}`}>
+                  {selectedRequisition.status.replaceAll("_", " ")}
+                </span>
+              </p>
+
+              <h3>Products</h3>
+              <div className="table-wrapper">
+                <table className="table">
+                  <thead>
+                    <tr>
+                      <th>Product</th>
+                      <th>Qty</th>
+                      <th>Unit Price</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {selectedRequisition.items && selectedRequisition.items.length > 0 ? (
+                      selectedRequisition.items.map((item) => (
+                        <tr key={item.id}>
+                          <td data-label="Product">{item.productName}</td>
+                          <td data-label="Qty">{item.quantity}</td>
+                          <td data-label="Unit Price">₹{item.unitPrice}</td>
+                        </tr>
+                      ))
+                    ) : (
+                      <tr>
+                        <td colSpan="3" className="no-data">
+                          No item details available
+                        </td>
+                      </tr>
+                    )}
+                  </tbody>
+                </table>
+              </div>
+
+              <div className="modal-actions">
+                <button className="close-btn" onClick={() => setSelectedRequisition(null)}>
+                  Close
+                </button>
+              </div>
+            </div>
+          </div>,
+          document.body
+        )}
+
+      {/* Track Modal */}
+      {showTrackModal &&
+        createPortal(
+          <div className="modal-overlay" onClick={closeTrackModal}>
+            <div className="modal-content" onClick={(e) => e.stopPropagation()}>
+              <div className="modal-header">
+                <h2>Track Requisition {trackedReq ? `— ${trackedReq.requisitionNo}` : ""}</h2>
+                <button className="modal-close" onClick={closeTrackModal} aria-label="Close">
+                  ×
+                </button>
+              </div>
+
+              {loadingHistory ? (
+                <p className="no-data">Loading history…</p>
+              ) : history.length > 0 ? (
+                <div className="timeline">
+                  {history.map((item, index) => (
+                    <div className="timeline-item" key={index}>
+                      <div className="timeline-dot"></div>
+                      <div className="timeline-content">
+                        <h4>{item.newStatus.replaceAll("_", " ")}</h4>
+                        <p>
+                          <b>Previous:</b> {item.oldStatus ? item.oldStatus.replaceAll("_", " ") : "-"}
+                        </p>
+                        <p>
+                          <b>Remarks:</b> {item.remarks || "-"}
+                        </p>
+                        <p>
+                          <b>Date:</b> {new Date(item.changedAt).toLocaleString()}
+                        </p>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <p className="no-data">No history available.</p>
+              )}
+
+              <div className="modal-actions">
+                <button className="close-btn" onClick={closeTrackModal}>
+                  Close
+                </button>
+              </div>
+            </div>
+          </div>,
+          document.body
+        )}
+
+      {/* Approve / Reject Modal */}
+      {actionModal &&
+        createPortal(
+          <div className="modal-overlay" onClick={closeActionModal}>
+            <div className="modal-content action-modal" onClick={(e) => e.stopPropagation()}>
+              <div className="modal-header">
+                <h2>
+                  {actionModal.type === "approved" ? "Approve Procurement" : "Reject Procurement"} —{" "}
+                  {actionModal.req.requisitionNo}
+                </h2>
+                <button
+                  className="modal-close"
+                  onClick={closeActionModal}
+                  aria-label="Close"
+                  disabled={submittingAction}
+                >
+                  ×
+                </button>
+              </div>
+
+              <p className="action-summary">
+                <strong>{actionModal.req.title}</strong> — ₹
+                {Number(actionModal.req.totalEstimatedAmount).toLocaleString()}
+              </p>
+
+              <form onSubmit={handleSubmitAction} noValidate>
+                <div className="field">
+                  <label>Remarks</label>
+                  <textarea
+                    value={remarks}
+                    onChange={(e) => {
+                      setRemarks(e.target.value);
+                      if (remarkError) setRemarkError("");
+                    }}
+                    placeholder={
+                      actionModal.type === "approved"
+                        ? "Approval remarks…"
+                        : "Reason for rejection…"
+                    }
+                    rows={4}
+                    className={remarkError ? "input-error" : ""}
+                  />
+                  {remarkError && <span className="field-error">{remarkError}</span>}
+                </div>
+
+                <div className="modal-actions">
+                  <button
+                    type="submit"
+                    className={actionModal.type === "approved" ? "approve-btn-lg" : "reject-btn-lg"}
+                    disabled={submittingAction}
+                  >
+                    {submittingAction
+                      ? "Submitting…"
+                      : actionModal.type === "approved"
+                      ? "Confirm Approval"
+                      : "Confirm Reject"}
+                  </button>
+                  <button
+                    type="button"
+                    className="btn-secondary"
+                    onClick={closeActionModal}
+                    disabled={submittingAction}
+                  >
+                    Cancel
+                  </button>
+                </div>
+              </form>
+            </div>
+          </div>,
+          document.body
+        )}
+    </div>
+  );
+};

@@ -214,13 +214,13 @@ export const RequisitionSection = () => {
                           <>
                             <button
                               className="approve-btn"
-                              onClick={() => openActionModal(req, "approve")}
+                              onClick={() => openActionModal(req, "approved")}
                             >
                               Approve
                             </button>
                             <button
                               className="reject-btn"
-                              onClick={() => openActionModal(req, "reject")}
+                              onClick={() => openActionModal(req, "rejected")}
                             >
                               Reject
                             </button>
@@ -379,7 +379,7 @@ export const RequisitionSection = () => {
                     if (remarkError) setRemarkError("");
                   }}
                   placeholder={
-                    actionModal.type === "approve"
+                    actionModal.type === "approved"
                       ? "Add a note for this approval…"
                       : "Reason for rejection…"
                   }
@@ -392,12 +392,12 @@ export const RequisitionSection = () => {
               <div className="modal-actions">
                 <button
                   type="submit"
-                  className={actionModal.type === "approve" ? "approve-btn-lg" : "reject-btn-lg"}
+                  className={actionModal.type === "approved" ? "approve-btn-lg" : "reject-btn-lg"}
                   disabled={submittingAction}
                 >
                   {submittingAction
                     ? "Submitting…"
-                    : actionModal.type === "approve"
+                    : actionModal.type === "approved"
                     ? "Confirm Approve"
                     : "Confirm Reject"}
                 </button>

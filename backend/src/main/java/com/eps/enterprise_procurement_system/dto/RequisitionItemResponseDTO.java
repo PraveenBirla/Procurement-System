@@ -17,6 +17,8 @@ public class RequisitionItemResponseDTO {
 
     private Long productId;
 
+    private Long categoryId;
+
     private String productName;
 
     private Integer quantity;

@@ -69,6 +69,7 @@ public class PurchaseRequisitionService {
 
                         dto.setId(item.getId());
                         dto.setProductId(item.getProduct().getId());
+                        dto.setCategoryId(item.getProduct().getCategory().getId());
                         dto.setProductName(item.getProduct().getName());
                         dto.setQuantity(item.getQuantity());
                         dto.setUnitPrice(item.getUnitPrice());

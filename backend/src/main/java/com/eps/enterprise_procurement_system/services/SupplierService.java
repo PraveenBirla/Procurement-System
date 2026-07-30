@@ -118,4 +118,13 @@ public class SupplierService {
 
         return "Supplier deleted successfully";
     }
+
+    public List<SupplierResponseDTO> getSuppliersByCategoryId(Long categoryId) {
+
+        return supplierRepo.findByCategoryId(categoryId)
+                .stream()
+                .map(this::convertToDTO)
+                .toList();
+
+    }
 }

@@ -15,7 +15,7 @@ public class DecisionRequestDTO {
 
     @NotBlank(message = "Decision is required")
     @Pattern(
-            regexp = "approve|reject",
+            regexp = "approved|rejected",
             message = "Decision must be either approve or reject"
     )
     private String decision;

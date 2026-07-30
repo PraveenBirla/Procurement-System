@@ -6,7 +6,7 @@ const productService = {
   const res = await api.get("/product-categories");
   return res.data.data;
  }, 
-
+ 
  async createCategories(data){
   const res = await api.post("/product-categories", data);
   return res.data.data;
@@ -21,6 +21,11 @@ const productService = {
   const res = await api.get("/products");
   return res.data.data;
 },
+
+ async getProductsBycategories(categoryId){
+  const res = await api.get(`/products/category/${categoryId}`);
+  return res.data.data;
+}, 
 
 async createProduct(product) {
   const res = await api.post("/products", product);

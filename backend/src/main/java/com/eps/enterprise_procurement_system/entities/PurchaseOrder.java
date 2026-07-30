@@ -38,8 +38,7 @@ public class PurchaseOrder {
 
     @Enumerated(EnumType.STRING)
     @Column(name = "status", nullable = false, length = 30)
-    @Builder.Default
-    private PurchaseOrderStatus status = PurchaseOrderStatus.GENERATED;
+    private PurchaseOrderStatus status  ;
 
     @Column(name = "total_amount", precision = 14, scale = 2)
     private BigDecimal totalAmount;

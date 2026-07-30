@@ -30,6 +30,11 @@ public class ProductController {
         return ResponseEntity.ok(new ApiResponse<>(service.getProductById(id)));
     }
 
+    @GetMapping("/category/{categoryId}")
+    public ResponseEntity<ApiResponse<List<ProductResponseDTO>>> getProductsByCategories(@PathVariable Long categoryId ){
+        return ResponseEntity.ok(new ApiResponse<>(service.getProductByCategoryId(categoryId)));
+    }
+
     @PostMapping
     @PreAuthorize("hasAnyRole('ADMIN','PROCUREMENT')")
     public ResponseEntity<ApiResponse<ProductResponseDTO>> create(@RequestBody ProductRequestDTO dto) {
