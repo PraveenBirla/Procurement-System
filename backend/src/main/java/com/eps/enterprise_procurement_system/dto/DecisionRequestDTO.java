@@ -20,6 +20,6 @@ public class DecisionRequestDTO {
     )
     private String decision;
 
-    @NotBlank(message = "Enter Remak")
+    @NotBlank(message = "Enter Remark")
     private String remarks;
 }

@@ -4,6 +4,7 @@ public enum NotificationType {
     REJECTION,
     APPROVAL,
     BUDGET,
+    PURCHASE_ORDER,
     DELIVERY,
     RETURN
 }

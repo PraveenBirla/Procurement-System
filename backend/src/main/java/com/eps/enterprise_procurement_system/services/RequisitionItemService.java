@@ -20,14 +20,9 @@ public class RequisitionItemService {
         return requisitionItemRepo.findByRequisition_Id(requisitionId).stream()
             .map(item -> {
 
-                RequisitionItemResponseDTO dto = new RequisitionItemResponseDTO();
-
-                dto.setId(item.getId());
+                RequisitionItemResponseDTO dto = modelMapper.map(item, RequisitionItemResponseDTO.class);
                 dto.setProductId(item.getProduct().getId());
                 dto.setProductName(item.getProduct().getName());
-                dto.setQuantity(item.getQuantity());
-                dto.setUnitPrice(item.getUnitPrice());
-
                 return dto;
             })
             .toList();
