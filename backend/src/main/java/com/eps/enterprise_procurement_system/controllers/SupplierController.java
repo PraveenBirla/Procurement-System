@@ -22,11 +22,9 @@ public class SupplierController {
     private final SupplierService supplierService;
 
     @GetMapping
-<<<<<<< HEAD
-    @PreAuthorize("hasAnyRole('ADMIN',  'PROCUREMENT_OFFICER')")
-=======
+
     @PreAuthorize("hasAnyRole('ADMIN','PROCUREMENT','FINANCE','MANAGER')")
->>>>>>> development
+
     public ResponseEntity<ApiResponse<List<SupplierResponseDTO>>> getAllSuppliers() {
 
         return ResponseEntity.ok(
@@ -36,7 +34,7 @@ public class SupplierController {
     @GetMapping("/{categoryId}/category")
     @PreAuthorize("hasAnyRole('ADMIN',  'PROCUREMENT_OFFICER')")
     public ResponseEntity<ApiResponse<List<SupplierResponseDTO>>> getSuppliersByCategoryId(@Valid  @PathVariable Long categoryId) {
-        return ResponseEntity.ok(new ApiResponse<>(service.getSuppliersByCategoryId(categoryId)));
+        return ResponseEntity.ok(new ApiResponse<>( supplierService.getSuppliersByCategoryId(categoryId)));
     }
 
 

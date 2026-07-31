@@ -8,6 +8,7 @@ import { AdminDashboardPage } from './pages/AdminDashboardPage';
 import { EmployeeDashboardPage } from './pages/EmployeeDashboardPage';
 import { ManagerDashboardPage } from './pages/ManagerDashboardPage';
 import { FinanceDashboardPage } from './pages/FinanceDashboardPage';
+import { SupplierDashboardPage } from './pages/SupplierDashboardPage';
 import { ProcurementDashboardPage } from './pages/ProcurementDashboardPage';
 function App() {
   const { user, loading } = useAuth();
@@ -39,6 +40,9 @@ function App() {
       case "PROCUREMENT":
         return "/procurement";
 
+        case "SUPPLIER":
+        return "/supplier";
+
       default:
         return "/login";
     }
@@ -55,6 +59,7 @@ function App() {
       <Route path="/manager" element={user?.role === "MANAGER" ? <ManagerDashboardPage/>: <Navigate to="/login" replace />}/>
       <Route path="/finance" element={user?.role === "FINANCE" ? <FinanceDashboardPage/>: <Navigate to="/login" replace />}/>
       <Route path="/procurement" element={user?.role === "PROCUREMENT" ? <ProcurementDashboardPage/>: <Navigate to="/login" replace />}/>
+      <Route path="/supplier" element={user?.role === "SUPPLIER" ? <SupplierDashboardPage/>: <Navigate to="/login" replace />}/>
       
       <Route path="/" element={<Navigate to={getDashboardPath()} replace/>}/>
     </Routes>
