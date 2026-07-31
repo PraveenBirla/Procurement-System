@@ -46,6 +46,16 @@ const requisitionService = {
       );
        return res.data.data;
      },
+
+    async getProcurementRequisitionsByStatus(status){
+      const res = await api.get("/approvals/procurement",{
+        params: {
+         status,
+        }
+      }
+      );
+       return res.data.data;
+     },
      
      
 
@@ -57,7 +67,7 @@ const requisitionService = {
     async  financeUpdate(id, data){
       const res = await api.post(`/requisitions/${id}/finance-decision`, data);
        return res.data.data;
-     },
+     } ,
 
        async procurementUpdate(id, data){
       const res = await api.post(`/requisitions/${id}/procurement-decision`, data);

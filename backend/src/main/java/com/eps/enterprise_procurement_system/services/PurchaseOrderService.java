@@ -1,30 +1,17 @@
 package com.eps.enterprise_procurement_system.services;
 
 import com.eps.enterprise_procurement_system.dto.PoItemResponseDTO;
+import com.eps.enterprise_procurement_system.dto.PurchaseOrderHistoryResponseDTO;
 import com.eps.enterprise_procurement_system.dto.PurchaseOrderRequestDTO;
 import com.eps.enterprise_procurement_system.dto.PurchaseOrderResponseDTO;
 //import com.eps.enterprise_procurement_system.dto.ReceiveGoodsRequestDTO;
 //import com.eps.enterprise_procurement_system.dto.ReceivedItemDTO;
-import com.eps.enterprise_procurement_system.entities.GoodsReceipt;
-import com.eps.enterprise_procurement_system.entities.Inventory;
-import com.eps.enterprise_procurement_system.entities.PoItem;
-import com.eps.enterprise_procurement_system.entities.Product;
-import com.eps.enterprise_procurement_system.entities.PurchaseOrder;
-import com.eps.enterprise_procurement_system.entities.PurchaseRequisition;
-import com.eps.enterprise_procurement_system.entities.ReturnReplacement;
-import com.eps.enterprise_procurement_system.entities.Supplier;
-import com.eps.enterprise_procurement_system.entities.User;
+import com.eps.enterprise_procurement_system.entities.*;
 import com.eps.enterprise_procurement_system.entities.enums.NotificationType;
 import com.eps.enterprise_procurement_system.entities.enums.PurchaseOrderStatus;
 import com.eps.enterprise_procurement_system.entities.enums.RequisitionStatus;
 import com.eps.enterprise_procurement_system.entities.enums.ReturnStatus;
-import com.eps.enterprise_procurement_system.repositories.GoodsReceiptRepo;
-import com.eps.enterprise_procurement_system.repositories.InventoryRepo;
-import com.eps.enterprise_procurement_system.repositories.PurchaseOrderRepo;
-import com.eps.enterprise_procurement_system.repositories.PurchaseRequisitionRepo;
-import com.eps.enterprise_procurement_system.repositories.ReturnReplacementRepo;
-import com.eps.enterprise_procurement_system.repositories.SupplierRepo;
-import com.eps.enterprise_procurement_system.repositories.UserRepository;
+import com.eps.enterprise_procurement_system.repositories.*;
 
 import lombok.RequiredArgsConstructor;
 
@@ -56,6 +43,8 @@ public class PurchaseOrderService {
 
     private final NotificationService notificationService;
     private final AuditService auditService;
+    private final PurchaseOrderHistoryRepo purchaseOrderHistoryRepo;
+
 
     private String generatePONumber() {
 
@@ -110,6 +99,24 @@ public class PurchaseOrderService {
                         order,
                         NotificationType.APPROVAL,
                         "Purchase Order " + order.getPoNumber() + " generated."));
+    }
+
+    private void saveHistory(
+            PurchaseOrder purchaseOrder,
+            PurchaseOrderStatus oldStatus,
+            PurchaseOrderStatus newStatus,
+            User changedBy,
+            String remarks) {
+
+        PurchaseOrderHistory history = PurchaseOrderHistory.builder()
+                .purchaseOrder(purchaseOrder)
+                .oldStatus(oldStatus)
+                .newStatus(newStatus)
+                .changedBy(changedBy)
+                .remarks(remarks)
+                .build();
+
+        purchaseOrderHistoryRepo.save(history);
     }
 
     private PurchaseOrderResponseDTO convertToDTO(PurchaseOrder purchaseOrder) {
@@ -226,12 +233,12 @@ public class PurchaseOrderService {
         // Fetch Supplier
         Supplier supplier = getSupplier(dto.getSupplierId());
 
-        // Supplier must be active
+
         if (!supplier.getIsActive()) {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Supplier is inactive");
         }
 
-        // Supplier should belong to same category
+
         for (var item : requisition.getItems()) {
 
             if (!item.getProduct()
@@ -274,17 +281,29 @@ public class PurchaseOrderService {
 
             // Remaining quantity to purchase
             int purchaseQty = reqItem.getQuantity() - inventory.getQuantityOnHand();
+
+            BigDecimal totalPrice = reqItem.getUnitPrice()
+                    .multiply(BigDecimal.valueOf(purchaseQty));
+
             PoItem poItem = PoItem.builder()
                     .purchaseOrder(purchaseOrder)
                     .product(reqItem.getProduct())
                     .quantity(purchaseQty)
                     .unitPrice(reqItem.getUnitPrice())
+                    .totalPrice(totalPrice)
                     .build();
 
             purchaseOrder.getPoItems().add(poItem);
         }
 
         PurchaseOrder saved = purchaseOrderRepo.save(purchaseOrder);
+
+        saveHistory(
+                saved,
+                null,
+                PurchaseOrderStatus.GENERATED,
+                procurementOfficer,
+                "Purchase Order Generated");
 
         requisition.setStatus(RequisitionStatus.PO_GENERATED);
         requisitionRepo.save(requisition);
@@ -342,6 +361,13 @@ public class PurchaseOrderService {
         return convertToDTO(saved);
     }
 
+    public PurchaseOrderResponseDTO getPurchaseOrderByRequisitionId(Long requisitionId) {
+
+        PurchaseOrder order = purchaseOrderRepo.findByRequisition_Id(requisitionId);
+
+        return convertToDTO(order);
+    }
+
     @Transactional
     public String cancelPurchaseOrder(Long id, User user) {
         PurchaseOrder order = purchaseOrderRepo.findById(id)
@@ -385,6 +411,8 @@ public class PurchaseOrderService {
         purchaseOrderRepo.delete(order);
         return "Purchase Order Deleted Successfully";
     }
+
+
 
     private void createReturn(PurchaseOrder order, GoodsReceipt receipt, String reason, User user){
 
@@ -569,5 +597,32 @@ public class PurchaseOrderService {
         return excelService.exportPurchaseOrders(orders);
     }
 
-    
+
+    public List<PurchaseOrderHistoryResponseDTO> getHistory(Long poId) {
+
+        List<PurchaseOrderHistory> histories =
+                purchaseOrderHistoryRepo.findByPurchaseOrderIdOrderByChangedAtAsc(poId);
+
+        return histories.stream()
+                .map(history -> PurchaseOrderHistoryResponseDTO.builder()
+                        .id(history.getId())
+                        .purchaseOrderId(history.getPurchaseOrder().getId())
+                        .poNumber(history.getPurchaseOrder().getPoNumber())
+                        .oldStatus(history.getOldStatus())
+                        .newStatus(history.getNewStatus())
+                        .changedById(
+                                history.getChangedBy() != null
+                                        ? history.getChangedBy().getId()
+                                        : null)
+                        .changedByName(
+                                history.getChangedBy() != null
+                                        ? history.getChangedBy().getFullName()
+                                        : null)
+                        .remarks(history.getRemarks())
+                        .changedAt(history.getChangedAt())
+                        .build())
+                .toList();
+
+
+    }
 }

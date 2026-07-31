@@ -6,7 +6,7 @@ import procurementService from "../../services/requisitionService";
 
 const PENDING_STATUS = "PENDING_PROCUREMENT";
 
-const PROCUREMENT_DECIDED = ["APPROVED", "PROCUREMENT_REJECTED"];
+const PROCUREMENT_DECIDED = ["APPROVED", "REJECTED"];
 
 export const RequisitionSection = () => {
   const [requisitions, setRequisitions] = useState([]);
@@ -58,7 +58,7 @@ export const RequisitionSection = () => {
 
       const processed = await Promise.all(
         PROCUREMENT_DECIDED.map((status) =>
-          procurementService.getRequisitionsByStatus(status)
+          procurementService.getProcurementRequisitionsByStatus(status)
         )
       );
 

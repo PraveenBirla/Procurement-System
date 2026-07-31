@@ -2,6 +2,7 @@ package com.eps.enterprise_procurement_system.controllers;
 
 import java.util.List;
 
+import com.eps.enterprise_procurement_system.dto.PurchaseOrderHistoryResponseDTO;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
@@ -49,6 +50,9 @@ public class PurchaseOrderController {
         return ResponseEntity.ok(new ApiResponse<>(purchaseOrderService.getAllPurchaseOrders()));
     }
 
+
+
+
     // Get Purchase Order By Id
 
     @GetMapping("/{id}")
@@ -57,6 +61,14 @@ public class PurchaseOrderController {
             @PathVariable Long id) {
 
         return ResponseEntity.ok(new ApiResponse<>(purchaseOrderService.getPurchaseOrderById(id)));
+    }
+
+    @GetMapping("/{requisitionId}/requisition")
+    @PreAuthorize("hasAnyRole('ADMIN','PROCUREMENT','FINANCE','MANAGER')")
+    public ResponseEntity<ApiResponse<PurchaseOrderResponseDTO>> getPurchaseOrderByRequisionId(
+            @PathVariable Long requisitionId) {
+
+        return ResponseEntity.ok(new ApiResponse<>(purchaseOrderService.getPurchaseOrderByRequisitionId(requisitionId)));
     }
 
     // Get Purchase Orders By Status
@@ -86,6 +98,11 @@ public class PurchaseOrderController {
         return ResponseEntity.ok(new ApiResponse<>(purchaseOrderService.getGeneratedOrders(currentUser.get().getId())));
     }
 
+    @GetMapping("{poId}/history")
+    public ResponseEntity<ApiResponse<List<PurchaseOrderHistoryResponseDTO>>> getHistory(@PathVariable Long poId){
+
+        return ResponseEntity.ok(new ApiResponse<>(purchaseOrderService.getHistory(poId)));
+    }
     // Update Status
 
     @PutMapping("/{id}/status")

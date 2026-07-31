@@ -23,6 +23,12 @@ public class GlobalResponseHandler implements ResponseBodyAdvice<Object> {
         if(body instanceof ApiResponse<?>){
             return body;
         }
+        else if (MediaType.APPLICATION_PDF.equals(selectedContentType)) {
+            return body;
+        }
+        else if (MediaType.APPLICATION_PDF.equals(selectedContentType)) {
+            return body;
+        }
         return new ApiResponse<>(body);
     }
 

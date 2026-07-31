@@ -8,7 +8,9 @@ const emptyItem = { productId: "", quantity: 1, unitPrice: "" };
 
 export const RequisitionSection = () => {
   const [requisitions, setRequisitions] = useState([]);
-  const [products, setProducts] = useState([]);
+  const [categories, setCategories] = useState([]);
+  const [products, setProducts] = useState([]); // products of the selected category only
+  const [loadingProducts, setLoadingProducts] = useState(false);
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(true);
 
@@ -26,13 +28,14 @@ export const RequisitionSection = () => {
   const [reqForm, setReqForm] = useState({
     title: "",
     description: "",
+    categoryId: "",
     items: [{ ...emptyItem }],
   });
   const [formErrors, setFormErrors] = useState({});
 
   useEffect(() => {
     loadRequisitions();
-    loadProducts();
+    loadCategories();
   }, []);
 
   useEffect(() => {
@@ -66,10 +69,10 @@ export const RequisitionSection = () => {
     }
   };
 
-  const loadProducts = async () => {
+  const loadCategories = async () => {
     try {
-      const res = await productService.getProducts();
-      setProducts(res);
+      const res = await productService.getCategories();
+      setCategories(res);
     } catch (err) {
       setError(err.message);
     }
@@ -103,7 +106,8 @@ export const RequisitionSection = () => {
 
   // ─── Create Requisition handlers ───
   const openCreateModal = () => {
-    setReqForm({ title: "", description: "", items: [{ ...emptyItem }] });
+    setReqForm({ title: "", description: "", categoryId: "", items: [{ ...emptyItem }] });
+    setProducts([]);
     setFormErrors({});
     setShowCreateModal(true);
   };
@@ -117,6 +121,30 @@ export const RequisitionSection = () => {
     const { name, value } = e.target;
     setReqForm({ ...reqForm, [name]: value });
     if (formErrors[name]) setFormErrors({ ...formErrors, [name]: "" });
+  };
+
+  const handleCategoryChange = async (e) => {
+    const categoryId = e.target.value;
+
+    setReqForm({
+      ...reqForm,
+      categoryId,
+      items: [{ ...emptyItem }], // reset items since category changed
+    });
+    setProducts([]);
+    if (formErrors.categoryId) setFormErrors({ ...formErrors, categoryId: "" });
+
+    if (!categoryId) return;
+
+    setLoadingProducts(true);
+    try {
+      const res = await productService.getProductsBycategories(categoryId);
+      setProducts(res);
+    } catch (err) {
+      setError(err.message);
+    } finally {
+      setLoadingProducts(false);
+    }
   };
 
   const handleItemChange = (index, field, value) => {
@@ -142,6 +170,7 @@ export const RequisitionSection = () => {
   };
 
   const addItemRow = () => {
+    if (!reqForm.categoryId) return;
     setReqForm({ ...reqForm, items: [...reqForm.items, { ...emptyItem }] });
   };
 
@@ -154,6 +183,7 @@ export const RequisitionSection = () => {
   const validateReqForm = () => {
     const errs = {};
     if (!reqForm.title.trim()) errs.title = "Title is required";
+    if (!reqForm.categoryId) errs.categoryId = "Category is required";
 
     reqForm.items.forEach((item, index) => {
       if (!item.productId || !item.quantity || Number(item.quantity) <= 0 || !item.unitPrice || Number(item.unitPrice) <= 0) {
@@ -178,6 +208,7 @@ export const RequisitionSection = () => {
     const payload = {
       title: reqForm.title.trim(),
       description: reqForm.description.trim(),
+      categoryId: Number(reqForm.categoryId),
       items: reqForm.items.map((item) => ({
         productId: Number(item.productId),
         quantity: Number(item.quantity),
@@ -260,7 +291,7 @@ export const RequisitionSection = () => {
                         disabled={trackingId === req.id}
                         onClick={() => handleTrack(req)}
                       >
-                        {trackingId === req.id ? "��" : "Track"}
+                        {trackingId === req.id ? "…" : "Track"}
                       </button>
                     </div>
                   </td>
@@ -408,9 +439,32 @@ export const RequisitionSection = () => {
                 />
               </div>
 
+              <div className="field">
+                <label>Category</label>
+                <select
+                  name="categoryId"
+                  value={reqForm.categoryId}
+                  onChange={handleCategoryChange}
+                  className={formErrors.categoryId ? "input-error" : ""}
+                >
+                  <option value="">Select Category</option>
+                  {categories.map((c) => (
+                    <option key={c.id} value={c.id}>
+                      {c.categoryName}
+                    </option>
+                  ))}
+                </select>
+                {formErrors.categoryId && <span className="field-error">{formErrors.categoryId}</span>}
+              </div>
+
               <div className="items-header">
                 <h3>Items</h3>
-                <button type="button" className="add-item-btn" onClick={addItemRow}>
+                <button
+                  type="button"
+                  className="add-item-btn"
+                  onClick={addItemRow}
+                  disabled={!reqForm.categoryId}
+                >
                   + Add Item
                 </button>
               </div>
@@ -422,8 +476,15 @@ export const RequisitionSection = () => {
                       <select
                         value={item.productId}
                         onChange={(e) => handleItemChange(index, "productId", e.target.value)}
+                        disabled={!reqForm.categoryId || loadingProducts}
                       >
-                        <option value="">Select Product</option>
+                        <option value="">
+                          {!reqForm.categoryId
+                            ? "Select category first"
+                            : loadingProducts
+                            ? "Loading products…"
+                            : "Select Product"}
+                        </option>
                         {products.map((p) => (
                           <option key={p.id} value={p.id}>
                             {p.name} {p.sku ? `(${p.sku})` : ""}

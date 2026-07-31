@@ -173,4 +173,18 @@ public class ApprovalService {
 
         return response;
     }
+
+    public List<PurchaseRequisitionResponseDTO> getProcurementRequisitions(ApprovalStatus status) {
+        List<PurchaseRequisition>  requisitions =  approvalRepo.findRequisitionsByApprovalTypeAndStatus(
+                ApprovalType.PROCUREMENT,
+                status
+        );
+
+        List<PurchaseRequisitionResponseDTO> response = requisitions.stream()
+                .map(this::mapToResponseDTO)
+                .toList();
+
+        return response;
+
+        }
 }

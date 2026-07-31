@@ -5,13 +5,14 @@ import purchaseOrderService from "../../services/purchaseOrderService";
 import suppliersService from "../../services/suppliersService";
 
 const APPROVED_STATUS = "APPROVED";
+const PO_GENERATED_STATUS = "PO_GENERATED";
 
 export const ApprovedRequisitionSection = () => {
   const [requisitions, setRequisitions] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
 
-  // requisitionId -> generated PO id
+  // requisitionId -> generated PO id (for POs generated in this session)
   const [poMap, setPoMap] = useState({});
 
   // Generate PO modal
@@ -28,6 +29,18 @@ export const ApprovedRequisitionSection = () => {
   const [poHistory, setPoHistory] = useState([]);
   const [loadingPoHistory, setLoadingPoHistory] = useState(false);
   const [trackingPoId, setTrackingPoId] = useState(null);
+
+  // Download PO
+  const [downloadingPoId, setDownloadingPoId] = useState(null);
+
+  const getErrorMessage = (err) => {
+    return (
+      err?.response?.data?.error?.message ||
+      err?.response?.data?.message ||
+      err?.message ||
+      "Something went wrong"
+    );
+  };
 
   useEffect(() => {
     loadRequisitions();
@@ -51,24 +64,49 @@ export const ApprovedRequisitionSection = () => {
     };
   }, [poModalReq, trackPoReq]);
 
-  const loadRequisitions = async () => {
-    setLoading(true);
-    try {
-      const approved = await procurementService.getRequisitionsByStatus(APPROVED_STATUS);
-      setRequisitions(approved);
-      setError("");
-    } catch (err) {
-      setError(err.message);
-    } finally {
-      setLoading(false);
+ const loadRequisitions = async () => {
+  setLoading(true);
+  try {
+    const approved = await procurementService.getProcurementRequisitionsByStatus(APPROVED_STATUS);
+    approved.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
+
+    setRequisitions(approved);
+    setError("");
+
+    // For rows whose PO is already generated, fetch the PO to get its id
+    const poGeneratedReqs = approved.filter((r) => r.status === PO_GENERATED_STATUS);
+    if (poGeneratedReqs.length > 0) {
+      const results = await Promise.all(
+        poGeneratedReqs.map((r) =>
+          purchaseOrderService
+            .getPurchaseOrderRequisionId(r.id)
+            .then((po) => [r.id, po.id])
+            .catch(() => [r.id, null])
+        )
+      );
+      setPoMap((prev) => {
+        const next = { ...prev };
+        results.forEach(([reqId, poId]) => {
+          if (poId) next[reqId] = poId;
+        });
+        return next;
+      });
     }
-  };
+  } catch (err) {
+    setError(getErrorMessage(err));
+  } finally {
+    setLoading(false);
+  }
+};
+
+  // Resolve PO id for a requisition: prefer freshly-generated one in this session,
+  // fall back to the id coming from the requisition response (after PO_GENERATED status).
+  const getPoId = (req) => poMap[req.id] ?? null;
 
   // ---------- Generate PO ----------
-  const openPOModal = async (req) => { 
-
+  const openPOModal = async (req) => {
     const categoryId = req.items?.[0]?.categoryId;
-   console.log(categoryId)
+
     if (!categoryId) {
       setPoModalReq(req);
       setPoError("categories not found");
@@ -81,10 +119,10 @@ export const ApprovedRequisitionSection = () => {
     setPoError("");
     setLoadingSuppliers(true);
     try {
-      const list = await  suppliersService.getAllSuppliersByCategoriyId(categoryId);
+      const list = await suppliersService.getAllSuppliersByCategoriyId(categoryId);
       setSuppliers(list);
     } catch (err) {
-      setPoError(err.message);
+      setPoError(getErrorMessage(err));
     } finally {
       setLoadingSuppliers(false);
     }
@@ -120,16 +158,17 @@ export const ApprovedRequisitionSection = () => {
 
       setPoMap((prev) => ({ ...prev, [poModalReq.id]: po.id }));
       closePOModal();
+      await loadRequisitions();
     } catch (err) {
-      setPoError(err.message);
+      setPoError(getErrorMessage(err));
     } finally {
       setSubmittingPO(false);
     }
   };
 
-   
+  // ---------- Track PO ----------
   const handleTrackPO = async (req) => {
-    const poId = poMap[req.id];
+    const poId = getPoId(req);
     if (!poId) return;
 
     setTrackingPoId(req.id);
@@ -141,7 +180,7 @@ export const ApprovedRequisitionSection = () => {
       const res = await purchaseOrderService.generatePurchaseOrderHistory(poId);
       setPoHistory(res);
     } catch (err) {
-      setError(err.message);
+      setError(getErrorMessage(err));
       setTrackPoReq(null);
     } finally {
       setLoadingPoHistory(false);
@@ -152,6 +191,29 @@ export const ApprovedRequisitionSection = () => {
   const closeTrackPOModal = () => {
     setTrackPoReq(null);
     setPoHistory([]);
+  };
+
+  // ---------- Download PO ----------
+  const handleDownloadPO = async (req) => {
+    const poId = getPoId(req);
+    if (!poId) return;
+
+    setDownloadingPoId(req.id);
+    try {
+      const blob = await purchaseOrderService.downloadePurchaseOrder(poId);
+      const url = window.URL.createObjectURL(blob);
+      const link = document.createElement("a");
+      link.href = url;
+      link.download = `PurchaseOrder-${req.requisitionNo}.pdf`;
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+      window.URL.revokeObjectURL(url);
+    } catch (err) {
+      setError(getErrorMessage(err));
+    } finally {
+      setDownloadingPoId(null);
+    }
   };
 
   return (
@@ -176,6 +238,7 @@ export const ApprovedRequisitionSection = () => {
               <th>Req No</th>
               <th>Title</th>
               <th>Department</th>
+              <th>Status</th>
               <th>Amount</th>
               <th>Created</th>
               <th>Action</th>
@@ -185,30 +248,46 @@ export const ApprovedRequisitionSection = () => {
           <tbody>
             {loading ? (
               <tr>
-                <td colSpan="6" className="no-data">
+                <td colSpan="7" className="no-data">
                   Loading…
                 </td>
               </tr>
             ) : requisitions.length > 0 ? (
               requisitions.map((req) => {
-                const poId = poMap[req.id];
+                const isPoGenerated = req.status === PO_GENERATED_STATUS;
+                const poId = getPoId(req);
+
                 return (
                   <tr key={req.id}>
                     <td data-label="Req No">{req.requisitionNo}</td>
                     <td data-label="Title">{req.title}</td>
                     <td data-label="Department">{req.departmentName}</td>
+                    <td data-label="Status">
+                      <span className={`status-badge ${req.status.toLowerCase()}`}>
+                        {req.status.replaceAll("_", " ")}
+                      </span>
+                    </td>
                     <td data-label="Amount">₹{Number(req.totalEstimatedAmount).toLocaleString()}</td>
                     <td data-label="Created">{new Date(req.createdAt).toLocaleDateString()}</td>
                     <td data-label="Action">
                       <div className="action-group">
-                        {poId ? (
-                          <button
-                            className="track-btn"
-                            onClick={() => handleTrackPO(req)}
-                            disabled={trackingPoId === req.id}
-                          >
-                            {trackingPoId === req.id ? "…" : "Track PO"}
-                          </button>
+                        {isPoGenerated ? (
+                          <>
+                            <button
+                              className="view-btn"
+                              onClick={() => handleDownloadPO(req)}
+                              disabled={!poId || downloadingPoId === req.id}
+                            >
+                              {downloadingPoId === req.id ? "…" : "Download PO"}
+                            </button>
+                            <button
+                              className="track-btn"
+                              onClick={() => handleTrackPO(req)}
+                              disabled={!poId || trackingPoId === req.id}
+                            >
+                              {trackingPoId === req.id ? "…" : "Track PO"}
+                            </button>
+                          </>
                         ) : (
                           <button className="approve-btn" onClick={() => openPOModal(req)}>
                             Generate PO
@@ -221,7 +300,7 @@ export const ApprovedRequisitionSection = () => {
               })
             ) : (
               <tr>
-                <td colSpan="6" className="no-data">
+                <td colSpan="7" className="no-data">
                   No Approved Requisitions Found
                 </td>
               </tr>

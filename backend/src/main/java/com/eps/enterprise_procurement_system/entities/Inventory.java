@@ -29,10 +29,12 @@ public class Inventory {
     private Integer quantityOnHand = 0;
 
     @Column(name = "quantity_under_inspection")
-    private int quantityUnderInspection;
+    @Builder.Default
+    private int quantityUnderInspection=0;
 
     @Column(name = "quantity_quarantined")
-    private int quantityQuarantined;
+    @Builder.Default
+    private int quantityQuarantined=0;
 
     @Column(name = "warehouse_location", length = 100)
     private String warehouseLocation;

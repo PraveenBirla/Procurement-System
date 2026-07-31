@@ -80,6 +80,15 @@ public class ApprovalController {
 
     }
 
+    @GetMapping("/procurement")
+    public ResponseEntity<ApiResponse<List<PurchaseRequisitionResponseDTO>>> getProcurementRequisitions(
+            @RequestParam ApprovalStatus status) {
+
+        List<PurchaseRequisitionResponseDTO> result= approvalService.getProcurementRequisitions(status);
+        return ResponseEntity.ok(new ApiResponse<>(result));
+
+    }
+
 
 
 

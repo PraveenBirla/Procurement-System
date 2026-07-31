@@ -10,6 +10,18 @@ const purchaseOrderService = {
   async generatePurchaseOrderHistory(poId){
      const res = await api.get(`/purchase-orders/${poId}/history` );
        return res.data.data;
+  },
+  
+   async getPurchaseOrderRequisionId(requisitionId){
+     const res = await api.get(`/purchase-orders/${requisitionId}/requisition` );
+       return res.data.data;
+  }, 
+
+  async downloadePurchaseOrder(poId){
+    const res = await api.get(`/purchase-orders/${poId}/pdf`, {
+        responseType: "blob",
+    });
+       return res.data ;
   }
 
 }
