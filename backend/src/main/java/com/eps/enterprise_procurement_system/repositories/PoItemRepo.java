@@ -14,4 +14,6 @@ public interface PoItemRepo extends JpaRepository<PoItem, Long> {
     List<PoItem> findByPurchaseOrder_Id(Long po_id);
 
     void deleteByPurchaseOrder_Id(Long poId);
+
+    boolean existsByRequisitionItem_Id(Long req_item_id);
 }

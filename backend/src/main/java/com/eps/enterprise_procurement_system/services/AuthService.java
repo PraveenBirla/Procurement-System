@@ -9,6 +9,9 @@ import com.eps.enterprise_procurement_system.entities.Department;
 import com.eps.enterprise_procurement_system.entities.User;
 import com.eps.enterprise_procurement_system.repositories.DepartmentRepo;
 import com.eps.enterprise_procurement_system.repositories.UserRepository;
+
+import lombok.RequiredArgsConstructor;
+
 import org.modelmapper.ModelMapper;
 import org.springframework.http.HttpStatus;
 import org.springframework.security.authentication.AuthenticationManager;
@@ -20,6 +23,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.web.server.ResponseStatusException;
 
 @Service
+@RequiredArgsConstructor
 public class AuthService {
 
     private final ModelMapper modelMapper;
@@ -28,15 +32,6 @@ public class AuthService {
     private final PasswordEncoder passwordEncoder;
     private final AuthenticationManager authenticationManager;
     private final JwtService jwtService;
-
-    public AuthService(ModelMapper modelMapper, UserRepository userRepository, DepartmentRepo departmentRepo, PasswordEncoder passwordEncoder, AuthenticationManager authenticationManager, JwtService jwtService) {
-        this.modelMapper = modelMapper;
-        this.userRepository = userRepository;
-        this.departmentRepo = departmentRepo;
-        this.passwordEncoder = passwordEncoder;
-        this.authenticationManager = authenticationManager;
-        this.jwtService = jwtService;
-    }
 
 
     public RegisterResponseDTO register(RegisterRequestDTO dto){

@@ -1,22 +1,445 @@
 package com.eps.enterprise_procurement_system.services;
 
+import java.awt.Color;
+import java.io.ByteArrayOutputStream;
+import java.math.BigDecimal;
+import java.time.LocalDate;
+import java.time.format.DateTimeFormatter;
+
+import org.openpdf.text.Document;
+import org.openpdf.text.Element;
+import org.openpdf.text.Font;
+import org.openpdf.text.PageSize;
+import org.openpdf.text.Paragraph;
+import org.openpdf.text.Phrase;
+import org.openpdf.text.pdf.PdfPCell;
+import org.openpdf.text.pdf.PdfPTable;
+import org.openpdf.text.pdf.PdfWriter;
 import org.springframework.stereotype.Service;
 
+import com.eps.enterprise_procurement_system.entities.GoodsReceipt;
+import com.eps.enterprise_procurement_system.entities.GoodsReceiptItem;
+import com.eps.enterprise_procurement_system.entities.PoItem;
 import com.eps.enterprise_procurement_system.entities.PurchaseOrder;
 
 @Service
 public class PdfService {
 
+    private static final Font TITLE_FONT = new Font(Font.HELVETICA,20,Font.BOLD);
+
+    private static final Font HEADER_FONT = new Font(Font.HELVETICA,12,Font.BOLD);
+
+    private static final Font NORMAL_FONT = new Font(Font.HELVETICA,11);
+
+    private static final Font SMALL_FONT = new Font(Font.HELVETICA,9);
+
+    private static final DateTimeFormatter DATE_FORMAT = DateTimeFormatter.ofPattern("dd-MM-yyyy");
+
     public byte[] generatePurchaseOrder(PurchaseOrder order){
-        return new byte[5];
+
+        ByteArrayOutputStream out = new ByteArrayOutputStream();
+
+        Document document = new Document(PageSize.A4);
+
+        try{
+
+            PdfWriter.getInstance(document,out);
+
+            document.open();
+
+            addCompanyHeader(document);
+
+            addTitle(document,"PURCHASE ORDER");
+
+            addPurchaseOrderInfo(document,order);
+
+            addItemsTable(document,order);
+
+            addAmountSection(document,order);
+
+            addFooter(document);
+
+            document.close();
+
+        }
+        catch(Exception e){
+            throw new RuntimeException(e);
+        }
+
+        return out.toByteArray();
     }
 
-    public byte[] generateInvoice(PurchaseOrder order){
-        return new byte[5];
+    public byte[] generateInvoice(PurchaseOrder order) {
+
+        ByteArrayOutputStream out = new ByteArrayOutputStream();
+
+        Document document = new Document(PageSize.A4);
+
+        try {
+
+            PdfWriter.getInstance(document, out);
+
+            document.open();
+
+            addCompanyHeader(document);
+
+            addTitle(document, "PURCHASE INVOICE");
+
+            addInvoiceInfo(document, order);
+
+            addItemsTable(document, order);
+
+            addInvoiceAmountSection(document, order);
+
+            addFooter(document);
+
+            document.close();
+
+        }
+        catch (Exception e) {
+            throw new RuntimeException("Unable to generate Invoice PDF", e);
+        }
+
+        return out.toByteArray();
     }
 
-    public byte[] generateGoodsReceipt(PurchaseOrder order){
-        return new byte[5];
+    public byte[] generateGoodsReceipt(GoodsReceipt receipt){
+
+        ByteArrayOutputStream out = new ByteArrayOutputStream();
+
+        Document document = new Document(PageSize.A4);
+
+        try{
+
+            PdfWriter.getInstance(document,out);
+
+            document.open();
+
+            addCompanyHeader(document);
+
+            addTitle(document,"GOODS RECEIPT NOTE");
+
+            addGoodsReceiptInfo(document,receipt);
+
+            addGoodsReceiptItems(document,receipt);
+
+            addGoodsReceiptSummary(document,receipt);
+
+            addFooter(document);
+
+            document.close();
+
+        }
+        catch(Exception e){
+            throw new RuntimeException("Unable to generate Goods Receipt",e);
+        }
+
+        return out.toByteArray();
     }
 
+    // Common Methods
+
+    private void addCompanyHeader(Document document) throws Exception {
+
+        Paragraph company = new Paragraph("Enterprise Procurement System", TITLE_FONT);
+
+        company.setAlignment(Element.ALIGN_CENTER);
+
+        document.add(company);
+
+        Paragraph address = new Paragraph(
+                "India",
+                SMALL_FONT);
+
+        address.setAlignment(Element.ALIGN_CENTER);
+
+        document.add(address);
+
+        document.add(new Paragraph(" "));
+    }
+
+    private void addTitle(Document document, String title)throws Exception{
+        Paragraph paragraph = new Paragraph(title, HEADER_FONT);
+
+        paragraph.setAlignment(Element.ALIGN_CENTER);
+
+        paragraph.setSpacingAfter(15);
+
+        document.add(paragraph);
+    }
+
+    private void addPurchaseOrderInfo(Document document, PurchaseOrder order)throws Exception{
+        PdfPTable table = new PdfPTable(2);
+
+        table.setWidthPercentage(100);
+
+        table.setSpacingAfter(15);
+
+        table.addCell(createLabelCell("PO Number"));
+        table.addCell(createValueCell(order.getPoNumber()));
+
+        table.addCell(createLabelCell("Supplier"));
+        table.addCell(createValueCell(
+                order.getSupplier().getName()));
+
+        table.addCell(createLabelCell("Status"));
+        table.addCell(createValueCell(
+                order.getStatus().name()));
+
+        table.addCell(createLabelCell("Generated By"));
+        table.addCell(createValueCell(
+                order.getGeneratedBy().getFullName()));
+
+        table.addCell(createLabelCell("Created Date"));
+        table.addCell(createValueCell(
+                order.getCreatedAt().format(DATE_FORMAT)));
+
+        table.addCell(createLabelCell("Expected Delivery"));
+        table.addCell(createValueCell(
+                order.getExpectedDeliveryDate().format(DATE_FORMAT)));
+
+        document.add(table);
+    }
+
+    private void addItemsTable(Document document, PurchaseOrder order)throws Exception{
+        PdfPTable table = new PdfPTable(5);
+
+        table.setWidthPercentage(100);
+
+        table.setWidths(new int[]{1,4,2,2,2});
+
+        table.addCell(createHeaderCell("S.No"));
+
+        table.addCell(createHeaderCell("Product"));
+
+        table.addCell(createHeaderCell("Qty"));
+
+        table.addCell(createHeaderCell("Price"));
+
+        table.addCell(createHeaderCell("Amount"));
+
+        int i=1;
+
+        for(PoItem item:order.getPoItems()){
+
+            table.addCell(createValueCell(String.valueOf(i++)));
+
+            table.addCell(createValueCell(
+                    item.getProduct().getName()));
+
+            table.addCell(createValueCell(
+                    String.valueOf(item.getQuantity())));
+
+            table.addCell(createValueCell(
+                    item.getUnitPrice().toString()));
+
+            table.addCell(createValueCell(item.getTotalPrice().toString()));
+        }
+
+        document.add(table);
+    }
+
+    private void addAmountSection(Document document, PurchaseOrder order)throws Exception{
+        Paragraph amount = new Paragraph("\nTotal Amount : ₹ " + order.getTotalAmount(), HEADER_FONT);
+
+        amount.setAlignment(Element.ALIGN_RIGHT);
+
+        document.add(amount);
+    }
+
+    private void addFooter(Document document) throws Exception {
+        Paragraph footer = new Paragraph(
+                "\n\nThis is a system generated document.\n"
+                        + "Enterprise Procurement System",
+                SMALL_FONT);
+
+        footer.setAlignment(Element.ALIGN_CENTER);
+
+        document.add(footer);
+    }
+
+    private PdfPCell createHeaderCell(String value) {
+
+        PdfPCell cell = new PdfPCell(new Phrase(value, HEADER_FONT));
+
+        cell.setBackgroundColor(Color.LIGHT_GRAY);
+
+        cell.setHorizontalAlignment(Element.ALIGN_CENTER);
+
+        return cell;
+    }
+
+    private PdfPCell createLabelCell(String value) {
+
+        PdfPCell cell = new PdfPCell(new Phrase(value, HEADER_FONT));
+
+        return cell;
+    }
+
+    private PdfPCell createValueCell(String value) {
+
+        PdfPCell cell = new PdfPCell(new Phrase(value, NORMAL_FONT));
+
+        return cell;
+    }
+
+    private void addInvoiceInfo(Document document, PurchaseOrder order) throws Exception {
+
+        PdfPTable table = new PdfPTable(2);
+
+        table.setWidthPercentage(100);
+
+        table.setSpacingAfter(15);
+
+        table.addCell(createLabelCell("Invoice No"));
+        table.addCell(createValueCell("INV-" + order.getPoNumber()));
+
+        table.addCell(createLabelCell("PO Number"));
+        table.addCell(createValueCell(order.getPoNumber()));
+
+        table.addCell(createLabelCell("Invoice Date"));
+        table.addCell(createValueCell(LocalDate.now().format(DATE_FORMAT)));
+
+        table.addCell(createLabelCell("Supplier"));
+        table.addCell(createValueCell(order.getSupplier().getName()));
+
+        table.addCell(createLabelCell("Supplier Email"));
+        table.addCell(createValueCell(order.getSupplier().getEmail()));
+
+        table.addCell(createLabelCell("Supplier Phone"));
+        table.addCell(createValueCell(order.getSupplier().getPhone()));
+
+        table.addCell(createLabelCell("Generated By"));
+        table.addCell(createValueCell(order.getGeneratedBy().getFullName()));
+
+        document.add(table);
+    }
+
+    private void addInvoiceAmountSection(Document document, PurchaseOrder order) throws Exception {
+
+        BigDecimal subTotal = order.getTotalAmount();
+
+        BigDecimal gst = subTotal.multiply(new BigDecimal("0.18"));
+
+        BigDecimal grandTotal = subTotal.add(gst);
+
+        PdfPTable table = new PdfPTable(2);
+
+        table.setWidthPercentage(40);
+
+        table.setHorizontalAlignment(Element.ALIGN_RIGHT);
+
+        table.setSpacingBefore(15);
+
+        table.addCell(createLabelCell("Subtotal"));
+        table.addCell(createValueCell(subTotal.toString()));
+
+        table.addCell(createLabelCell("GST (18%)"));
+        table.addCell(createValueCell(gst.toString()));
+
+        table.addCell(createLabelCell("Grand Total"));
+        table.addCell(createValueCell(grandTotal.toString()));
+
+        document.add(table);
+    }
+
+    private void addGoodsReceiptInfo(Document document, GoodsReceipt receipt) throws Exception {
+
+        PurchaseOrder order = receipt.getPurchaseOrder();
+
+        PdfPTable table = new PdfPTable(2);
+
+        table.setWidthPercentage(100);
+
+        table.setSpacingAfter(15);
+
+        table.addCell(createLabelCell("Goods Receipt No"));
+        table.addCell(createValueCell(receipt.getGoodsReceiptNumber()));
+
+        table.addCell(createLabelCell("Purchase Order"));
+        table.addCell(createValueCell(order.getPoNumber()));
+
+        table.addCell(createLabelCell("Supplier"));
+        table.addCell(createValueCell(order.getSupplier().getName()));
+
+        table.addCell(createLabelCell("Received Date"));
+        table.addCell(createValueCell(receipt.getReceivedDate().format(DATE_FORMAT)));
+
+        table.addCell(createLabelCell("Received By"));
+        table.addCell(createValueCell(receipt.getInspectedBy().getFullName()));
+
+        table.addCell(createLabelCell("Inspection"));
+        table.addCell(createValueCell(receipt.getQualityStatus().name()));
+
+        document.add(table);
+
+    }
+
+    private void addGoodsReceiptItems(Document document, GoodsReceipt receipt) throws Exception {
+
+        PdfPTable table = new PdfPTable(6);
+
+        table.setWidthPercentage(100);
+
+        table.setWidths(new int[] { 1, 4, 2, 2, 2, 2 });
+
+        table.addCell(createHeaderCell("S.No"));
+
+        table.addCell(createHeaderCell("Product"));
+
+        table.addCell(createHeaderCell("Ordered"));
+
+        table.addCell(createHeaderCell("Received"));
+
+        table.addCell(createHeaderCell("Accepted"));
+
+        table.addCell(createHeaderCell("Rejected"));
+
+        int i = 1;
+
+        for (GoodsReceiptItem item : receipt.getItems()) {
+
+            table.addCell(createValueCell(String.valueOf(i++)));
+
+            table.addCell(createValueCell(item.getProduct().getName()));
+
+            table.addCell(createValueCell(String.valueOf(item.getOrderedQuantity())));
+
+            table.addCell(createValueCell(String.valueOf(item.getReceivedQuantity())));
+
+            table.addCell(createValueCell(String.valueOf(item.getAcceptedQuantity())));
+
+            table.addCell(createValueCell(String.valueOf(item.getRejectedQuantity())));
+        }
+
+        document.add(table);
+
+    }
+
+    private void addGoodsReceiptSummary(Document document, GoodsReceipt receipt)throws Exception{
+
+        PdfPTable table = new PdfPTable(2);
+
+        table.setWidthPercentage(45);
+
+        table.setHorizontalAlignment(Element.ALIGN_RIGHT);
+
+        table.setSpacingBefore(15);
+
+        table.addCell(createLabelCell("Overall Status"));
+
+        table.addCell(createValueCell(receipt.getQualityStatus().name()));
+
+        table.addCell(createLabelCell("Return Raised"));
+
+        table.addCell(createValueCell(receipt.getReturnReplacements()==null ?
+                        "NO" : "YES"));
+
+        table.addCell(createLabelCell("Remarks"));
+
+        table.addCell(createValueCell(receipt.getRemarks()==null ? "-" :receipt.getRemarks()));
+
+        document.add(table);
+
+    }
 }

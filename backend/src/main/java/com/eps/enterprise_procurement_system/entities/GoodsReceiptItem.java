@@ -30,11 +30,14 @@ public class GoodsReceiptItem {
 
     @Column(name = "accepted_quantity", nullable = false)
     @Builder.Default
-    private Integer acceptedQuantity = 0;
+    private Integer  acceptedQuantity = 0;
 
     @Column(name = "rejected_quantity", nullable = false)
     @Builder.Default
     private Integer rejectedQuantity = 0;
+
+    @Column(name="ordered_quantity")
+    private Integer orderedQuantity;
 
     @Lob
     @Column(name = "remarks")

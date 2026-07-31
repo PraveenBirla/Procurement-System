@@ -35,5 +35,8 @@ public class PoItem {
 
     @Column(name = "unit_price", nullable = false, precision = 12, scale = 2)
     private BigDecimal unitPrice;
+
+    @Column(name = "total_price")
+    private BigDecimal totalPrice;
 }
 

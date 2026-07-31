@@ -2,7 +2,6 @@ package com.eps.enterprise_procurement_system.controllers;
 
 import java.util.List;
 
-import com.eps.enterprise_procurement_system.dto.PurchaseOrderHistoryResponseDTO;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
@@ -100,8 +99,6 @@ public class PurchaseOrderController {
                 dto.getStatus(),
                 currentUser.get())));
     }
-
-
 
     // ======================================================
     // Cancel Purchase Order
@@ -213,13 +210,6 @@ public class PurchaseOrderController {
                         "attachment; filename=SupplierOrders.xlsx")
                 .contentType(MediaType.APPLICATION_OCTET_STREAM)
                 .body(excel);
-    }
-
-    @GetMapping("/{poId}/history")
-    public ResponseEntity<ApiResponse<List<PurchaseOrderHistoryResponseDTO>>> getHistory(
-            @PathVariable Long poId) {
-
-        return ResponseEntity.ok(new ApiResponse<>(purchaseOrderService.getPurchaseOrderHistory(poId)));
     }
 
 }

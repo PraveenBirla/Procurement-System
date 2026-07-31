@@ -58,7 +58,7 @@ public class PoItemService {
 
         PurchaseOrder order = purchaseOrderRepo.findById(poId).orElseThrow();
 
-        Product product = productRepo.findById(dto.getProductId()).orElseThrow();
+        Product product = productRepo.findById(dto.getRequisitionItemId()).orElseThrow();
 
         PoItem item = PoItem.builder()
                 .purchaseOrder(order)
@@ -82,7 +82,7 @@ public class PoItemService {
 
         PoItem item = poItemRepo.findById(itemId).orElseThrow();
 
-        Product product = productRepo.findById(dto.getProductId()).orElseThrow();
+        Product product = productRepo.findById(dto.getRequisitionItemId()).orElseThrow();
 
         item.setProduct(product);
         item.setQuantity(dto.getQuantity());

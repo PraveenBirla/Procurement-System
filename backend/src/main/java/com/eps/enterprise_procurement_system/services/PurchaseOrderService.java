@@ -1,12 +1,30 @@
 package com.eps.enterprise_procurement_system.services;
 
-import com.eps.enterprise_procurement_system.dto.*;
-import com.eps.enterprise_procurement_system.entities.*;
+import com.eps.enterprise_procurement_system.dto.PoItemResponseDTO;
+import com.eps.enterprise_procurement_system.dto.PurchaseOrderRequestDTO;
+import com.eps.enterprise_procurement_system.dto.PurchaseOrderResponseDTO;
+//import com.eps.enterprise_procurement_system.dto.ReceiveGoodsRequestDTO;
+//import com.eps.enterprise_procurement_system.dto.ReceivedItemDTO;
+import com.eps.enterprise_procurement_system.entities.GoodsReceipt;
+import com.eps.enterprise_procurement_system.entities.Inventory;
+import com.eps.enterprise_procurement_system.entities.PoItem;
+import com.eps.enterprise_procurement_system.entities.Product;
+import com.eps.enterprise_procurement_system.entities.PurchaseOrder;
+import com.eps.enterprise_procurement_system.entities.PurchaseRequisition;
+import com.eps.enterprise_procurement_system.entities.ReturnReplacement;
+import com.eps.enterprise_procurement_system.entities.Supplier;
+import com.eps.enterprise_procurement_system.entities.User;
 import com.eps.enterprise_procurement_system.entities.enums.NotificationType;
 import com.eps.enterprise_procurement_system.entities.enums.PurchaseOrderStatus;
 import com.eps.enterprise_procurement_system.entities.enums.RequisitionStatus;
 import com.eps.enterprise_procurement_system.entities.enums.ReturnStatus;
-import com.eps.enterprise_procurement_system.repositories.*;
+import com.eps.enterprise_procurement_system.repositories.GoodsReceiptRepo;
+import com.eps.enterprise_procurement_system.repositories.InventoryRepo;
+import com.eps.enterprise_procurement_system.repositories.PurchaseOrderRepo;
+import com.eps.enterprise_procurement_system.repositories.PurchaseRequisitionRepo;
+import com.eps.enterprise_procurement_system.repositories.ReturnReplacementRepo;
+import com.eps.enterprise_procurement_system.repositories.SupplierRepo;
+import com.eps.enterprise_procurement_system.repositories.UserRepository;
 
 import lombok.RequiredArgsConstructor;
 
@@ -17,7 +35,6 @@ import org.springframework.web.server.ResponseStatusException;
 
 import java.math.BigDecimal;
 import java.time.LocalDate;
-import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
@@ -39,7 +56,6 @@ public class PurchaseOrderService {
 
     private final NotificationService notificationService;
     private final AuditService auditService;
-    private final PurchaseOrderHistoryRepo historyRepo;
 
     private String generatePONumber() {
 
@@ -183,14 +199,6 @@ public class PurchaseOrderService {
                 .toList();
     }
 
-    public List<PurchaseOrderHistoryResponseDTO> getPurchaseOrderHistory(Long poId) {
-
-        return historyRepo.findByPurchaseOrderIdOrderByChangedAtAsc(poId)
-                .stream()
-                .map(this::convertHistoryToDTO)
-                .toList();
-    }
-
     @Transactional
     public PurchaseOrderResponseDTO generatePurchaseOrder(
             PurchaseOrderRequestDTO dto,
@@ -254,7 +262,7 @@ public class PurchaseOrderService {
 
             Inventory inventory = getInventory(reqItem.getProduct());
 
-
+            // Enough stock already exists
             if (inventory.getQuantityOnHand() >= reqItem.getQuantity()) {
 
                 throw new ResponseStatusException(
@@ -279,7 +287,6 @@ public class PurchaseOrderService {
         PurchaseOrder saved = purchaseOrderRepo.save(purchaseOrder);
 
         requisition.setStatus(RequisitionStatus.PO_GENERATED);
-
         requisitionRepo.save(requisition);
         notificationService.notify(
                 supplier,
@@ -314,13 +321,9 @@ public class PurchaseOrderService {
                 .orElseThrow(() -> new ResponseStatusException(
                         HttpStatus.NOT_FOUND, "Purchase Order not found"));
 
-        PurchaseOrderStatus oldStatus = order.getStatus();
-
         order.setStatus(status);
 
         PurchaseOrder saved = purchaseOrderRepo.save(order);
-
-
 
         notificationService.notify(
                 saved.getSupplier(),
@@ -396,121 +399,121 @@ public class PurchaseOrderService {
         returnReplacementRepo.save(rr);
     }
 
-    @Transactional
-    public byte[] receiveGoods(Long poId, ReceiveGoodsRequestDTO dto, User warehouseUser) {
-
-        PurchaseOrder order = purchaseOrderRepo.findById(poId)
-                .orElseThrow(() -> new ResponseStatusException(
-                        HttpStatus.NOT_FOUND, "Purchase Order not found"));
-
-        if (order.getStatus() != PurchaseOrderStatus.DELIVERED) {
-            throw new ResponseStatusException(
-                    HttpStatus.BAD_REQUEST,
-                    "Purchase Order not ready for receiving");
-        }
-
-        boolean hasIssue = false;
-        Map<Long, ReceivedItemDTO> receivedMap = dto.getItems()
-                .stream()
-                .collect(Collectors.toMap(
-                        ReceivedItemDTO::getProductId,
-                        Function.identity()));
-
-        for (PoItem poItem : order.getPoItems()) {
-
-            ReceivedItemDTO received = receivedMap.get(poItem.getProduct().getId());
-
-            if (received == null) {
-
-                createReturn(order,
-                        null,
-                        "Product missing",
-                        warehouseUser);
-
-                hasIssue = true;
-                continue;
-            }
-
-            if (received.getReceivedQuantity() < poItem.getQuantity()) {
-
-                createReturn(
-                        order,
-                        null,
-                        "Short quantity for " + poItem.getProduct().getName(),
-                        warehouseUser);
-
-                hasIssue = true;
-            }
-
-            if (Boolean.TRUE.equals(received.getDamaged())) {
-
-                createReturn(
-                        order,
-                        null,
-                        "Damaged item : " + poItem.getProduct().getName(),
-                        warehouseUser);
-
-                hasIssue = true;
-            }
-        }
-
-        if (hasIssue) {
-
-            order.setStatus(PurchaseOrderStatus.RETURN_INITIATED);
-
-            purchaseOrderRepo.save(order);
-
-            auditService.log(
-                    "PurchaseOrder",
-                    order.getId(),
-                    "RETURN_INITIATED",
-                    warehouseUser,
-                    "Inspection Failed");
-
-            notificationService.notify(
-                    order.getSupplier(),
-                    null,
-                    order,
-                    NotificationType.RETURN,
-                    "Replacement requested for " + order.getPoNumber());
-
-            throw new ResponseStatusException(
-                    HttpStatus.BAD_REQUEST,
-                    "Inspection failed. Replacement Requested");
-        }
-
-        for (PoItem item : order.getPoItems()) {
-
-            Inventory inventory = inventoryRepo.findByProduct_Id(item.getProduct().getId()).orElseThrow();
-
-            inventory.setQuantityOnHand(inventory.getQuantityOnHand() + item.getQuantity());
-
-            inventory.setLastPurchaseOrder(order);
-
-            inventoryRepo.save(inventory);
-        }
-        GoodsReceipt receipt = GoodsReceipt.builder()
-                .purchaseOrder(order)
-                .inspectedBy(warehouseUser)
-                .receivedDate(LocalDate.now())
-                .remarks("Inspection Passed")
-                .build();
-
-        goodsReceiptRepo.save(receipt);
-
-        order.setStatus(PurchaseOrderStatus.PO_RECEIVED);
-
-        purchaseOrderRepo.save(order);
-
-        auditService.log(
-                "PurchaseOrder",
-                order.getId(),
-                "PO_RECEIVED",
-                warehouseUser,
-                "All goods verified");
-
-        return pdfService.generateGoodsReceipt(order);
-    }
+//    @Transactional
+//    public byte[] receiveGoods(Long poId, ReceiveGoodsRequestDTO dto, User warehouseUser) {
+//
+//        PurchaseOrder order = purchaseOrderRepo.findById(poId)
+//                .orElseThrow(() -> new ResponseStatusException(
+//                        HttpStatus.NOT_FOUND, "Purchase Order not found"));
+//
+//        if (order.getStatus() != PurchaseOrderStatus.DELIVERED) {
+//            throw new ResponseStatusException(
+//                    HttpStatus.BAD_REQUEST,
+//                    "Purchase Order not ready for receiving");
+//        }
+//
+//        boolean hasIssue = false;
+//        Map<Long, ReceivedItemDTO> receivedMap = dto.getItems()
+//                .stream()
+//                .collect(Collectors.toMap(
+//                        ReceivedItemDTO::getProductId,
+//                        Function.identity()));
+//
+//        for (PoItem poItem : order.getPoItems()) {
+//
+//            ReceivedItemDTO received = receivedMap.get(poItem.getProduct().getId());
+//
+//            if (received == null) {
+//
+//                createReturn(order,
+//                        null,
+//                        "Product missing",
+//                        warehouseUser);
+//
+//                hasIssue = true;
+//                continue;
+//            }
+//
+//            if (received.getReceivedQuantity() < poItem.getQuantity()) {
+//
+//                createReturn(
+//                        order,
+//                        null,
+//                        "Short quantity for " + poItem.getProduct().getName(),
+//                        warehouseUser);
+//
+//                hasIssue = true;
+//            }
+//
+//            if (Boolean.TRUE.equals(received.getDamaged())) {
+//
+//                createReturn(
+//                        order,
+//                        null,
+//                        "Damaged item : " + poItem.getProduct().getName(),
+//                        warehouseUser);
+//
+//                hasIssue = true;
+//            }
+//        }
+//
+//        if (hasIssue) {
+//
+//            order.setStatus(PurchaseOrderStatus.RETURN_INITIATED);
+//
+//            purchaseOrderRepo.save(order);
+//
+//            auditService.log(
+//                    "PurchaseOrder",
+//                    order.getId(),
+//                    "RETURN_INITIATED",
+//                    warehouseUser,
+//                    "Inspection Failed");
+//
+//            notificationService.notify(
+//                    order.getSupplier(),
+//                    null,
+//                    order,
+//                    NotificationType.RETURN,
+//                    "Replacement requested for " + order.getPoNumber());
+//
+//            throw new ResponseStatusException(
+//                    HttpStatus.BAD_REQUEST,
+//                    "Inspection failed. Replacement Requested");
+//        }
+//
+//        for (PoItem item : order.getPoItems()) {
+//
+//            Inventory inventory = inventoryRepo.findByProduct_Id(item.getProduct().getId()).orElseThrow();
+//
+//            inventory.setQuantityOnHand(inventory.getQuantityOnHand() + item.getQuantity());
+//
+//            inventory.setLastPurchaseOrder(order);
+//
+//            inventoryRepo.save(inventory);
+//        }
+//        GoodsReceipt receipt = GoodsReceipt.builder()
+//                .purchaseOrder(order)
+//                .inspectedBy(warehouseUser)
+//                .receivedDate(LocalDate.now())
+//                .remarks("Inspection Passed")
+//                .build();
+//
+//        goodsReceiptRepo.save(receipt);
+//
+//        order.setStatus(PurchaseOrderStatus.PO_RECEIVED);
+//
+//        purchaseOrderRepo.save(order);
+//
+//        auditService.log(
+//                "PurchaseOrder",
+//                order.getId(),
+//                "PO_RECEIVED",
+//                warehouseUser,
+//                "All goods verified");
+//
+//        return pdfService.generateGoodsReceipt(order);
+//    }
 
     //Pdfs and excels
     public byte[] generatePurchaseOrderPdf(Long poId) {
@@ -565,50 +568,6 @@ public class PurchaseOrderService {
 
         return excelService.exportPurchaseOrders(orders);
     }
-
-    private PurchaseOrderHistoryResponseDTO convertHistoryToDTO(PurchaseOrderHistory history) {
-
-        return PurchaseOrderHistoryResponseDTO.builder()
-                .id(history.getId())
-                .purchaseOrderId(history.getPurchaseOrder().getId())
-                .poNumber(history.getPurchaseOrder().getPoNumber())
-                .oldStatus(history.getOldStatus())
-                .newStatus(history.getNewStatus())
-                .changedById(history.getChangedBy().getId())
-                .changedByName(history.getChangedBy().getFullName())
-                .remarks(history.getRemarks())
-                .changedAt(history.getChangedAt())
-                .build();
-    }
-
-//    @Transactional
-//    public PurchaseOrderResponseDTO updateHIstoryStatus(
-//            Long poId,
-//            PurchaseOrderStatus newStatus,
-//            String remarks,
-//            User user) {
-//
-//        PurchaseOrder po = purchaseOrderRepo.findById(poId)
-//                .orElseThrow();
-//
-//        PurchaseOrderStatus oldStatus = po.getStatus();
-//
-//        po.setStatus(newStatus);
-//
-//        purchaseOrderRepo.save(po);
-//
-//        historyRepo.save(
-//                PurchaseOrderHistory.builder()
-//                        .purchaseOrder(po)
-//                        .oldStatus(oldStatus)
-//                        .newStatus(newStatus)
-//                        .changedBy(user)
-//                        .remarks(remarks)
-//                        .changedAt(LocalDateTime.now())
-//                        .build());
-//
-//        return  convertToDTO(po);
-//    }
 
     
 }

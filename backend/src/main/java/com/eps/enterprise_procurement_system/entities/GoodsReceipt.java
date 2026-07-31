@@ -22,6 +22,9 @@ public class GoodsReceipt {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
+    @Column(name = "goods_receipt_number", nullable = false, unique = true, length = 30)
+    private String goodsReceiptNumber;
+
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "po_id", nullable = false, foreignKey = @ForeignKey(name = "fk_goods_receipt_po"))
     private PurchaseOrder purchaseOrder;
