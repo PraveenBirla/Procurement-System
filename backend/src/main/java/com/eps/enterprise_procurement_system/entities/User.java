@@ -43,9 +43,9 @@ public class User implements UserDetails {
     @JoinColumn(name = "department_id", nullable = false, foreignKey = @ForeignKey(name = "fk_user_department"))
     private Department department;
 
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "supplier_id", foreignKey = @ForeignKey(name = "fk_user_supplier"))
-    private Supplier supplier;
+    // @ManyToOne(fetch = FetchType.LAZY)
+    // @JoinColumn(name = "supplier_id", foreignKey = @ForeignKey(name = "fk_user_supplier"))
+    // private Supplier supplier;
 
     @Column(name = "is_active", nullable = false)
     @Builder.Default

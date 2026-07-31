@@ -29,5 +29,10 @@ public class RegisterRequestDTO {
     @NotNull(message="select a correct department")
     private Long departmentId;
 
+    private String companyName;
+    private String phone;
+    private String address;
+    private Long categoryId;
+
     private LocalDateTime localDateTime = LocalDateTime.now();
 }

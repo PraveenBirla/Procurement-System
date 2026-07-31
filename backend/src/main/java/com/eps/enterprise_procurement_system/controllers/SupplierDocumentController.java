@@ -6,7 +6,6 @@ import com.eps.enterprise_procurement_system.dto.SupplierDocumentResponseDTO;
 import com.eps.enterprise_procurement_system.entities.enums.VerificationStatus;
 import com.eps.enterprise_procurement_system.services.SupplierDocumentService;
 import com.eps.enterprise_procurement_system.util.CurrentUser;
-
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
@@ -25,68 +24,93 @@ public class SupplierDocumentController {
     private final SupplierDocumentService supplierDocumentService;
     private final CurrentUser currentUser;
 
+    // ==========================================================
+    // ADMIN / PROCUREMENT
+    // ==========================================================
+
     @GetMapping
+    @PreAuthorize("hasAnyRole('ADMIN','PROCUREMENT')")
     public ResponseEntity<ApiResponse<List<SupplierDocumentResponseDTO>>> getAllDocuments() {
 
-        List<SupplierDocumentResponseDTO> documents = supplierDocumentService.getAllDocuments();
-
-        return ResponseEntity.ok(new ApiResponse<>(documents));
-    }
-    
-    @GetMapping("/{id}")
-    public ResponseEntity<ApiResponse<SupplierDocumentResponseDTO>> getDocumentById(@PathVariable Long id) {
-
-        SupplierDocumentResponseDTO document = supplierDocumentService.getDocumentById(id);
-
-        return ResponseEntity.ok(new ApiResponse<>(document));
+        return ResponseEntity.ok(
+                new ApiResponse<>(supplierDocumentService.getAllDocuments()));
     }
 
     @GetMapping("/supplier/{supplierId}")
+    @PreAuthorize("hasAnyRole('ADMIN','PROCUREMENT')")
     public ResponseEntity<ApiResponse<List<SupplierDocumentResponseDTO>>> getDocumentsBySupplier(
             @PathVariable Long supplierId) {
 
-        List<SupplierDocumentResponseDTO> documents = supplierDocumentService.getDocumentsBySupplier(supplierId);
-
-        return ResponseEntity.ok(new ApiResponse<>(documents));
+        return ResponseEntity.ok(
+                new ApiResponse<>(
+                        supplierDocumentService.getDocumentsBySupplier(supplierId)));
     }
-    
+
+    // ==========================================================
+    // LOGGED-IN SUPPLIER
+    // ==========================================================
+
+    @GetMapping("/my-documents")
+    @PreAuthorize("hasRole('SUPPLIER')")
+    public ResponseEntity<ApiResponse<List<SupplierDocumentResponseDTO>>> getMyDocuments() {
+
+        return ResponseEntity.ok(new ApiResponse<>(
+                        supplierDocumentService.getMyDocuments(currentUser.get())));
+    }
+
     @PostMapping
-    @PreAuthorize("hasAnyRole('ADMIN','PROCUREMENT', 'SUPPLIER')")
-    public ResponseEntity<ApiResponse<SupplierDocumentResponseDTO>> createDocument(
+    @PreAuthorize("hasRole('SUPPLIER')")
+    public ResponseEntity<ApiResponse<SupplierDocumentResponseDTO>> uploadDocument(
             @Valid @RequestBody SupplierDocumentRequestDTO dto) {
 
-        SupplierDocumentResponseDTO response = supplierDocumentService.createDocument(dto);
-
-        return new ResponseEntity<>(new ApiResponse<>(response), HttpStatus.CREATED);
+        return new ResponseEntity<>(
+                new ApiResponse<>(supplierDocumentService.createDocument(dto, currentUser.get())),
+                HttpStatus.CREATED);
     }
-    
+
     @PutMapping("/{id}")
-    @PreAuthorize("hasAnyRole('ADMIN','PROCUREMENT', 'SUPPLIER')")
+    @PreAuthorize("hasRole('SUPPLIER')")
     public ResponseEntity<ApiResponse<SupplierDocumentResponseDTO>> updateDocument(
-            @PathVariable Long id, @Valid @RequestBody SupplierDocumentRequestDTO dto) {
+            @PathVariable Long id,
+            @Valid @RequestBody SupplierDocumentRequestDTO dto) {
 
-        SupplierDocumentResponseDTO response = supplierDocumentService.updateDocument(id, dto);
-
-        return ResponseEntity.ok(new ApiResponse<>(response));
+        return ResponseEntity.ok(
+                new ApiResponse<>(
+                        supplierDocumentService.updateDocument(
+                                id,
+                                dto,
+                                currentUser.get())));
     }
+
+    @DeleteMapping("/{id}")
+    @PreAuthorize("hasRole('SUPPLIER')")
+    public ResponseEntity<ApiResponse<Map<String, String>>> deleteDocument( @PathVariable Long id) {
+
+        return ResponseEntity.ok(
+                new ApiResponse<>(Map.of(
+                            "message",
+                            supplierDocumentService.deleteDocument(
+                            id,
+                            currentUser.get()))));
+    }
+
+    // ==========================================================
+    // PROCUREMENT / ADMIN VERIFICATION
+    // ==========================================================
 
     @PutMapping("/{id}/verify")
-    @PreAuthorize("hasRole('ADMIN', 'PROCUREMENT')")
-    public ResponseEntity<ApiResponse<SupplierDocumentResponseDTO>> verifyDocument(@PathVariable Long id, @RequestParam VerificationStatus status, @RequestParam(required = false) String remarks) {
+    @PreAuthorize("hasAnyRole('ADMIN','PROCUREMENT')")
+    public ResponseEntity<ApiResponse<SupplierDocumentResponseDTO>> verifyDocument(
+            @PathVariable Long id,
+            @RequestParam VerificationStatus status,
+            @RequestParam(required = false) String remarks) {
 
-        SupplierDocumentResponseDTO response = supplierDocumentService.verifyDocument(
-                id, status, currentUser.get(), remarks);
-
-        return ResponseEntity.ok(new ApiResponse<>(response));
+        return ResponseEntity.ok(
+                new ApiResponse<>(
+                        supplierDocumentService.verifyDocument(
+                                id,
+                                status,
+                                currentUser.get(),
+                                remarks)));
     }
-    
-    @DeleteMapping("/{id}")
-    @PreAuthorize("hasRole('ADMIN', 'SUPPLIER')")
-    public ResponseEntity<ApiResponse<Map<String,String>>> deleteDocument(@PathVariable Long id) {
-
-        String message = supplierDocumentService.deleteDocument(id);
-
-        return ResponseEntity.ok(new ApiResponse<>(Map.of("message", message)));
-    }
-    
 }

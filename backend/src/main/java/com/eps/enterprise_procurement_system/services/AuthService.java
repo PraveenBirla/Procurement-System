@@ -6,8 +6,12 @@ import com.eps.enterprise_procurement_system.dto.LoginResponseDTO;
 import com.eps.enterprise_procurement_system.dto.RegisterRequestDTO;
 import com.eps.enterprise_procurement_system.dto.RegisterResponseDTO;
 import com.eps.enterprise_procurement_system.entities.Department;
+import com.eps.enterprise_procurement_system.entities.Supplier;
 import com.eps.enterprise_procurement_system.entities.User;
+import com.eps.enterprise_procurement_system.entities.enums.Role;
 import com.eps.enterprise_procurement_system.repositories.DepartmentRepo;
+import com.eps.enterprise_procurement_system.repositories.ProductCategoryRepo;
+import com.eps.enterprise_procurement_system.repositories.SupplierRepo;
 import com.eps.enterprise_procurement_system.repositories.UserRepository;
 
 import lombok.RequiredArgsConstructor;
@@ -32,6 +36,8 @@ public class AuthService {
     private final PasswordEncoder passwordEncoder;
     private final AuthenticationManager authenticationManager;
     private final JwtService jwtService;
+    private final ProductCategoryRepo categoryRepo;
+    private final SupplierRepo supplierRepo;
 
 
     public RegisterResponseDTO register(RegisterRequestDTO dto){
@@ -53,6 +59,19 @@ public class AuthService {
             .isActive(true)
             .build();
         User saved = userRepository.save(user);
+
+        if (dto.getRole() == Role.SUPPLIER) {
+
+            Supplier supplier = Supplier.builder()
+                    .user(user)
+                    .companyName(dto.getCompanyName())
+                    .phone(dto.getPhone())
+                    .address(dto.getAddress())
+                    .category(categoryRepo.findById(dto.getCategoryId()).orElseThrow())
+                    .build();
+
+            supplierRepo.save(supplier);
+        }
        
         RegisterResponseDTO responseDTO =
                  RegisterResponseDTO.builder()

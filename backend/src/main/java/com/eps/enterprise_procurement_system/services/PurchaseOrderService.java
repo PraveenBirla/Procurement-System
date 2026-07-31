@@ -1,20 +1,37 @@
 package com.eps.enterprise_procurement_system.services;
 
+import com.eps.enterprise_procurement_system.dto.GoodsReceiptItemRequestDTO;
+import com.eps.enterprise_procurement_system.dto.PoItemRequestDTO;
 import com.eps.enterprise_procurement_system.dto.PoItemResponseDTO;
-import com.eps.enterprise_procurement_system.dto.PurchaseOrderHistoryResponseDTO;
 import com.eps.enterprise_procurement_system.dto.PurchaseOrderRequestDTO;
 import com.eps.enterprise_procurement_system.dto.PurchaseOrderResponseDTO;
-//import com.eps.enterprise_procurement_system.dto.ReceiveGoodsRequestDTO;
-//import com.eps.enterprise_procurement_system.dto.ReceivedItemDTO;
-import com.eps.enterprise_procurement_system.entities.*;
+import com.eps.enterprise_procurement_system.entities.GoodsReceipt;
+import com.eps.enterprise_procurement_system.entities.GoodsReceiptItem;
+import com.eps.enterprise_procurement_system.entities.Inventory;
+import com.eps.enterprise_procurement_system.entities.PoItem;
+import com.eps.enterprise_procurement_system.entities.PurchaseOrder;
+import com.eps.enterprise_procurement_system.entities.PurchaseRequisition;
+import com.eps.enterprise_procurement_system.entities.RequisitionItem;
+import com.eps.enterprise_procurement_system.entities.ReturnReplacement;
+import com.eps.enterprise_procurement_system.entities.Supplier;
+import com.eps.enterprise_procurement_system.entities.User;
 import com.eps.enterprise_procurement_system.entities.enums.NotificationType;
 import com.eps.enterprise_procurement_system.entities.enums.PurchaseOrderStatus;
+import com.eps.enterprise_procurement_system.entities.enums.QualityStatus;
 import com.eps.enterprise_procurement_system.entities.enums.RequisitionStatus;
 import com.eps.enterprise_procurement_system.entities.enums.ReturnStatus;
-import com.eps.enterprise_procurement_system.repositories.*;
+import com.eps.enterprise_procurement_system.repositories.GoodsReceiptRepo;
+import com.eps.enterprise_procurement_system.repositories.InventoryRepo;
+import com.eps.enterprise_procurement_system.repositories.PoItemRepo;
+import com.eps.enterprise_procurement_system.repositories.PurchaseOrderRepo;
+import com.eps.enterprise_procurement_system.repositories.PurchaseRequisitionRepo;
+import com.eps.enterprise_procurement_system.repositories.ReturnReplacementRepo;
+import com.eps.enterprise_procurement_system.repositories.SupplierRepo;
+import com.eps.enterprise_procurement_system.repositories.UserRepository;
 
 import lombok.RequiredArgsConstructor;
 
+import org.modelmapper.ModelMapper;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -22,6 +39,8 @@ import org.springframework.web.server.ResponseStatusException;
 
 import java.math.BigDecimal;
 import java.time.LocalDate;
+import java.time.LocalDateTime;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
@@ -31,598 +50,697 @@ import java.util.stream.Collectors;
 @Service
 @RequiredArgsConstructor
 public class PurchaseOrderService {
-    private final PurchaseOrderRepo purchaseOrderRepo;
-    private final PurchaseRequisitionRepo requisitionRepo;
-    private final SupplierRepo supplierRepo;
-    private final InventoryRepo inventoryRepo;
-    private final UserRepository userRepo;
-    private final PdfService pdfService;
-    private final ExcelService excelService;
-    private final ReturnReplacementRepo returnReplacementRepo;
-    private final GoodsReceiptRepo goodsReceiptRepo;
+        private final PurchaseOrderRepo purchaseOrderRepo;
+        private final PoItemRepo poItemRepo;
+        private final PurchaseOrderStateMachine stateMachine;
+        private final PurchaseRequisitionRepo requisitionRepo;
+        private final SupplierRepo supplierRepo;
+        private final InventoryRepo inventoryRepo;
+        private final UserRepository userRepo;
+        private final PdfService pdfService;
+        private final ExcelService excelService;
+        private final ReturnReplacementRepo returnReplacementRepo;
+        private final GoodsReceiptRepo goodsReceiptRepo;
+        private final ModelMapper modelMapper;
 
-    private final NotificationService notificationService;
-    private final AuditService auditService;
-    private final PurchaseOrderHistoryRepo purchaseOrderHistoryRepo;
+        private final NotificationService notificationService;
+        private final AuditService auditService;
 
+        private String generatePONumber() {
 
-    private String generatePONumber() {
-
-        return "PO-" +
-                UUID.randomUUID()
-                        .toString()
-                        .substring(0, 8)
-                        .toUpperCase();
-    }
-
-    private PurchaseRequisition getRequisition(Long requisitionId) {
-
-        return requisitionRepo.findById(requisitionId)
-                .orElseThrow(() -> new ResponseStatusException(
-                        HttpStatus.NOT_FOUND, "Requisition not found"));
-    }
-
-    private Supplier getSupplier(Long supplierId) {
-
-        return supplierRepo.findById(supplierId)
-                .orElseThrow(() -> new ResponseStatusException(
-                        HttpStatus.NOT_FOUND,
-                        "Supplier not found"));
-    }
-
-    private Inventory getInventory(Product product) {
-
-        return inventoryRepo.findByProduct_Id(product.getId())
-                .orElseThrow(() -> new ResponseStatusException(
-                        HttpStatus.NOT_FOUND, "Inventory not found for " + product.getName()));
-    }
-
-    private BigDecimal calculateTotal(PurchaseRequisition requisition) {
-
-        return requisition.getItems()
-                .stream()
-                .map(item -> item.getUnitPrice().multiply(
-                        BigDecimal.valueOf(
-                                item.getQuantity())))
-                .reduce(BigDecimal.ZERO, BigDecimal::add);
-    }
-
-    private void notifyStakeholders(PurchaseOrder order) {
-
-        userRepo.findAll()
-                .stream()
-                .filter(user -> user.getRole().name().equals("ADMIN") ||
-                        user.getRole().name().equals("FINANCE"))
-                .forEach(user -> notificationService.notify(
-                        user,
-                        order.getRequisition(),
-                        order,
-                        NotificationType.APPROVAL,
-                        "Purchase Order " + order.getPoNumber() + " generated."));
-    }
-
-    private void saveHistory(
-            PurchaseOrder purchaseOrder,
-            PurchaseOrderStatus oldStatus,
-            PurchaseOrderStatus newStatus,
-            User changedBy,
-            String remarks) {
-
-        PurchaseOrderHistory history = PurchaseOrderHistory.builder()
-                .purchaseOrder(purchaseOrder)
-                .oldStatus(oldStatus)
-                .newStatus(newStatus)
-                .changedBy(changedBy)
-                .remarks(remarks)
-                .build();
-
-        purchaseOrderHistoryRepo.save(history);
-    }
-
-    private PurchaseOrderResponseDTO convertToDTO(PurchaseOrder purchaseOrder) {
-
-        PurchaseOrderResponseDTO dto = new PurchaseOrderResponseDTO();
-
-        dto.setId(purchaseOrder.getId());
-        dto.setPoNumber(purchaseOrder.getPoNumber());
-
-        dto.setRequisitionId(purchaseOrder.getRequisition().getId());
-
-        dto.setRequisitionNo(purchaseOrder.getRequisition().getRequisitionNo());
-
-        dto.setSupplierId(purchaseOrder.getSupplier().getId());
-
-        dto.setSupplierName(purchaseOrder.getSupplier().getName());
-
-        dto.setStatus(purchaseOrder.getStatus());
-
-        dto.setTotalAmount(purchaseOrder.getTotalAmount());
-
-        dto.setExpectedDeliveryDate(purchaseOrder.getExpectedDeliveryDate());
-
-        dto.setCreatedAt(purchaseOrder.getCreatedAt());
-
-        if (purchaseOrder.getGeneratedBy() != null) {
-            dto.setGeneratedById(purchaseOrder.getGeneratedBy().getId());
-            dto.setGeneratedByName(purchaseOrder.getGeneratedBy().getFullName());
+                return "PO-" +
+                        UUID.randomUUID()
+                                .toString()
+                                .substring(0, 8)
+                                .toUpperCase();
         }
 
-        dto.setItems(purchaseOrder.getPoItems()
-                .stream()
-                .map(item -> {
-                    PoItemResponseDTO itemDTO = new PoItemResponseDTO();
-                    itemDTO.setId(item.getId());
-                    itemDTO.setProductId(item.getProduct().getId());
-                    itemDTO.setProductName(item.getProduct().getName());
-                    itemDTO.setQuantity(item.getQuantity());
-                    itemDTO.setUnitPrice(item.getUnitPrice());
-                    itemDTO.setTotalPrice(item.getUnitPrice()
-                            .multiply(
-                                    java.math.BigDecimal.valueOf(item.getQuantity())));
-                    return itemDTO;
-                }).toList());
+        private PurchaseRequisition getRequisition(Long requisitionId) {
 
-        return dto;
-    }
-
-    public List<PurchaseOrderResponseDTO> getAllPurchaseOrders() {
-
-        return purchaseOrderRepo.findAll()
-                .stream()
-                .map(this::convertToDTO)
-                .toList();
-    }
-
-    public PurchaseOrderResponseDTO getPurchaseOrderById(Long id) {
-
-        PurchaseOrder order = purchaseOrderRepo.findById(id)
-                .orElseThrow(() -> new ResponseStatusException(
-                        HttpStatus.NOT_FOUND, "Purchase Order not found"));
-
-        return convertToDTO(order);
-    }
-
-    public List<PurchaseOrderResponseDTO> getPurchaseOrdersByStatus(PurchaseOrderStatus status) {
-
-        return purchaseOrderRepo.findByStatus(status)
-                .stream()
-                .map(this::convertToDTO)
-                .toList();
-    }
-
-    public List<PurchaseOrderResponseDTO> getSupplierOrders(Long supplierId) {
-
-        return purchaseOrderRepo.findBySupplier_Id(supplierId)
-                .stream()
-                .map(this::convertToDTO)
-                .toList();
-    }
-
-    public List<PurchaseOrderResponseDTO> getGeneratedOrders(Long userId) {
-
-        return purchaseOrderRepo.findByGeneratedBy_Id(userId)
-                .stream()
-                .map(this::convertToDTO)
-                .toList();
-    }
-
-    @Transactional
-    public PurchaseOrderResponseDTO generatePurchaseOrder(
-            PurchaseOrderRequestDTO dto,
-            User procurementOfficer) {
-
-        // Fetch Approved Requisition
-        PurchaseRequisition requisition = getRequisition(dto.getRequisitionId());
-
-        // Only approved requisitions can generate PO
-        if (requisition.getStatus() != RequisitionStatus.APPROVED) {
-
-            throw new ResponseStatusException(
-                    HttpStatus.BAD_REQUEST,
-                    "Purchase Order can be generated only for APPROVED requisitions");
+                return requisitionRepo.findById(requisitionId)
+                        .orElseThrow(() -> new ResponseStatusException(
+                                HttpStatus.NOT_FOUND, "Requisition not found"));
         }
 
-        // Prevent duplicate PO generation
-        if (purchaseOrderRepo.existsByRequisition_Id(requisition.getId())) {
+        private Supplier getSupplier(Long supplierId) {
 
-            throw new ResponseStatusException(
-                    HttpStatus.BAD_REQUEST,
-                    "Purchase Order already exists for this requisition");
+                return supplierRepo.findById(supplierId)
+                        .orElseThrow(() -> new ResponseStatusException(
+                                HttpStatus.NOT_FOUND,
+                                "Supplier not found"));
         }
 
-        // Fetch Supplier
-        Supplier supplier = getSupplier(dto.getSupplierId());
+        private void notifyStakeholders(PurchaseOrder order) {
 
-
-        if (!supplier.getIsActive()) {
-            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Supplier is inactive");
+                userRepo.findAll()
+                        .stream()
+                        .filter(user -> user.getRole().name().equals("ADMIN") ||
+                                user.getRole().name().equals("FINANCE"))
+                        .forEach(user -> notificationService.notify(
+                                user,
+                                order.getRequisition(),
+                                order,
+                                NotificationType.APPROVAL,
+                                "Purchase Order " + order.getPoNumber() + " generated."));
         }
 
+        private PurchaseOrderResponseDTO convertToDTO(PurchaseOrder purchaseOrder) {
 
-        for (var item : requisition.getItems()) {
+                PurchaseOrderResponseDTO dto = new PurchaseOrderResponseDTO();
 
-            if (!item.getProduct()
-                    .getCategory()
-                    .getId()
-                    .equals(supplier.getCategory().getId())) {
+                dto.setId(purchaseOrder.getId());
+                dto.setPoNumber(purchaseOrder.getPoNumber());
 
-                throw new ResponseStatusException(
-                        HttpStatus.BAD_REQUEST,
-                        "Supplier does not supply category : "
-                                + item.getProduct()
-                                        .getCategory()
-                                        .getCategoryName());
-            }
+                dto.setRequisitionId(purchaseOrder.getRequisition().getId());
+
+                dto.setRequisitionNo(purchaseOrder.getRequisition().getRequisitionNo());
+
+                dto.setSupplierId(purchaseOrder.getSupplier().getId());
+
+                dto.setSupplierName(purchaseOrder.getSupplier().getUser().getFullName());
+
+                dto.setStatus(purchaseOrder.getStatus());
+
+                dto.setTotalAmount(purchaseOrder.getTotalAmount());
+
+                dto.setExpectedDeliveryDate(purchaseOrder.getExpectedDeliveryDate());
+
+                dto.setCreatedAt(purchaseOrder.getCreatedAt());
+
+                if (purchaseOrder.getGeneratedBy() != null) {
+                dto.setGeneratedById(purchaseOrder.getGeneratedBy().getId());
+                dto.setGeneratedByName(purchaseOrder.getGeneratedBy().getFullName());
+                }
+
+                dto.setItems(purchaseOrder.getPoItems()
+                        .stream()
+                        .map(item -> {
+                        PoItemResponseDTO itemDTO = new PoItemResponseDTO();
+                        itemDTO.setId(item.getId());
+                        itemDTO.setProductId(item.getProduct().getId());
+                        itemDTO.setProductName(item.getProduct().getName());
+                        itemDTO.setQuantity(item.getQuantity());
+                        itemDTO.setUnitPrice(item.getUnitPrice());
+                        itemDTO.setTotalPrice(item.getUnitPrice()
+                                .multiply(
+                                        java.math.BigDecimal.valueOf(item.getQuantity())));
+                        return itemDTO;
+                        }).toList());
+
+                return dto;
         }
 
-        // Create Purchase Order
-        PurchaseOrder purchaseOrder = PurchaseOrder.builder()
-                .poNumber(generatePONumber())
-                .requisition(requisition)
-                .supplier(supplier)
-                .generatedBy(procurementOfficer)
-                .expectedDeliveryDate(dto.getExpectedDeliveryDate())
-                .status(PurchaseOrderStatus.GENERATED)
-                .totalAmount(calculateTotal(requisition))
-                .build();
-        for (var reqItem : requisition.getItems()) {
+        public List<PurchaseOrderResponseDTO> getAllPurchaseOrders() {
 
-            Inventory inventory = getInventory(reqItem.getProduct());
-
-            // Enough stock already exists
-            if (inventory.getQuantityOnHand() >= reqItem.getQuantity()) {
-
-                throw new ResponseStatusException(
-                        HttpStatus.BAD_REQUEST,
-                        reqItem.getProduct().getName()
-                                + " already has sufficient inventory."
-                                + " No purchase required.");
-            }
-
-            // Remaining quantity to purchase
-            int purchaseQty = reqItem.getQuantity() - inventory.getQuantityOnHand();
-
-            BigDecimal totalPrice = reqItem.getUnitPrice()
-                    .multiply(BigDecimal.valueOf(purchaseQty));
-
-            PoItem poItem = PoItem.builder()
-                    .purchaseOrder(purchaseOrder)
-                    .product(reqItem.getProduct())
-                    .quantity(purchaseQty)
-                    .unitPrice(reqItem.getUnitPrice())
-                    .totalPrice(totalPrice)
-                    .build();
-
-            purchaseOrder.getPoItems().add(poItem);
+                return purchaseOrderRepo.findAll()
+                        .stream()
+                        .map(this::convertToDTO)
+                        .toList();
         }
 
-        PurchaseOrder saved = purchaseOrderRepo.save(purchaseOrder);
+        public PurchaseOrderResponseDTO getPurchaseOrderById(Long id) {
 
-        saveHistory(
-                saved,
-                null,
-                PurchaseOrderStatus.GENERATED,
-                procurementOfficer,
-                "Purchase Order Generated");
+                PurchaseOrder order = purchaseOrderRepo.findById(id)
+                        .orElseThrow(() -> new ResponseStatusException(
+                                HttpStatus.NOT_FOUND, "Purchase Order not found"));
 
-        requisition.setStatus(RequisitionStatus.PO_GENERATED);
-        requisitionRepo.save(requisition);
-        notificationService.notify(
-                supplier,
-                requisition,
-                saved,
-                NotificationType.PURCHASE_ORDER,
-                "Purchase Order " + saved.getPoNumber() + " has been generated.");
-
-        notifyStakeholders(saved);
-
-        notificationService.notify(
-                requisition.getEmployee(),
-                requisition,
-                saved,
-                NotificationType.PURCHASE_ORDER,
-                "Purchase Order " + saved.getPoNumber() + " has been generated for your requisition.");
-
-        auditService.log(
-                "PurchaseOrder",
-                saved.getId(),
-                "CREATE",
-                procurementOfficer,
-                "Purchase Order Generated");
-
-        return convertToDTO(saved);
-    }
-
-    @Transactional
-    public PurchaseOrderResponseDTO updateStatus(Long orderId, PurchaseOrderStatus status, User user) {
-
-        PurchaseOrder order = purchaseOrderRepo.findById(orderId)
-                .orElseThrow(() -> new ResponseStatusException(
-                        HttpStatus.NOT_FOUND, "Purchase Order not found"));
-
-        order.setStatus(status);
-
-        PurchaseOrder saved = purchaseOrderRepo.save(order);
-
-        notificationService.notify(
-                saved.getSupplier(),
-                saved.getRequisition(),
-                saved,
-                NotificationType.PURCHASE_ORDER,
-                "Purchase Order " + saved.getPoNumber() + " status changed to " + status);
-
-        auditService.log(
-                "PurchaseOrder",
-                saved.getId(),
-                "STATUS_UPDATE",
-                user,
-                status.name());
-
-        return convertToDTO(saved);
-    }
-
-    public PurchaseOrderResponseDTO getPurchaseOrderByRequisitionId(Long requisitionId) {
-
-        PurchaseOrder order = purchaseOrderRepo.findByRequisition_Id(requisitionId);
-
-        return convertToDTO(order);
-    }
-
-    @Transactional
-    public String cancelPurchaseOrder(Long id, User user) {
-        PurchaseOrder order = purchaseOrderRepo.findById(id)
-                .orElseThrow(() -> new ResponseStatusException(
-                        HttpStatus.NOT_FOUND,
-                        "Purchase Order not found"));
-
-        if (order.getStatus() == PurchaseOrderStatus.PO_RECEIVED) {
-
-            throw new ResponseStatusException(
-                    HttpStatus.BAD_REQUEST, "Received Purchase Order cannot be cancelled");
+                return convertToDTO(order);
         }
 
-        order.setStatus(PurchaseOrderStatus.CANCELLED);
+        public List<PurchaseOrderResponseDTO> getPurchaseOrdersByStatus(PurchaseOrderStatus status) {
 
-        purchaseOrderRepo.save(order);
+                return purchaseOrderRepo.findByStatus(status)
+                        .stream()
+                        .map(this::convertToDTO)
+                        .toList();
+        }
 
-        notificationService.notify(
-                order.getSupplier(),
-                order.getRequisition(),
-                order,
-                NotificationType.PURCHASE_ORDER,
-                "Purchase Order " + order.getPoNumber() + " has been cancelled.");
+        public List<PurchaseOrderResponseDTO> getSupplierOrders(Long supplierId) {
 
-        auditService.log(
-                "PurchaseOrder",
-                order.getId(),
-                "CANCEL",
-                user,
-                "Purchase Order Cancelled");
-        return "Cancelled Purchase Order";
-    }
+                return purchaseOrderRepo.findBySupplier_Id(supplierId)
+                        .stream()
+                        .map(this::convertToDTO)
+                        .toList();
+        }
 
-    @Transactional
-    public String deletePurchaseOrder(Long id) {
+        public List<PurchaseOrderResponseDTO> getGeneratedOrders(Long userId) {
 
-        PurchaseOrder order = purchaseOrderRepo.findById(id)
-                .orElseThrow(() -> new ResponseStatusException(
-                        HttpStatus.NOT_FOUND, "Purchase Order not found"));
+                return purchaseOrderRepo.findByGeneratedBy_Id(userId)
+                                .stream()
+                                .map(this::convertToDTO)
+                                .toList();
+        }
 
-        purchaseOrderRepo.delete(order);
-        return "Purchase Order Deleted Successfully";
-    }
+        private BigDecimal calculateTotal(List<RequisitionItem> selectedItems) {
 
+                return selectedItems.stream()
+                        .map(item -> {
 
+                                if (item.getUnitPrice() == null) {
+                                throw new ResponseStatusException(
+                                        HttpStatus.BAD_REQUEST,
+                                        "Unit price is not available for product : "
+                                                + item.getProduct().getName());
+                                }
 
-    private void createReturn(PurchaseOrder order, GoodsReceipt receipt, String reason, User user){
+                                return item.getUnitPrice()
+                                        .multiply(BigDecimal.valueOf(item.getQuantity()));
+                        })
+                        .reduce(BigDecimal.ZERO, BigDecimal::add);
+                }
 
-        ReturnReplacement rr = ReturnReplacement.builder()
-                        .purchaseOrder(order)
-                        .goodsReceipt(receipt)
-                        .reason(reason)
-                        .raisedBy(user)
-                        .status(ReturnStatus.RAISED)
+        @Transactional
+        public PurchaseOrderResponseDTO generatePurchaseOrder(
+                PurchaseOrderRequestDTO dto, User procurementOfficer) {
+
+                // Fetch Approved Requisition
+                PurchaseRequisition requisition = getRequisition(dto.getRequisitionId());
+
+                // Validate delivery date is in future
+                if (dto.getExpectedDeliveryDate() != null && 
+                dto.getExpectedDeliveryDate().isBefore(LocalDate.now())) {
+                        throw new ResponseStatusException(HttpStatus.BAD_REQUEST, 
+                        "Expected delivery date must be in the future");
+                }
+
+                // Only approved requisitions can generate PO
+                if (requisition.getStatus() != RequisitionStatus.APPROVED) {
+
+                        throw new ResponseStatusException(
+                                        HttpStatus.BAD_REQUEST,
+                                        "Purchase Order can be generated only for APPROVED requisitions");
+                }
+
+                // Fetch Supplier
+                Supplier supplier = getSupplier(dto.getSupplierId());
+
+                // Supplier must be active
+                if (!supplier.getIsActive()) {
+                        throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Supplier is inactive");
+                }
+
+                // Prevent duplicate PO generation
+                if (purchaseOrderRepo.existsByRequisition_Id(requisition.getId())) {
+
+                        throw new ResponseStatusException(
+                                        HttpStatus.BAD_REQUEST,
+                                        "Purchase Order already exists for this requisition");
+                }
+
+                if (dto.getPoItems() == null || dto.getPoItems().isEmpty()) {
+
+                        throw new ResponseStatusException(
+                                HttpStatus.BAD_REQUEST,
+                                "Please select requisition items.");
+                }
+
+                List<RequisitionItem> selectedItems = new ArrayList<>();
+
+                for (PoItemRequestDTO itemDTO : dto.getPoItems()) {
+
+                        RequisitionItem reqItem = requisition.getItems()
+                                .stream()
+                                .filter(i -> i.getId() == itemDTO.getRequisitionItemId())
+                                .findFirst()
+                                .orElseThrow(() ->
+                                        new ResponseStatusException(
+                                                HttpStatus.NOT_FOUND,
+                                                "Requisition Item not found : "
+                                                        + itemDTO.getRequisitionItemId()));
+                if (poItemRepo.existsByRequisitionItem_Id(reqItem.getId())) {
+
+                        throw new ResponseStatusException(
+                                HttpStatus.BAD_REQUEST,
+                                reqItem.getProduct().getName()
+                                        + " is already included in another Purchase Order.");
+                        }
+
+                        if (!reqItem.getProduct()
+                                .getCategory()
+                                .getId()
+                                .equals(supplier.getCategory().getId())) {
+
+                        throw new ResponseStatusException(
+                                HttpStatus.BAD_REQUEST,
+                                supplier.getUser().getFullName() + " cannot supply " + reqItem.getProduct().getName());
+                        }
+
+                        selectedItems.add(reqItem);
+                }
+
+                if (selectedItems.isEmpty()) {
+
+                        throw new ResponseStatusException(
+                                HttpStatus.BAD_REQUEST,
+                                "All selected products are already available in inventory.");
+                }
+
+                PurchaseOrder purchaseOrder = PurchaseOrder.builder()
+                        .poNumber(generatePONumber())
+                        .requisition(requisition)
+                        .supplier(supplier)
+                        .generatedBy(procurementOfficer)
+                        .expectedDeliveryDate(dto.getExpectedDeliveryDate())
+                        .status(PurchaseOrderStatus.GENERATED)
+                        .totalAmount(calculateTotal(selectedItems))
                         .build();
 
-        returnReplacementRepo.save(rr);
-    }
+                for (RequisitionItem reqItem : selectedItems) {
 
-//    @Transactional
-//    public byte[] receiveGoods(Long poId, ReceiveGoodsRequestDTO dto, User warehouseUser) {
-//
-//        PurchaseOrder order = purchaseOrderRepo.findById(poId)
-//                .orElseThrow(() -> new ResponseStatusException(
-//                        HttpStatus.NOT_FOUND, "Purchase Order not found"));
-//
-//        if (order.getStatus() != PurchaseOrderStatus.DELIVERED) {
-//            throw new ResponseStatusException(
-//                    HttpStatus.BAD_REQUEST,
-//                    "Purchase Order not ready for receiving");
-//        }
-//
-//        boolean hasIssue = false;
-//        Map<Long, ReceivedItemDTO> receivedMap = dto.getItems()
-//                .stream()
-//                .collect(Collectors.toMap(
-//                        ReceivedItemDTO::getProductId,
-//                        Function.identity()));
-//
-//        for (PoItem poItem : order.getPoItems()) {
-//
-//            ReceivedItemDTO received = receivedMap.get(poItem.getProduct().getId());
-//
-//            if (received == null) {
-//
-//                createReturn(order,
-//                        null,
-//                        "Product missing",
-//                        warehouseUser);
-//
-//                hasIssue = true;
-//                continue;
-//            }
-//
-//            if (received.getReceivedQuantity() < poItem.getQuantity()) {
-//
-//                createReturn(
-//                        order,
-//                        null,
-//                        "Short quantity for " + poItem.getProduct().getName(),
-//                        warehouseUser);
-//
-//                hasIssue = true;
-//            }
-//
-//            if (Boolean.TRUE.equals(received.getDamaged())) {
-//
-//                createReturn(
-//                        order,
-//                        null,
-//                        "Damaged item : " + poItem.getProduct().getName(),
-//                        warehouseUser);
-//
-//                hasIssue = true;
-//            }
-//        }
-//
-//        if (hasIssue) {
-//
-//            order.setStatus(PurchaseOrderStatus.RETURN_INITIATED);
-//
-//            purchaseOrderRepo.save(order);
-//
-//            auditService.log(
-//                    "PurchaseOrder",
-//                    order.getId(),
-//                    "RETURN_INITIATED",
-//                    warehouseUser,
-//                    "Inspection Failed");
-//
-//            notificationService.notify(
-//                    order.getSupplier(),
-//                    null,
-//                    order,
-//                    NotificationType.RETURN,
-//                    "Replacement requested for " + order.getPoNumber());
-//
-//            throw new ResponseStatusException(
-//                    HttpStatus.BAD_REQUEST,
-//                    "Inspection failed. Replacement Requested");
-//        }
-//
-//        for (PoItem item : order.getPoItems()) {
-//
-//            Inventory inventory = inventoryRepo.findByProduct_Id(item.getProduct().getId()).orElseThrow();
-//
-//            inventory.setQuantityOnHand(inventory.getQuantityOnHand() + item.getQuantity());
-//
-//            inventory.setLastPurchaseOrder(order);
-//
-//            inventoryRepo.save(inventory);
-//        }
-//        GoodsReceipt receipt = GoodsReceipt.builder()
-//                .purchaseOrder(order)
-//                .inspectedBy(warehouseUser)
-//                .receivedDate(LocalDate.now())
-//                .remarks("Inspection Passed")
-//                .build();
-//
-//        goodsReceiptRepo.save(receipt);
-//
-//        order.setStatus(PurchaseOrderStatus.PO_RECEIVED);
-//
-//        purchaseOrderRepo.save(order);
-//
-//        auditService.log(
-//                "PurchaseOrder",
-//                order.getId(),
-//                "PO_RECEIVED",
-//                warehouseUser,
-//                "All goods verified");
-//
-//        return pdfService.generateGoodsReceipt(order);
-//    }
+                        PoItem poItem = PoItem.builder()
+                                .purchaseOrder(purchaseOrder)
+                                .requisitionItem(reqItem)     // if this relation exists
+                                .product(reqItem.getProduct())
+                                .quantity(reqItem.getQuantity())
+                                .unitPrice(reqItem.getUnitPrice())
+                                .totalPrice(
+                                        reqItem.getUnitPrice()
+                                                .multiply(BigDecimal.valueOf(reqItem.getQuantity())))
+                                .build();
 
-    //Pdfs and excels
-    public byte[] generatePurchaseOrderPdf(Long poId) {
+                        purchaseOrder.getPoItems().add(poItem);
+                }
 
-        PurchaseOrder order = purchaseOrderRepo.findById(poId)
-                .orElseThrow(() -> new ResponseStatusException(
-                        HttpStatus.NOT_FOUND,
-                        "Purchase Order not found"));
+                PurchaseOrder saved = purchaseOrderRepo.save(purchaseOrder);
 
-        return pdfService.generatePurchaseOrder(order);
-    }
+                boolean allOrdered = requisition.getItems()
+                        .stream()
+                        .allMatch(item ->
+                                poItemRepo.existsByRequisitionItem_Id(item.getId()));
 
-    public byte[] generateInvoice(Long poId) {
+                if (allOrdered) {
+                        requisition.setStatus(RequisitionStatus.PO_GENERATED);
+                } else {
+                        requisition.setStatus(RequisitionStatus.PARTIALLY_ORDERED);
+                }
 
-        PurchaseOrder order = purchaseOrderRepo.findById(poId)
-                .orElseThrow(() -> new ResponseStatusException(
-                        HttpStatus.NOT_FOUND, "Purchase Order not found"));
+                requisitionRepo.save(requisition);
 
-        if (order.getStatus() != PurchaseOrderStatus.PO_RECEIVED) {
+                notificationService.notify(
+                        supplier,
+                        requisition,
+                        saved,
+                        NotificationType.PURCHASE_ORDER,
+                        "Purchase Order " + saved.getPoNumber() + " has been generated.");
 
-            throw new ResponseStatusException(
-                    HttpStatus.BAD_REQUEST, "Invoice can be generated only after goods are received");
+                notificationService.notify(
+                        requisition.getEmployee(),
+                        requisition,
+                        saved,
+                        NotificationType.PURCHASE_ORDER,
+                        "Purchase Order " + saved.getPoNumber()
+                                + " has been generated.");
+
+                notifyStakeholders(saved);
+
+                auditService.log(
+                        "PurchaseOrder",
+                        saved.getId(),
+                        "CREATE",
+                        procurementOfficer,
+                        "Purchase Order Generated");
+
+                return convertToDTO(saved);
         }
 
-        return pdfService.generateInvoice(order);
-    }
+        private void applyTransitionLogic(PurchaseOrder order, PurchaseOrderStatus from, PurchaseOrderStatus to, User user) {
 
-    public byte[] exportPurchaseOrders() {
+                switch (to) {
+                        case DELIVERED:
+                                // Record delivery timestamp
+                                order.setDeliveredAt(LocalDateTime.now());
+                                break;
 
-        List<PurchaseOrder> orders = purchaseOrderRepo.findAll();
+                        case COMPLETED:
+                                // Mark as successfully completed
+                                order.setCompletedAt(LocalDateTime.now());
+                                order.setCompletedBy(user);
+                                break;
 
-        return excelService.exportPurchaseOrders(orders);
-    }
+                        case RETURN_INITIATED:
+                                // Log inspection failure
+                                auditService.log("PurchaseOrder", order.getId(), "INSPECTION_FAILED", user,
+                                                "Quality issues detected");
+                                break;
 
-    public byte[] exportPurchaseOrdersByStatus(PurchaseOrderStatus status) {
+                        case CANCELLED:
+                                // Mark cancellation details
+                                order.setCancelledAt(LocalDateTime.now());
+                                order.setCancelledBy(user);
+                                notificationService.notify(order.getGeneratedBy(), order.getRequisition(), order,
+                                                NotificationType.PURCHASE_ORDER, "Order Cancelled");
+                                break;
 
-        List<PurchaseOrder> orders = purchaseOrderRepo.findByStatus(status);
+                        case REPLACEMENT_PENDING:
+                                // Increment replacement count
+                                order.setReplacementCount(order.getReplacementCount() + 1);
+                                break;
+                        
+                        default:
+                                break;
+                }
+        }
 
-        return excelService.exportPurchaseOrders(orders);
-    }
+        @Transactional
+        public PurchaseOrderResponseDTO updateStatus(Long orderId, PurchaseOrderStatus newStatus, User user) {
 
-    public byte[] exportSupplierOrders(Long supplierId) {
+                PurchaseOrder order = purchaseOrderRepo.findById(orderId)
+                        .orElseThrow(() -> new ResponseStatusException(
+                                HttpStatus.NOT_FOUND, "Purchase Order not found"));
+                
+                PurchaseOrderStatus currentStatus = order.getStatus();
 
-        List<PurchaseOrder> orders = purchaseOrderRepo.findBySupplier_Id(supplierId);
+                if (!stateMachine.isValidTransition(currentStatus, newStatus)) {
+                throw new ResponseStatusException(
+                        HttpStatus.BAD_REQUEST,
+                        "Invalid status transition from " + currentStatus + " to " + newStatus + 
+                        ". Valid transitions: " + stateMachine.getValidNextStatuses(currentStatus));
+                }
 
-        return excelService.exportPurchaseOrders(orders);
-    }
+                // Apply business logic based on transition
+                applyTransitionLogic(order, currentStatus, newStatus, user);
 
-    public byte[] exportGeneratedOrders(Long userId) {
+                order.setStatus(newStatus);
+                PurchaseOrder saved = purchaseOrderRepo.save(order);
 
-        List<PurchaseOrder> orders = purchaseOrderRepo.findByGeneratedBy_Id(userId);
+                // Notify stakeholders
+                String reason = stateMachine.getTransitionReason(currentStatus, newStatus);
+                notificationService.notify(
+                        saved.getSupplier(),
+                        saved.getRequisition(),
+                        saved,
+                        NotificationType.PURCHASE_ORDER,
+                        "Purchase Order " + saved.getPoNumber() + " " + reason);
 
-        return excelService.exportPurchaseOrders(orders);
-    }
+                auditService.log(
+                        "PurchaseOrder",
+                        saved.getId(),
+                        "STATUS_TRANSITION",
+                        user,
+                        currentStatus + " → " + newStatus);
 
+                return convertToDTO(saved);
+        }
 
-    public List<PurchaseOrderHistoryResponseDTO> getHistory(Long poId) {
+        @Transactional
+        public String cancelPurchaseOrder(Long id, User user) {
+                PurchaseOrder order = purchaseOrderRepo.findById(id)
+                        .orElseThrow(() -> new ResponseStatusException(
+                                HttpStatus.NOT_FOUND,
+                                "Purchase Order not found"));
 
-        List<PurchaseOrderHistory> histories =
-                purchaseOrderHistoryRepo.findByPurchaseOrderIdOrderByChangedAtAsc(poId);
+                if (order.getStatus() == PurchaseOrderStatus.PO_RECEIVED) {
 
-        return histories.stream()
-                .map(history -> PurchaseOrderHistoryResponseDTO.builder()
-                        .id(history.getId())
-                        .purchaseOrderId(history.getPurchaseOrder().getId())
-                        .poNumber(history.getPurchaseOrder().getPoNumber())
-                        .oldStatus(history.getOldStatus())
-                        .newStatus(history.getNewStatus())
-                        .changedById(
-                                history.getChangedBy() != null
-                                        ? history.getChangedBy().getId()
-                                        : null)
-                        .changedByName(
-                                history.getChangedBy() != null
-                                        ? history.getChangedBy().getFullName()
-                                        : null)
-                        .remarks(history.getRemarks())
-                        .changedAt(history.getChangedAt())
-                        .build())
-                .toList();
+                throw new ResponseStatusException(
+                        HttpStatus.BAD_REQUEST, "Received Purchase Order cannot be cancelled");
+                }
 
+                order.setStatus(PurchaseOrderStatus.CANCELLED);
 
-    }
+                purchaseOrderRepo.save(order);
+
+                notificationService.notify(
+                        order.getSupplier(),
+                        order.getRequisition(),
+                        order,
+                        NotificationType.PURCHASE_ORDER,
+                        "Purchase Order " + order.getPoNumber() + " has been cancelled.");
+
+                auditService.log(
+                        "PurchaseOrder",
+                        order.getId(),
+                        "CANCEL",
+                        user,
+                        "Purchase Order Cancelled");
+                return "Cancelled Purchase Order";
+        }
+
+        @Transactional
+        public String deletePurchaseOrder(Long id) {
+
+                PurchaseOrder order = purchaseOrderRepo.findById(id)
+                        .orElseThrow(() -> new ResponseStatusException(
+                                HttpStatus.NOT_FOUND, "Purchase Order not found"));
+
+                purchaseOrderRepo.delete(order);
+                return "Purchase Order Deleted Successfully";
+        }
+
+        private void createReturn(PurchaseOrder order, GoodsReceipt receipt, String reason, User user){
+
+                ReturnReplacement rr = ReturnReplacement.builder()
+                                .purchaseOrder(order)
+                                .goodsReceipt(receipt)
+                                .reason(reason)
+                                .raisedBy(user)
+                                .status(ReturnStatus.RAISED)
+                                .build();
+
+                returnReplacementRepo.save(rr);
+        }
+
+        @Transactional
+        public byte[] receiveGoods(Long poId, List<GoodsReceiptItemRequestDTO> items,
+                                User warehouseUser) {
+
+                PurchaseOrder order = purchaseOrderRepo.findById(poId)
+                        .orElseThrow(() -> new ResponseStatusException(
+                                HttpStatus.NOT_FOUND,
+                                "Purchase Order not found"));
+
+                if (order.getStatus() != PurchaseOrderStatus.DELIVERED) {
+                        throw new ResponseStatusException(
+                                HttpStatus.BAD_REQUEST,
+                                "Purchase Order is not ready for receiving.");
+                }
+
+                Map<Long, GoodsReceiptItemRequestDTO> receivedItems =
+                        items.stream().collect(Collectors.toMap(
+                                GoodsReceiptItemRequestDTO::getProductId,
+                                Function.identity()));
+
+                boolean hasIssue = false;
+
+                GoodsReceipt receipt = GoodsReceipt.builder()
+                        .goodsReceiptNumber("REQ-" + UUID.randomUUID().toString().replace("-", "").toUpperCase().substring(0, 8))
+                        .purchaseOrder(order)
+                        .receivedDate(LocalDate.now())
+                        .inspectedBy(warehouseUser)
+                        .inspectedAt(LocalDateTime.now())
+                        .qualityStatus(QualityStatus.PASS)
+                        .remarks("Inspection Completed")
+                        .build();
+
+                goodsReceiptRepo.save(receipt);
+
+                List<GoodsReceiptItem> receiptItems = new ArrayList<>();
+
+                for (PoItem poItem : order.getPoItems()) {
+
+                        GoodsReceiptItemRequestDTO dto = receivedItems.get(poItem.getProduct().getId());
+
+                        if (dto == null) {
+
+                                createReturn(
+                                        order,
+                                        receipt,
+                                        "Product not received : " + poItem.getProduct().getName(),
+                                        warehouseUser);
+
+                                hasIssue = true;
+                                continue;
+                        }
+
+                        if (dto.getAcceptedQuantity() + dto.getRejectedQuantity() != dto.getReceivedQuantity()) {
+
+                                throw new ResponseStatusException(
+                                        HttpStatus.BAD_REQUEST,
+                                        "Accepted + Rejected quantity must equal Received quantity for "
+                                                + poItem.getProduct().getName());
+                        }
+
+                        GoodsReceiptItem receiptItem =
+                                GoodsReceiptItem.builder()
+                                        .goodsReceipt(receipt)
+                                        .product(poItem.getProduct())
+                                        .orderedQuantity(poItem.getQuantity())
+                                        .receivedQuantity(dto.getReceivedQuantity())
+                                        .acceptedQuantity(dto.getAcceptedQuantity())
+                                        .rejectedQuantity(dto.getRejectedQuantity())
+                                        .remarks(dto.getRemarks())
+                                        .build();
+
+                        receiptItems.add(receiptItem);
+
+                        int ordered = poItem.getQuantity();
+                        int received = dto.getReceivedQuantity();
+
+                        if (received < ordered) {
+
+                                createReturn(
+                                        order,
+                                        receipt,
+                                        "Short quantity. Ordered " + ordered + " but received " + received + " for "
+                                                + poItem.getProduct().getName(),
+                                        warehouseUser);
+
+                                hasIssue = true;
+                        }
+
+                        if (received > ordered) {
+
+                                createReturn(
+                                        order,
+                                        receipt,
+                                        "Overshipment. Ordered "
+                                                + ordered
+                                                + " but received "
+                                                + received
+                                                + " for "
+                                                + poItem.getProduct().getName(),
+                                        warehouseUser);
+
+                                hasIssue = true;
+                        }
+
+                        if (dto.getRejectedQuantity() > 0) {
+
+                                createReturn(
+                                        order,
+                                        receipt,
+                                        dto.getRejectedQuantity() + " defective units of " + poItem.getProduct().getName(),
+                                        warehouseUser);
+
+                                hasIssue = true;
+                        }
+
+                        Inventory inventory = inventoryRepo.findByProduct_Id(poItem.getProduct().getId())
+                                .orElseThrow(() -> new ResponseStatusException(
+                                                HttpStatus.NOT_FOUND,"Inventory not found"));
+
+                        inventory.setQuantityOnHand(inventory.getQuantityOnHand() + dto.getAcceptedQuantity());
+
+                        inventory.setLastPurchaseOrder(order);
+
+                        inventoryRepo.save(inventory);
+                }
+
+                receipt.setItems(receiptItems);
+
+                receipt.setQualityStatus(hasIssue ? QualityStatus.FAIL : QualityStatus.PASS);
+
+                receipt.setRemarks(hasIssue ? "Inspection completed with issues" : "Inspection passed");
+
+                goodsReceiptRepo.save(receipt);
+
+                if (hasIssue) {
+
+                        order.setStatus(PurchaseOrderStatus.RETURN_INITIATED);
+
+                        purchaseOrderRepo.save(order);
+
+                        auditService.log(
+                                "PurchaseOrder",
+                                order.getId(),
+                                "RETURN_INITIATED",
+                                warehouseUser,
+                                "Inspection failed");
+
+                        notificationService.notify(
+                                order.getSupplier(),
+                                null,
+                                order,
+                                NotificationType.RETURN,
+                                "Replacement/Return required for "
+                                        + order.getPoNumber());
+
+                } 
+                else {
+
+                        order.setStatus(PurchaseOrderStatus.COMPLETED);
+
+                        purchaseOrderRepo.save(order);
+
+                        auditService.log(
+                                "PurchaseOrder",
+                                order.getId(),
+                                "GOODS_RECEIVED",
+                                warehouseUser,
+                                "Inspection successful");
+
+                        notificationService.notify(
+                                order.getGeneratedBy(),
+                                null,
+                                order,
+                                NotificationType.PURCHASE_ORDER,
+                                "Goods received successfully for " + order.getPoNumber());
+                }
+
+                return pdfService.generateGoodsReceipt(receipt);
+        }
+        //Pdfs and excels
+        public byte[] generatePurchaseOrderPdf(Long poId) {
+
+                PurchaseOrder order = purchaseOrderRepo.findById(poId)
+                        .orElseThrow(() -> new ResponseStatusException(
+                                HttpStatus.NOT_FOUND,
+                                "Purchase Order not found"));
+
+                return pdfService.generatePurchaseOrder(order);
+        }
+
+        public byte[] generateInvoice(Long poId) {
+
+                PurchaseOrder order = purchaseOrderRepo.findById(poId)
+                                .orElseThrow(() -> new ResponseStatusException(
+                                                HttpStatus.NOT_FOUND, "Purchase Order not found"));
+
+                if (order.getStatus() != PurchaseOrderStatus.PO_RECEIVED) {
+
+                        throw new ResponseStatusException(
+                                        HttpStatus.BAD_REQUEST, "Invoice can be generated only after goods are received");
+                }
+
+                return pdfService.generateInvoice(order);
+        }
+
+        public byte[] exportPoItems(Long poId) {
+
+                PurchaseOrder order = purchaseOrderRepo.findById(poId)
+                        .orElseThrow(() -> new ResponseStatusException(
+                                HttpStatus.NOT_FOUND,
+                                "Purchase Order not found"));
+
+                return excelService.exportPOItems(order);
+        }
+
+        public byte[] exportPurchaseOrders() {
+
+                List<PurchaseOrder> orders = purchaseOrderRepo.findAll();
+
+                return excelService.exportPurchaseOrders(orders);
+        }
+
+        public byte[] exportPurchaseOrdersByStatus(PurchaseOrderStatus status) {
+
+                List<PurchaseOrder> orders = purchaseOrderRepo.findByStatus(status);
+
+                return excelService.exportPurchaseOrders(orders);
+        }
+
+        public byte[] exportSupplierOrders(Long supplierId) {
+
+                List<PurchaseOrder> orders = purchaseOrderRepo.findBySupplier_Id(supplierId);
+
+                return excelService.exportPurchaseOrders(orders);
+        }
+
+        public byte[] exportGeneratedOrders(Long userId) {
+
+                List<PurchaseOrder> orders = purchaseOrderRepo.findByGeneratedBy_Id(userId);
+
+                return excelService.exportPurchaseOrders(orders);
+        }
+
+    
 }
