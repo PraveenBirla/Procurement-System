@@ -150,11 +150,16 @@ export const ApprovedRequisitionSection = () => {
 
     try {
       setSubmittingPO(true);
-      const po = await purchaseOrderService.generatePurchaseOrder({
-        requisitionId: poModalReq.id,
-        supplierId: Number(selectedSupplierId),
-        expectedDeliveryDate,
-      });
+    const po = await purchaseOrderService.generatePurchaseOrder({
+    requisitionId: poModalReq.id,
+    supplierId: Number(selectedSupplierId),
+    expectedDeliveryDate,
+    poItems: poModalReq.items.map(item => ({
+        requisitionItemId: item.id,
+        quantity: item.quantity,
+        unitPrice: item.unitPrice
+    }))
+});
 
       setPoMap((prev) => ({ ...prev, [poModalReq.id]: po.id }));
       closePOModal();

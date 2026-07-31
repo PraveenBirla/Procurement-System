@@ -63,13 +63,13 @@ public class PurchaseOrderController {
         return ResponseEntity.ok(new ApiResponse<>(purchaseOrderService.getPurchaseOrderById(id)));
     }
 
-    @GetMapping("/{requisitionId}/requisition")
-    @PreAuthorize("hasAnyRole('ADMIN','PROCUREMENT','FINANCE','MANAGER')")
-    public ResponseEntity<ApiResponse<PurchaseOrderResponseDTO>> getPurchaseOrderByRequisionId(
-            @PathVariable Long requisitionId) {
-
-        return ResponseEntity.ok(new ApiResponse<>(purchaseOrderService.getPurchaseOrderByRequisitionId(requisitionId)));
-    }
+//    @GetMapping("/{requisitionId}/requisition")
+//    @PreAuthorize("hasAnyRole('ADMIN','PROCUREMENT','FINANCE','MANAGER')")
+//    public ResponseEntity<ApiResponse<PurchaseOrderResponseDTO>> getPurchaseOrderByRequisionId(
+//            @PathVariable Long requisitionId) {
+//
+//        return ResponseEntity.ok(new ApiResponse<>(purchaseOrderService.getPurchaseOrderByRequisitionId(requisitionId)));
+//    }
 
     // Get Purchase Orders By Status
 
@@ -98,12 +98,12 @@ public class PurchaseOrderController {
         return ResponseEntity.ok(new ApiResponse<>(purchaseOrderService.getGeneratedOrders(currentUser.get().getId())));
     }
 
-    @GetMapping("{poId}/history")
-    public ResponseEntity<ApiResponse<List<PurchaseOrderHistoryResponseDTO>>> getHistory(@PathVariable Long poId){
-
-        return ResponseEntity.ok(new ApiResponse<>(purchaseOrderService.getHistory(poId)));
-    }
-    // Update Status
+//    @GetMapping("{poId}/history")
+//    public ResponseEntity<ApiResponse<List<PurchaseOrderHistoryResponseDTO>>> getHistory(@PathVariable Long poId){
+//
+//        return ResponseEntity.ok(new ApiResponse<>(purchaseOrderService.getHistory(poId)));
+//    }
+//    // Update Status
 
     @PutMapping("/{id}/status")
     @PreAuthorize("hasAnyRole('PROCUREMENT','ADMIN')")
