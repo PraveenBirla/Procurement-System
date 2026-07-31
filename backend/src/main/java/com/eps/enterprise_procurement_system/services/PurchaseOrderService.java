@@ -279,6 +279,7 @@ public class PurchaseOrderService {
         PurchaseOrder saved = purchaseOrderRepo.save(purchaseOrder);
 
         requisition.setStatus(RequisitionStatus.PO_GENERATED);
+
         requisitionRepo.save(requisition);
         notificationService.notify(
                 supplier,
@@ -319,16 +320,7 @@ public class PurchaseOrderService {
 
         PurchaseOrder saved = purchaseOrderRepo.save(order);
 
-        historyRepo.save(
-                PurchaseOrderHistory.builder()
-                        .purchaseOrder(saved)
-                        .oldStatus(oldStatus)
-                        .newStatus(status)
-                        .changedBy(user)
-                        .remarks("Status changed to " + status)
-                        .changedAt(LocalDateTime.now())
-                        .build()
-        );
+
 
         notificationService.notify(
                 saved.getSupplier(),
