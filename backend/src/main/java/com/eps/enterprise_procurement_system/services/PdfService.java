@@ -180,7 +180,7 @@ public class PdfService {
 
         table.addCell(createLabelCell("Supplier"));
         table.addCell(createValueCell(
-                order.getSupplier().getName()));
+                order.getSupplier().getUser().getFullName()));
 
         table.addCell(createLabelCell("Status"));
         table.addCell(createValueCell(
@@ -301,10 +301,13 @@ public class PdfService {
         table.addCell(createValueCell(LocalDate.now().format(DATE_FORMAT)));
 
         table.addCell(createLabelCell("Supplier"));
-        table.addCell(createValueCell(order.getSupplier().getName()));
+        table.addCell(createValueCell(order.getSupplier().getUser().getFullName()));
+
+        table.addCell(createLabelCell("Company Name"));
+        table.addCell(createValueCell(order.getSupplier().getCompanyName()));
 
         table.addCell(createLabelCell("Supplier Email"));
-        table.addCell(createValueCell(order.getSupplier().getEmail()));
+        table.addCell(createValueCell(order.getSupplier().getUser().getEmail()));
 
         table.addCell(createLabelCell("Supplier Phone"));
         table.addCell(createValueCell(order.getSupplier().getPhone()));
@@ -360,7 +363,10 @@ public class PdfService {
         table.addCell(createValueCell(order.getPoNumber()));
 
         table.addCell(createLabelCell("Supplier"));
-        table.addCell(createValueCell(order.getSupplier().getName()));
+        table.addCell(createValueCell(order.getSupplier().getUser().getFullName()));
+
+        table.addCell(createLabelCell("CompanyName"));
+        table.addCell(createValueCell(order.getSupplier().getCompanyName()));
 
         table.addCell(createLabelCell("Received Date"));
         table.addCell(createValueCell(receipt.getReceivedDate().format(DATE_FORMAT)));

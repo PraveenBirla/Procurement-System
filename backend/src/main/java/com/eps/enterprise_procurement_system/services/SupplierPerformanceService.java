@@ -36,7 +36,7 @@ public class SupplierPerformanceService {
         SupplierPerformanceResponseDTO dto = modelMapper.map(performance, SupplierPerformanceResponseDTO.class);
 
         dto.setSupplierId(performance.getSupplier().getId());
-        dto.setSupplierName(performance.getSupplier().getName());
+        dto.setSupplierName(performance.getSupplier().getUser().getFullName());
 
         if (performance.getPurchaseOrder() != null) {
             dto.setPurchaseOrderId(performance.getPurchaseOrder().getId());
@@ -60,7 +60,7 @@ public class SupplierPerformanceService {
         SupplierAverageRatingDTO dto = new SupplierAverageRatingDTO();
 
         dto.setSupplierId(supplier.getId());
-        dto.setSupplierName(supplier.getName());
+        dto.setSupplierName(supplier.getUser().getFullName());
 
         dto.setTotalReviews(reviews.size());
 

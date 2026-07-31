@@ -20,11 +20,8 @@ public class Supplier {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    @Column(name = "name", nullable = false, length = 150)
-    private String name;
-
-    @Column(name = "email", length = 150)
-    private String email;
+    @Column(nullable = false)
+    private String companyName;
 
     @Column(name = "phone", length = 20)
     private String phone;
@@ -32,6 +29,11 @@ public class Supplier {
     @Lob
     @Column(name = "address")
     private String address;
+
+    @OneToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "user_id", unique = true, nullable = false,
+            foreignKey = @ForeignKey(name = "fk_supplier_user"))
+    private User user;
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "category_id", foreignKey = @ForeignKey(name = "fk_supplier_category"))

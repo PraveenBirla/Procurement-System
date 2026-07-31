@@ -117,7 +117,7 @@ public class PurchaseOrderService {
 
                 dto.setSupplierId(purchaseOrder.getSupplier().getId());
 
-                dto.setSupplierName(purchaseOrder.getSupplier().getName());
+                dto.setSupplierName(purchaseOrder.getSupplier().getUser().getFullName());
 
                 dto.setStatus(purchaseOrder.getStatus());
 
@@ -282,7 +282,7 @@ public class PurchaseOrderService {
 
                         throw new ResponseStatusException(
                                 HttpStatus.BAD_REQUEST,
-                                supplier.getName() + " cannot supply " + reqItem.getProduct().getName());
+                                supplier.getUser().getFullName() + " cannot supply " + reqItem.getProduct().getName());
                         }
 
                         selectedItems.add(reqItem);

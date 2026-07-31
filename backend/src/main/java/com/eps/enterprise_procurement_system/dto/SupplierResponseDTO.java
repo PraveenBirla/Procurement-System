@@ -13,6 +13,8 @@ public class SupplierResponseDTO {
 
     private String email;
 
+    private String companyName;
+
     private String phone;
 
     private String address;

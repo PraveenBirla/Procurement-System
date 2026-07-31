@@ -23,7 +23,7 @@ public interface PurchaseOrderRepo extends JpaRepository<PurchaseOrder, Long> {
 
     List<PurchaseOrder> findByGeneratedBy_Id(Long userId);
 
-    List<PurchaseOrder> findBySupplier_NameContainingIgnoreCase(String keyword);
+    List<PurchaseOrder> findBySupplier_CompanyNameContainingIgnoreCase(String keyword);
 
     List<PurchaseOrder> findByExpectedDeliveryDateBefore(LocalDate date);
 

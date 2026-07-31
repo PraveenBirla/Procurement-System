@@ -35,12 +35,13 @@ public class NotificationService {
     }
 
     public void notify(Supplier supplier, PurchaseRequisition req, PurchaseOrder po, NotificationType type, String message) {
-        Optional<User> supplierUser = userRepo.findBySupplier(supplier);
 
-        if (supplierUser.isPresent()) {
-            notify(supplierUser.get(), req, po, type, message);
+        User supplierUser = supplier.getUser();
+
+        if (supplierUser != null) {
+            notify(supplierUser, req, po, type, message);
         } else {
-            log.warn("No user account linked to supplier {} — skipped notification: {}",
+            log.warn("Supplier {} has no linked user account — skipped notification: {}",
                     supplier.getId(), message);
         }
     }

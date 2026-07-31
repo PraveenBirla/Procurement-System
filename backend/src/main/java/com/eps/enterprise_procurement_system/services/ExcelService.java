@@ -41,7 +41,7 @@ public class ExcelService {
 
                 row.createCell(1).setCellValue(po.getRequisition().getRequisitionNo());
 
-                row.createCell(2).setCellValue(po.getSupplier().getName());
+                row.createCell(2).setCellValue(po.getSupplier().getUser().getFullName());
 
                 row.createCell(3).setCellValue(po.getGeneratedBy().getFullName());
 
