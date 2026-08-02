@@ -10,11 +10,8 @@ import java.util.List;
 
 public interface SupplierRepo extends JpaRepository<Supplier, Long> {
 
-<<<<<<< HEAD
     List<Supplier> findByCategoryId(Long categoryId);
-=======
     boolean existsByUser_Id(Long id);
 
     Optional<Supplier> findByUser_Id(Long userId);
->>>>>>> development
 }

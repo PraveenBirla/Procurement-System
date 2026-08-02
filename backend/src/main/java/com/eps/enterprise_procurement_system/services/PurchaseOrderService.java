@@ -3,6 +3,7 @@ package com.eps.enterprise_procurement_system.services;
 import com.eps.enterprise_procurement_system.dto.GoodsReceiptItemRequestDTO;
 import com.eps.enterprise_procurement_system.dto.PoItemRequestDTO;
 import com.eps.enterprise_procurement_system.dto.PoItemResponseDTO;
+import com.eps.enterprise_procurement_system.dto.PurchaseOrderHistoryResponseDTO;
 import com.eps.enterprise_procurement_system.dto.PurchaseOrderRequestDTO;
 import com.eps.enterprise_procurement_system.dto.PurchaseOrderResponseDTO;
 import com.eps.enterprise_procurement_system.entities.GoodsReceipt;
@@ -10,6 +11,7 @@ import com.eps.enterprise_procurement_system.entities.GoodsReceiptItem;
 import com.eps.enterprise_procurement_system.entities.Inventory;
 import com.eps.enterprise_procurement_system.entities.PoItem;
 import com.eps.enterprise_procurement_system.entities.PurchaseOrder;
+import com.eps.enterprise_procurement_system.entities.PurchaseOrderHistory;
 import com.eps.enterprise_procurement_system.entities.PurchaseRequisition;
 import com.eps.enterprise_procurement_system.entities.RequisitionItem;
 import com.eps.enterprise_procurement_system.entities.ReturnReplacement;
@@ -23,6 +25,7 @@ import com.eps.enterprise_procurement_system.entities.enums.ReturnStatus;
 import com.eps.enterprise_procurement_system.repositories.GoodsReceiptRepo;
 import com.eps.enterprise_procurement_system.repositories.InventoryRepo;
 import com.eps.enterprise_procurement_system.repositories.PoItemRepo;
+import com.eps.enterprise_procurement_system.repositories.PurchaseOrderHistoryRepo;
 import com.eps.enterprise_procurement_system.repositories.PurchaseOrderRepo;
 import com.eps.enterprise_procurement_system.repositories.PurchaseRequisitionRepo;
 import com.eps.enterprise_procurement_system.repositories.ReturnReplacementRepo;
@@ -62,7 +65,7 @@ public class PurchaseOrderService {
         private final ReturnReplacementRepo returnReplacementRepo;
         private final GoodsReceiptRepo goodsReceiptRepo;
         private final ModelMapper modelMapper;
-
+        private final PurchaseOrderHistoryRepo purchaseOrderHistoryRepo;
         private final NotificationService notificationService;
         private final AuditService auditService;
 
@@ -224,7 +227,8 @@ public class PurchaseOrderService {
                 }
 
                 // Only approved requisitions can generate PO
-                if (requisition.getStatus() != RequisitionStatus.APPROVED) {
+                if (requisition.getStatus() != RequisitionStatus.APPROVED
+                && requisition.getStatus() != RequisitionStatus.PARTIALLY_ORDERED) {
 
                         throw new ResponseStatusException(
                                         HttpStatus.BAD_REQUEST,
@@ -240,7 +244,7 @@ public class PurchaseOrderService {
                 }
 
                 // Prevent duplicate PO generation
-                if (purchaseOrderRepo.existsByRequisition_Id(requisition.getId())) {
+                if (purchaseOrderRepo.existsByRequisition_Id(requisition.getId()) && requisition.getStatus()!=RequisitionStatus.PARTIALLY_ORDERED) {
 
                         throw new ResponseStatusException(
                                         HttpStatus.BAD_REQUEST,
@@ -678,6 +682,32 @@ public class PurchaseOrderService {
 
                 return pdfService.generateGoodsReceipt(receipt);
         }
+
+        public List<PurchaseOrderHistoryResponseDTO> getHistory(Long poId) {
+
+                if(purchaseOrderRepo.existsById(poId)){
+                        List<PurchaseOrderHistory> historyList = purchaseOrderHistoryRepo
+                                .findByPurchaseOrderIdOrderByChangedAtAsc(poId);
+                        return historyList.stream().map(
+                                history -> modelMapper.map(history, PurchaseOrderHistoryResponseDTO.class)
+                        ).toList();
+                }
+                else {
+                        throw new ResponseStatusException(
+                                HttpStatus.NOT_FOUND, "Purchase Order not found");
+                }
+                
+        }
+
+        public PurchaseOrderResponseDTO getPurchaseOrderByRequisitionId(Long reqId) {
+
+                PurchaseOrder order = purchaseOrderRepo.findByRequisition_Id(reqId)
+                        .orElseThrow(() -> new ResponseStatusException(
+                                HttpStatus.NOT_FOUND, "Purchase Order with this requisition not found"));
+
+                return convertToDTO(order);
+        }
+
         //Pdfs and excels
         public byte[] generatePurchaseOrderPdf(Long poId) {
 
