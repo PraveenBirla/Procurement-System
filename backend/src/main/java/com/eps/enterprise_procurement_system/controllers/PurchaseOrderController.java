@@ -229,4 +229,12 @@ public class PurchaseOrderController {
                 .body(excel);
     }
 
+    @GetMapping("/{id}/history")
+    @PreAuthorize("hasAnyRole('ADMIN', 'PROCUREMENT')")
+    public ResponseEntity<ApiResponse<List<PurchaseOrderHistoryResponseDTO>>>  getHistory(@PathVariable Long id){
+
+        return ResponseEntity.ok(new ApiResponse<>(purchaseOrderService.getHistory(id)));
+    }
+
+
 }

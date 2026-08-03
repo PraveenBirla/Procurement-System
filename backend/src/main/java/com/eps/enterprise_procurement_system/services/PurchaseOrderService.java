@@ -6,31 +6,13 @@ import com.eps.enterprise_procurement_system.dto.PoItemResponseDTO;
 import com.eps.enterprise_procurement_system.dto.PurchaseOrderHistoryResponseDTO;
 import com.eps.enterprise_procurement_system.dto.PurchaseOrderRequestDTO;
 import com.eps.enterprise_procurement_system.dto.PurchaseOrderResponseDTO;
-import com.eps.enterprise_procurement_system.entities.GoodsReceipt;
-import com.eps.enterprise_procurement_system.entities.GoodsReceiptItem;
-import com.eps.enterprise_procurement_system.entities.Inventory;
-import com.eps.enterprise_procurement_system.entities.PoItem;
-import com.eps.enterprise_procurement_system.entities.PurchaseOrder;
-import com.eps.enterprise_procurement_system.entities.PurchaseOrderHistory;
-import com.eps.enterprise_procurement_system.entities.PurchaseRequisition;
-import com.eps.enterprise_procurement_system.entities.RequisitionItem;
-import com.eps.enterprise_procurement_system.entities.ReturnReplacement;
-import com.eps.enterprise_procurement_system.entities.Supplier;
-import com.eps.enterprise_procurement_system.entities.User;
+import com.eps.enterprise_procurement_system.entities.*;
 import com.eps.enterprise_procurement_system.entities.enums.NotificationType;
 import com.eps.enterprise_procurement_system.entities.enums.PurchaseOrderStatus;
 import com.eps.enterprise_procurement_system.entities.enums.QualityStatus;
 import com.eps.enterprise_procurement_system.entities.enums.RequisitionStatus;
 import com.eps.enterprise_procurement_system.entities.enums.ReturnStatus;
-import com.eps.enterprise_procurement_system.repositories.GoodsReceiptRepo;
-import com.eps.enterprise_procurement_system.repositories.InventoryRepo;
-import com.eps.enterprise_procurement_system.repositories.PoItemRepo;
-import com.eps.enterprise_procurement_system.repositories.PurchaseOrderHistoryRepo;
-import com.eps.enterprise_procurement_system.repositories.PurchaseOrderRepo;
-import com.eps.enterprise_procurement_system.repositories.PurchaseRequisitionRepo;
-import com.eps.enterprise_procurement_system.repositories.ReturnReplacementRepo;
-import com.eps.enterprise_procurement_system.repositories.SupplierRepo;
-import com.eps.enterprise_procurement_system.repositories.UserRepository;
+import com.eps.enterprise_procurement_system.repositories.*;
 
 import lombok.RequiredArgsConstructor;
 
@@ -68,6 +50,8 @@ public class PurchaseOrderService {
         private final PurchaseOrderHistoryRepo purchaseOrderHistoryRepo;
         private final NotificationService notificationService;
         private final AuditService auditService;
+        private final RequisitionStatusHistoryRepo historyRepo;
+
 
         private String generatePONumber() {
 
@@ -339,6 +323,17 @@ public class PurchaseOrderService {
                 }
 
                 requisitionRepo.save(requisition);
+
+            historyRepo.save(RequisitionStatusHistory.builder()
+                    .requisition(requisition)
+                    .oldStatus(requisition.getStatus())
+                    .newStatus(RequisitionStatus.PO_GENERATED)
+                    .changedBy(procurementOfficer)
+                    .remarks("purchase order generated")
+                    .build()
+            );
+
+            savePurchaseOrderHistory(purchaseOrder, PurchaseOrderStatus.GENERATED,  procurementOfficer);
 
                 notificationService.notify(
                         supplier,
@@ -772,5 +767,16 @@ public class PurchaseOrderService {
                 return excelService.exportPurchaseOrders(orders);
         }
 
+        public void savePurchaseOrderHistory(PurchaseOrder purchaseOrder, PurchaseOrderStatus status, User changedBy){
+               PurchaseOrderHistory history = new PurchaseOrderHistory();
+
+               history.setPurchaseOrder(purchaseOrder);
+               history.setOldStatus(purchaseOrder.getStatus());
+               history.setNewStatus(status);
+               history.setChangedBy(changedBy);
+               history.setChangedAt(LocalDateTime.now());
+
+               purchaseOrderHistoryRepo.save(history);
+        }
     
 }
