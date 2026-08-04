@@ -1,10 +1,12 @@
 import { useState } from "react";
 import {
   CircleUserRound,
-  LogOut
+  LogOut,
+  Package
 } from "lucide-react";  
 import { RequisitionSection } from "./RequisitionSection";
 import { SupplierProfileSection } from "./SupplierProfileSection"; 
+import { OrderSection } from "./OrderSection";
 import authService from "../../services/authService";
 
 export const  SupplierDashboard  = () => {
@@ -12,6 +14,7 @@ export const  SupplierDashboard  = () => {
 
   const menuItems = [
     { id: "profile", label: "profile", icon: CircleUserRound },
+    { id: "orders", label: "orders", icon: Package},
       
   ];
 
@@ -43,6 +46,7 @@ export const  SupplierDashboard  = () => {
      
       <main className="main-content animate-fade-in">
         {activeSection === "profile" &&  <SupplierProfileSection/> }
+         {activeSection === "orders" &&  <OrderSection/> }
       </main>
     </div>
   );

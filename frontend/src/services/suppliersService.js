@@ -40,8 +40,12 @@ const  suppliersService = {
    async deleteDocumments(documentId){
      const res = await api.delete(`/supplier-documents/${documentId}`);
        return res.data.data;
-   } 
-
+   },
+   
+    async getSuppliersOrder(){
+       const res = await api.get("/purchase-orders/supplier");
+       return res.data.data;
+     }  
 
 
 

@@ -27,6 +27,16 @@ const purchaseOrderService = {
   async  sendToSupplier(poId){
     const res = await api.post(`/purchase-orders/${poId}/send`)
        return res.data.data ;
+  },
+
+   async updateStatus(poId, data){
+    const res = await api.put(`/purchase-orders/${poId}/status`, data)
+       return res.data.data ;
+  },
+
+  async getAll(){
+       const res = await api.get(`/purchase-orders`)
+       return res.data.data ;
   }
 
 }

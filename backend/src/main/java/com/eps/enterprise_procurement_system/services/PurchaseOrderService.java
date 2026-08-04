@@ -161,9 +161,12 @@ public class PurchaseOrderService {
                         .toList();
         }
 
-        public List<PurchaseOrderResponseDTO> getSupplierOrders(Long supplierId) {
+        public List<PurchaseOrderResponseDTO> getSupplierOrders() {
 
-                return purchaseOrderRepo.findBySupplier_Id(supplierId)
+            Supplier supplier = supplierRepo.findByUserId(currentUser.get().getId())
+                    .orElseThrow(() -> new RuntimeException("supplier not found"));
+
+                return purchaseOrderRepo.findBySupplier_Id(supplier.getId())
                         .stream()
                         .map(this::convertToDTO)
                         .toList();
@@ -423,8 +426,11 @@ public class PurchaseOrderService {
                 // Apply business logic based on transition
                 applyTransitionLogic(order, currentStatus, newStatus, user);
 
+
                 order.setStatus(newStatus);
                 PurchaseOrder saved = purchaseOrderRepo.save(order);
+
+                savePurchaseOrderHistory(saved, saved.getStatus(),user);
 
                 // Notify stakeholders
                 String reason = stateMachine.getTransitionReason(currentStatus, newStatus);

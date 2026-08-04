@@ -17,4 +17,6 @@ public interface SupplierRepo extends JpaRepository<Supplier, Long> {
 
     Optional<Supplier> findByUser_Id(Long userId);
 
+    Optional<Supplier> findByUserId(Long userId);
+
 }

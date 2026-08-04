@@ -6,12 +6,14 @@ import {
 import authService from "../../services/authService";
 import { RequisitionSection } from "./RequisitionSection";
 import { ApprovedRequisitionSection } from "./ApprovedRequisitionSection";
+import { PurchaseOrderSection } from "./PurchaseOrderSection";
 export const ProcurementDashboard = () => {
   const [activeSection, setActiveSection] = useState("requition");
 
   const menuItems = [
     { id: "requition", label: "requition", icon: Package },
-     { id: "ApprovedRequition", label: "ApprovedRequition", icon: Package }, 
+     { id: "ApprovedRequition", label: "Approved Requition", icon: Package }, 
+     { id: "PurchaseOrders", label: "Purchase Orders", icon: Package }
   ];
 
   return (
@@ -43,6 +45,7 @@ export const ProcurementDashboard = () => {
       <main className="main-content animate-fade-in">
         {activeSection === "requition" &&  <RequisitionSection/> }
         {activeSection === "ApprovedRequition" &&  <ApprovedRequisitionSection/> }
+        {activeSection === "PurchaseOrders" && <PurchaseOrderSection/> }
          
       </main>
     </div>
