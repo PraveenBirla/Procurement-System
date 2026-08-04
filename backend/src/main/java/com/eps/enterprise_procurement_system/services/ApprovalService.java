@@ -5,6 +5,7 @@ import com.eps.enterprise_procurement_system.dto.ApprovalResponseDTO;
 import com.eps.enterprise_procurement_system.dto.PurchaseRequisitionResponseDTO;
 import com.eps.enterprise_procurement_system.dto.RequisitionItemResponseDTO;
 import com.eps.enterprise_procurement_system.entities.Approval;
+import com.eps.enterprise_procurement_system.entities.PurchaseOrder;
 import com.eps.enterprise_procurement_system.entities.PurchaseRequisition;
 import com.eps.enterprise_procurement_system.entities.User;
 import com.eps.enterprise_procurement_system.entities.enums.ApprovalStatus;
@@ -196,6 +197,7 @@ public class ApprovalService {
                         .isDuplicate(req.getIsDuplicate())
                         .createdAt(req.getCreatedAt())
                         .updatedAt(req.getUpdatedAt())
+
                         .items(
                                 req.getItems().stream()
                                         .map(item -> RequisitionItemResponseDTO.builder()

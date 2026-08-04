@@ -7,31 +7,37 @@ import suppliersService from "../../services/suppliersService";
 const APPROVED_STATUS = "APPROVED";
 const PO_GENERATED_STATUS = "PO_GENERATED";
 
+// TODO: confirm against your actual PurchaseOrderStatus enum values.
+const PO_SENT_STATUS = "SENT_TO_SUPPLIER";
+
 export const ApprovedRequisitionSection = () => {
   const [requisitions, setRequisitions] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
 
-  // requisitionId -> generated PO id (for POs generated in this session)
+  // requisitionId -> { id, status, pdfURL, poNumber }
   const [poMap, setPoMap] = useState({});
 
-  // Generate PO modal
-  const [poModalReq, setPoModalReq] = useState(null);
+  // View PO modal
+  const [viewPoReq, setViewPoReq] = useState(null);
+
+  // Generate PO modal (supplier + date selected here now)
+  const [genModalReq, setGenModalReq] = useState(null);
   const [suppliers, setSuppliers] = useState([]);
   const [loadingSuppliers, setLoadingSuppliers] = useState(false);
   const [selectedSupplierId, setSelectedSupplierId] = useState("");
   const [expectedDeliveryDate, setExpectedDeliveryDate] = useState("");
-  const [poError, setPoError] = useState("");
-  const [submittingPO, setSubmittingPO] = useState(false);
+  const [genError, setGenError] = useState("");
+  const [submittingGenerate, setSubmittingGenerate] = useState(false);
+
+  // Send to Supplier (direct action, no modal, only poId)
+  const [sendingPoReqId, setSendingPoReqId] = useState(null);
 
   // Track PO history modal
   const [trackPoReq, setTrackPoReq] = useState(null);
   const [poHistory, setPoHistory] = useState([]);
   const [loadingPoHistory, setLoadingPoHistory] = useState(false);
   const [trackingPoId, setTrackingPoId] = useState(null);
-
-  // Download PO
-  const [downloadingPoId, setDownloadingPoId] = useState(null);
 
   const getErrorMessage = (err) => {
     return (
@@ -47,12 +53,13 @@ export const ApprovedRequisitionSection = () => {
   }, []);
 
   useEffect(() => {
-    const anyOpen = !!poModalReq || !!trackPoReq;
+    const anyOpen = !!viewPoReq || !!genModalReq || !!trackPoReq;
     document.body.style.overflow = anyOpen ? "hidden" : "";
 
     const handleKey = (e) => {
       if (e.key === "Escape") {
-        closePOModal();
+        closeViewPoModal();
+        closeGenerateModal();
         closeTrackPOModal();
       }
     };
@@ -62,119 +69,187 @@ export const ApprovedRequisitionSection = () => {
       document.body.style.overflow = "";
       document.removeEventListener("keydown", handleKey);
     };
-  }, [poModalReq, trackPoReq]);
+  }, [viewPoReq, genModalReq, trackPoReq]);
 
- const loadRequisitions = async () => {
-  setLoading(true);
-  try {
-    const approved = await procurementService.getProcurementRequisitionsByStatus(APPROVED_STATUS);
-    approved.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
+  const loadRequisitions = async () => {
+    setLoading(true);
+    try {
+      const approved = await procurementService.getProcurementRequisitionsByStatus(APPROVED_STATUS);
+      approved.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
 
-    setRequisitions(approved);
-    setError("");
+      setRequisitions(approved);
+      setError("");
 
-    // For rows whose PO is already generated, fetch the PO to get its id
-    const poGeneratedReqs = approved.filter((r) => r.status === PO_GENERATED_STATUS);
-    if (poGeneratedReqs.length > 0) {
-      const results = await Promise.all(
-        poGeneratedReqs.map((r) =>
-          purchaseOrderService
-            .getPurchaseOrderRequisionId(r.id)
-            .then((po) => [r.id, po.id])
-            .catch(() => [r.id, null])
-        )
-      );
-      setPoMap((prev) => {
-        const next = { ...prev };
-        results.forEach(([reqId, poId]) => {
-          if (poId) next[reqId] = poId;
+      // Load POs for all requisitions that already have a PO (generated / sent / delivered)
+      const poGeneratedReqs = approved.filter((r) => r.status !== "APPROVED");
+
+      if (poGeneratedReqs.length > 0) {
+        const results = await Promise.all(
+          poGeneratedReqs.map((r) =>
+            purchaseOrderService
+              .getPurchaseOrderRequisionId(r.id)
+              .then((po) => [r.id, po])
+              .catch(() => [r.id, null])
+          )
+        );
+
+        const newPoMap = {};
+        results.forEach(([reqId, po]) => {
+          if (po) {
+            newPoMap[reqId] = {
+              id: po.id,
+              status: po.status,
+              pdfURL: po.pdfURL,
+              poNumber: po.poNumber,
+            };
+          }
         });
-        return next;
-      });
+
+        // Replace entire map to ensure fresh data
+        setPoMap(newPoMap);
+      }
+    } catch (err) {
+      setError(getErrorMessage(err));
+    } finally {
+      setLoading(false);
     }
-  } catch (err) {
-    setError(getErrorMessage(err));
-  } finally {
-    setLoading(false);
-  }
-};
+  };
 
-  // Resolve PO id for a requisition: prefer freshly-generated one in this session,
-  // fall back to the id coming from the requisition response (after PO_GENERATED status).
-  const getPoId = (req) => poMap[req.id] ?? null;
+  const getPo = (req) => poMap[req.id] ?? null;
+  const isPoSent = (req) => getPo(req)?.status === PO_SENT_STATUS;
 
-  // ---------- Generate PO ----------
-  const openPOModal = async (req) => {
+  // ---------- Generate PO (modal: supplier + date selected here) ----------
+  const openGenerateModal = async (req) => {
     const categoryId = req.items?.[0]?.categoryId;
 
+    setGenModalReq(req);
+    setSelectedSupplierId("");
+    setExpectedDeliveryDate("");
+    setGenError("");
+
     if (!categoryId) {
-      setPoModalReq(req);
-      setPoError("categories not found");
+      setGenError("categories not found");
       return;
     }
 
-    setPoModalReq(req);
-    setSelectedSupplierId("");
-    setExpectedDeliveryDate("");
-    setPoError("");
     setLoadingSuppliers(true);
     try {
       const list = await suppliersService.getAllSuppliersByCategoriyId(categoryId);
       setSuppliers(list);
     } catch (err) {
-      setPoError(getErrorMessage(err));
+      setGenError(getErrorMessage(err));
     } finally {
       setLoadingSuppliers(false);
     }
   };
+   
+  const handleOpenPdf = (req) => {
+  const po = getPo(req);
 
-  const closePOModal = () => {
-    if (submittingPO) return;
-    setPoModalReq(null);
+  if (po?.pdfURL) {
+    window.open(po.pdfURL, "_blank");
+  } else {
+    setError("PDF not available");
+  }
+};
+  const closeGenerateModal = () => {
+    if (submittingGenerate) return;
+    setGenModalReq(null);
     setSuppliers([]);
     setSelectedSupplierId("");
     setExpectedDeliveryDate("");
-    setPoError("");
+    setGenError("");
   };
 
-  const handleGeneratePO = async (e) => {
+  const handleGenerateSubmit = async (e) => {
     e.preventDefault();
     if (!selectedSupplierId) {
-      setPoError("select supplier");
+      setGenError("select supplier");
       return;
     }
     if (!expectedDeliveryDate) {
-      setPoError("Expected delivery date zaroori hai");
+      setGenError("Expected delivery date zaroori hai");
       return;
     }
 
-    try {
-      setSubmittingPO(true);
-    const po = await purchaseOrderService.generatePurchaseOrder({
-    requisitionId: poModalReq.id,
-    supplierId: Number(selectedSupplierId),
-    expectedDeliveryDate,
-    poItems: poModalReq.items.map(item => ({
-        requisitionItemId: item.id,
-        quantity: item.quantity,
-        unitPrice: item.unitPrice
-    }))
-});
+    const req = genModalReq;
+    if (!req) return;
 
-      setPoMap((prev) => ({ ...prev, [poModalReq.id]: po.id }));
-      closePOModal();
+    setError("");
+    try {
+      setSubmittingGenerate(true);
+      const po = await purchaseOrderService.generatePurchaseOrder({
+        requisitionId: req.id,
+        poItems: req.items.map((item) => ({
+          requisitionItemId: item.id,
+          quantity: item.quantity,
+          unitPrice: item.unitPrice,
+        })),
+        supplierId: Number(selectedSupplierId),
+        expectedDeliveryDate,
+      });
+
+      setPoMap((prev) => ({
+        ...prev,
+        [req.id]: {
+          id: po.id,
+          status: po.status,
+          pdfURL: po.pdfURL,
+          poNumber: po.poNumber,
+        },
+      }));
+
+      closeGenerateModal();
       await loadRequisitions();
     } catch (err) {
-      setPoError(getErrorMessage(err));
+      setGenError(getErrorMessage(err));
     } finally {
-      setSubmittingPO(false);
+      setSubmittingGenerate(false);
+    }
+  };
+
+  // ---------- View PO (opens Cloudinary pdfURL directly in a new tab) ----------
+  const openViewPoModal = (req) => setViewPoReq(req);
+  const closeViewPoModal = () => setViewPoReq(null);
+
+  
+
+  // ---------- Send to Supplier (direct action, only poId sent) ----------
+  const handleSendToSupplier = async (req) => {
+    const po = getPo(req);
+    if (!po) {
+      setError("PO not found");
+      return;
+    }
+
+    setError("");
+    setSendingPoReqId(req.id);
+    try {
+      const updatedPo = await purchaseOrderService.sendToSupplier(po.id);
+
+      const newStatus = updatedPo?.status || PO_SENT_STATUS;
+      setPoMap((prev) => ({
+        ...prev,
+        [req.id]: {
+          id: updatedPo?.id || po.id,
+          status: newStatus,
+          pdfURL: updatedPo?.pdfURL || po.pdfURL,
+          poNumber: updatedPo?.poNumber || po.poNumber,
+        },
+      }));
+
+      await loadRequisitions();
+    } catch (err) {
+      setError(getErrorMessage(err));
+    } finally {
+      setSendingPoReqId(null);
     }
   };
 
   // ---------- Track PO ----------
   const handleTrackPO = async (req) => {
-    const poId = getPoId(req);
-    if (!poId) return;
+    const po = getPo(req);
+    if (!po) return;
 
     setTrackingPoId(req.id);
     setTrackPoReq(req);
@@ -182,7 +257,7 @@ export const ApprovedRequisitionSection = () => {
     setLoadingPoHistory(true);
 
     try {
-      const res = await purchaseOrderService.generatePurchaseOrderHistory(poId);
+      const res = await purchaseOrderService.getPurchaseOrderHistory(po.id);
       setPoHistory(res);
     } catch (err) {
       setError(getErrorMessage(err));
@@ -196,29 +271,6 @@ export const ApprovedRequisitionSection = () => {
   const closeTrackPOModal = () => {
     setTrackPoReq(null);
     setPoHistory([]);
-  };
-
-  // ---------- Download PO ----------
-  const handleDownloadPO = async (req) => {
-    const poId = getPoId(req);
-    if (!poId) return;
-
-    setDownloadingPoId(req.id);
-    try {
-      const blob = await purchaseOrderService.downloadePurchaseOrder(poId);
-      const url = window.URL.createObjectURL(blob);
-      const link = document.createElement("a");
-      link.href = url;
-      link.download = `PurchaseOrder-${req.requisitionNo}.pdf`;
-      document.body.appendChild(link);
-      link.click();
-      link.remove();
-      window.URL.revokeObjectURL(url);
-    } catch (err) {
-      setError(getErrorMessage(err));
-    } finally {
-      setDownloadingPoId(null);
-    }
   };
 
   return (
@@ -259,8 +311,7 @@ export const ApprovedRequisitionSection = () => {
               </tr>
             ) : requisitions.length > 0 ? (
               requisitions.map((req) => {
-                const isPoGenerated = req.status === PO_GENERATED_STATUS;
-                const poId = getPoId(req);
+                const po = getPo(req);
 
                 return (
                   <tr key={req.id}>
@@ -276,28 +327,49 @@ export const ApprovedRequisitionSection = () => {
                     <td data-label="Created">{new Date(req.createdAt).toLocaleDateString()}</td>
                     <td data-label="Action">
                       <div className="action-group">
-                        {isPoGenerated ? (
-                          <>
-                            <button
-                              className="view-btn"
-                              onClick={() => handleDownloadPO(req)}
-                              disabled={!poId || downloadingPoId === req.id}
-                            >
-                              {downloadingPoId === req.id ? "…" : "Download PO"}
-                            </button>
-                            <button
-                              className="track-btn"
-                              onClick={() => handleTrackPO(req)}
-                              disabled={!poId || trackingPoId === req.id}
-                            >
-                              {trackingPoId === req.id ? "…" : "Track PO"}
-                            </button>
-                          </>
-                        ) : (
-                          <button className="approve-btn" onClick={() => openPOModal(req)}>
+                        {req.status === "APPROVED" ? (
+                          <button className="approve-btn" onClick={() => openGenerateModal(req)}>
                             Generate PO
                           </button>
-                        )}
+                        ) : req.status === "PO_GENERATED" ? (
+                          <>
+                            <button className="view-btn" onClick={() =>  handleOpenPdf(req)} disabled={!po}>
+                              View PO
+                            </button>
+
+                            <button className="track-btn" onClick={() => handleTrackPO(req)} disabled={!po}>
+                              Track PO
+                            </button>
+
+                            <button
+                              className="approve-btn"
+                              onClick={() => handleSendToSupplier(req)}
+                              disabled={!po || sendingPoReqId === req.id}
+                            >
+                              {sendingPoReqId === req.id ? "Sending…" : "Send to Supplier"}
+                            </button>
+                          </>
+                        ) : req.status === "SENT_TO_SUPPLIER" ? (
+                          <>
+                            <button className="view-btn" onClick={() => openViewPoModal(req)} disabled={!po}>
+                              View PO
+                            </button>
+
+                            <button className="track-btn" onClick={() => handleTrackPO(req)} disabled={!po}>
+                              Track PO
+                            </button>
+                          </>
+                        ) : req.status === "DELIVERED" ? (
+                          <>
+                            <button className="view-btn" onClick={() => openViewPoModal(req)} disabled={!po}>
+                              View PO
+                            </button>
+
+                            <button className="track-btn" onClick={() => handleTrackPO(req)} disabled={!po}>
+                              Track PO
+                            </button>
+                          </>
+                        ) : null}
                       </div>
                     </td>
                   </tr>
@@ -314,38 +386,41 @@ export const ApprovedRequisitionSection = () => {
         </table>
       </div>
 
-      {/* Generate PO Modal */}
-      {poModalReq &&
+      {/* Generate PO Modal — supplier + expected delivery date selected here */}
+      {genModalReq &&
         createPortal(
-          <div className="modal-overlay" onClick={closePOModal}>
+          <div className="modal-overlay" onClick={closeGenerateModal}>
             <div className="modal-content action-modal" onClick={(e) => e.stopPropagation()}>
               <div className="modal-header">
-                <h2>Generate Purchase Order — {poModalReq.requisitionNo}</h2>
-                <button className="modal-close" onClick={closePOModal} disabled={submittingPO} aria-label="Close">
+                <h2>Generate PO — {genModalReq.requisitionNo}</h2>
+                <button
+                  className="modal-close"
+                  onClick={closeGenerateModal}
+                  disabled={submittingGenerate}
+                  aria-label="Close"
+                >
                   ×
                 </button>
               </div>
 
               <p className="action-summary">
-                <strong>{poModalReq.title}</strong> — ₹{Number(poModalReq.totalEstimatedAmount).toLocaleString()}
+                <strong>{genModalReq.title}</strong> — ₹
+                {Number(genModalReq.totalEstimatedAmount).toLocaleString()}
               </p>
 
-              {poError && (
+              {genError && (
                 <div className="error-box">
-                  <span>{poError}</span>
+                  <span>{genError}</span>
                 </div>
               )}
 
-              <form onSubmit={handleGeneratePO} noValidate>
+              <form onSubmit={handleGenerateSubmit} noValidate>
                 <div className="field">
                   <label>Supplier</label>
                   {loadingSuppliers ? (
                     <p className="no-data">Loading suppliers…</p>
                   ) : (
-                    <select
-                      value={selectedSupplierId}
-                      onChange={(e) => setSelectedSupplierId(e.target.value)}
-                    >
+                    <select value={selectedSupplierId} onChange={(e) => setSelectedSupplierId(e.target.value)}>
                       <option value="">Select supplier</option>
                       {suppliers.map((s) => (
                         <option key={s.id} value={s.id}>
@@ -367,14 +442,15 @@ export const ApprovedRequisitionSection = () => {
                 </div>
 
                 <div className="modal-actions">
-                  <button
-                    type="submit"
-                    className="approve-btn-lg"
-                    disabled={submittingPO || loadingSuppliers}
-                  >
-                    {submittingPO ? "Generating…" : "Generate PO & Notify Supplier"}
+                  <button type="submit" className="approve-btn-lg" disabled={submittingGenerate || loadingSuppliers}>
+                    {submittingGenerate ? "Generating…" : "Generate PO"}
                   </button>
-                  <button type="button" className="btn-secondary" onClick={closePOModal} disabled={submittingPO}>
+                  <button
+                    type="button"
+                    className="btn-secondary"
+                    onClick={closeGenerateModal}
+                    disabled={submittingGenerate}
+                  >
                     Cancel
                   </button>
                 </div>
@@ -384,6 +460,8 @@ export const ApprovedRequisitionSection = () => {
           document.body
         )}
 
+      
+      
       {/* Track PO Modal */}
       {trackPoReq &&
         createPortal(

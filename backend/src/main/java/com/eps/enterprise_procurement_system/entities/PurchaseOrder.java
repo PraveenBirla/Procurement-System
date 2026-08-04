@@ -43,6 +43,10 @@ public class PurchaseOrder {
     @Column(name = "total_amount", precision = 14, scale = 2)
     private BigDecimal totalAmount;
 
+    @Column(name = "po_url")
+    private String pdfURL ;
+
+
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "generated_by", foreignKey = @ForeignKey(name = "fk_po_generated_by"))
     private User generatedBy;

@@ -2,7 +2,8 @@ package com.eps.enterprise_procurement_system.controllers;
 
 import java.util.List;
 
-import com.eps.enterprise_procurement_system.dto.PurchaseOrderHistoryResponseDTO;
+import com.eps.enterprise_procurement_system.dto.*;
+import org.apache.poi.ss.formula.functions.T;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
@@ -10,9 +11,6 @@ import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
 import com.eps.enterprise_procurement_system.advices.ApiResponse;
-import com.eps.enterprise_procurement_system.dto.PurchaseOrderRequestDTO;
-import com.eps.enterprise_procurement_system.dto.PurchaseOrderResponseDTO;
-import com.eps.enterprise_procurement_system.dto.PurchaseOrderStatusRequestDTO;
 import com.eps.enterprise_procurement_system.entities.enums.PurchaseOrderStatus;
 import com.eps.enterprise_procurement_system.services.PurchaseOrderService;
 import com.eps.enterprise_procurement_system.util.CurrentUser;
@@ -28,9 +26,7 @@ public class PurchaseOrderController {
     private final PurchaseOrderService purchaseOrderService;
     private final CurrentUser currentUser;
 
-    // ======================================================
-    // Generate Purchase Order
-    // ======================================================
+
 
     @PostMapping
     @PreAuthorize("hasAnyRole('PROCUREMENT','ADMIN')")
@@ -63,13 +59,13 @@ public class PurchaseOrderController {
         return ResponseEntity.ok(new ApiResponse<>(purchaseOrderService.getPurchaseOrderById(id)));
     }
 
-//    @GetMapping("/{requisitionId}/requisition")
-//    @PreAuthorize("hasAnyRole('ADMIN','PROCUREMENT','FINANCE','MANAGER')")
-//    public ResponseEntity<ApiResponse<PurchaseOrderResponseDTO>> getPurchaseOrderByRequisionId(
-//            @PathVariable Long requisitionId) {
-//
-//        return ResponseEntity.ok(new ApiResponse<>(purchaseOrderService.getPurchaseOrderByRequisitionId(requisitionId)));
-//    }
+    @GetMapping("/{requisitionId}/requisition")
+    @PreAuthorize("hasAnyRole('ADMIN','PROCUREMENT','FINANCE','MANAGER')")
+    public ResponseEntity<ApiResponse<PurchaseOrderResponseDTO>> getPurchaseOrderByRequisionId(
+            @PathVariable Long requisitionId) {
+
+        return ResponseEntity.ok(new ApiResponse<>(purchaseOrderService.getPurchaseOrderByRequisitionId(requisitionId)));
+    }
 
     // Get Purchase Orders By Status
 
@@ -235,6 +231,16 @@ public class PurchaseOrderController {
 
         return ResponseEntity.ok(new ApiResponse<>(purchaseOrderService.getHistory(id)));
     }
+
+
+    @PostMapping("/{poId}/send")
+    @PreAuthorize("hasAnyRole('ADMIN', 'PROCUREMENT')")
+    public ResponseEntity<ApiResponse<String>> sendPOtoSupplier(@PathVariable Long poId){
+
+        purchaseOrderService.sendToSupplier(poId);
+        return ResponseEntity.ok(new ApiResponse<>("Purchase Order sent successfully"));
+    }
+
 
 
 }

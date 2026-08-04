@@ -7,7 +7,7 @@ const purchaseOrderService = {
        return res.data.data;
   },  
 
-  async generatePurchaseOrderHistory(poId){
+  async getPurchaseOrderHistory(poId){
      const res = await api.get(`/purchase-orders/${poId}/history` );
        return res.data.data;
   },
@@ -22,6 +22,11 @@ const purchaseOrderService = {
         responseType: "blob",
     });
        return res.data ;
+  }, 
+
+  async  sendToSupplier(poId){
+    const res = await api.post(`/purchase-orders/${poId}/send`)
+       return res.data.data ;
   }
 
 }

@@ -11,5 +11,6 @@ public enum PurchaseOrderStatus {
     REPLACEMENT_PENDING,
     REPLACEMENT_RECEIVED,
     PARTIALLY_RECEIVED,
-    CANCELLED
+    CANCELLED,
+
 }
