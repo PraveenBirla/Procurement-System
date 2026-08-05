@@ -2,6 +2,7 @@ package com.eps.enterprise_procurement_system.services;
 
 import com.cloudinary.Cloudinary;
 import com.eps.enterprise_procurement_system.config.CloudinaryConfig;
+import org.apache.commons.collections4.MapUtils;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
 
@@ -34,6 +35,29 @@ public class CloudinaryService {
         catch (Exception e){
             e.printStackTrace();
             throw new RuntimeException(e.getMessage(),e);
+        }
+    }
+
+    public String uploadDocs(MultipartFile file) {
+
+        try {
+
+            Map<?, ?> uploadResult = cloudinary.uploader().upload(
+                    file.getBytes(),
+                    Map.of(
+                            "resource_type", "auto",
+                            "folder", "supplier_documents",
+                            "public_id", file.getOriginalFilename(),
+                            "use_filename", true,
+                            "overwrite", true
+                    )
+            );
+
+            return uploadResult.get("secure_url").toString();
+
+        } catch (Exception e) {
+            e.printStackTrace();
+            throw new RuntimeException("Failed to upload document", e);
         }
     }
 }

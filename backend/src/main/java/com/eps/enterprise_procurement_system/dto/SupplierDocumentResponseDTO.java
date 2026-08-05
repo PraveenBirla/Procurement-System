@@ -1,9 +1,11 @@
 package com.eps.enterprise_procurement_system.dto;
 
+import com.eps.enterprise_procurement_system.entities.enums.SupplierDocumentType;
 import com.eps.enterprise_procurement_system.entities.enums.VerificationStatus;
 import lombok.Data;
 
 import java.time.LocalDate;
+import java.time.LocalDateTime;
 
 @Data
 public class SupplierDocumentResponseDTO {
@@ -14,25 +16,11 @@ public class SupplierDocumentResponseDTO {
 
     private String supplierName;
 
-    private String documentType;
-
-    private String documentNumber;
+    private SupplierDocumentType documentType;
 
     private String fileName;
 
-    private String filePath;
+    private String fileUrl;
 
-    private Long fileSize;
-
-    private String contentType;
-
-    private LocalDate expiryDate;
-
-    private VerificationStatus verificationStatus;
-
-    private Long verifiedById;
-
-    private String verifiedByName;
-
-    private String remarks;
+    private LocalDateTime uploadedAt;
 }
