@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import supplierService from "../../services/suppliersService";
 import productService from "../../services/productService";
 
@@ -8,6 +8,14 @@ const emptyForm = {
   address: "",
   categoryId: "",
 };
+
+const DOCUMENT_TYPES = [
+  { type: "GST_CERTIFICATE", label: "GST Certificate" },
+  { type: "PAN_CARD", label: "PAN Card" },
+  { type: "BUSINESS_REGISTRATION", label: "Business Registration" },
+  { type: "BANK_PROOF", label: "Bank Proof" },
+  { type: "OTHER", label: "Other" },
+];
 
 export const SupplierProfileSection = () => {
   const [profile, setProfile] = useState(null);
@@ -22,6 +30,12 @@ export const SupplierProfileSection = () => {
   const [formErrors, setFormErrors] = useState({});
   const [submitting, setSubmitting] = useState(false);
 
+  // Documents
+  const [documents, setDocuments] = useState([]);
+  const [loadingDocuments, setLoadingDocuments] = useState(true);
+  const [uploadingType, setUploadingType] = useState(null);
+  const fileInputRefs = useRef({});
+
   const getErrorMessage = (err) => {
     return (
       err?.response?.data?.error?.message ||
@@ -34,6 +48,7 @@ export const SupplierProfileSection = () => {
   useEffect(() => {
     loadProfile();
     loadCategories();
+    loadDocuments();
   }, []);
 
   const loadProfile = async () => {
@@ -64,6 +79,58 @@ export const SupplierProfileSection = () => {
     }
   };
 
+  const loadDocuments = async () => {
+    setLoadingDocuments(true);
+    try {
+      const res = await supplierService.getAllDocumments();
+      setDocuments(res);
+    } catch (err) {
+      setError(getErrorMessage(err));
+    } finally {
+      setLoadingDocuments(false);
+    }
+  };
+
+  const getDocumentFor = (type) => documents.find((d) => d.documentType === type) || null;
+
+  const triggerFileSelect = (type) => {
+    fileInputRefs.current[type]?.click();
+  };
+
+  const handleFileSelected = async (type, e) => {
+  const file = e.target.files?.[0];
+  e.target.value = "";
+
+  if (!file) return;
+
+  setUploadingType(type);
+  setError("");
+
+  try {
+    const existingDoc = getDocumentFor(type);
+
+    if (existingDoc) {
+      
+      await supplierService.updateDocument(existingDoc.id, file);
+    } else {
+       
+      await supplierService.uploadDocument(type, file);
+    }
+
+    await loadDocuments();
+  } catch (err) {
+    setError(getErrorMessage(err));
+  } finally {
+    setUploadingType(null);
+  }
+};
+
+  const handleViewDocument = (doc) => {
+    if (!doc?.fileUrl) return;
+    window.open(doc.fileUrl, "_blank", "noopener,noreferrer");
+  };
+
+  // ─── Profile handlers ───
   const openCreateForm = () => {
     setForm(emptyForm);
     setFormErrors({});
@@ -248,6 +315,79 @@ export const SupplierProfileSection = () => {
             </button>
           </div>
         </form>
+      )}
+
+      {/* Documents */}
+      {!notFound && (
+        <div className="documents-section" style={{ marginTop: "2rem" }}>
+          <h3>Documents</h3>
+
+          {loadingDocuments ? (
+            <p className="no-data">Loading documents…</p>
+          ) : (
+            <div className="table-wrapper">
+              <table className="table">
+                <thead>
+                  <tr>
+                    <th>Document Type</th>
+                    <th>File Name</th>
+                    <th>Uploaded At</th>
+                    <th>Action</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {DOCUMENT_TYPES.map(({ type, label }) => {
+                    const doc = getDocumentFor(type);
+                    const isUploading = uploadingType === type;
+
+                    return (
+                      <tr key={type}>
+                        <td data-label="Document Type">{label}</td>
+                        <td data-label="File Name">{doc?.fileName || "-"}</td>
+                        <td data-label="Uploaded At">
+                          {doc?.uploadedAt ? new Date(doc.uploadedAt).toLocaleString() : "-"}
+                        </td>
+                        <td data-label="Action">
+                          <div className="action-group">
+                            {doc ? (
+                              <>
+                                <button className="view-btn" onClick={() => handleViewDocument(doc)}>
+                                  View
+                                </button>
+                                <button
+                                  className="btn-secondary"
+                                  onClick={() => triggerFileSelect(type)}
+                                  disabled={isUploading}
+                                >
+                                  {isUploading ? "Uploading…" : "Replace"}
+                                </button>
+                              </>
+                            ) : (
+                              <button
+                                className="btn-primary"
+                                onClick={() => triggerFileSelect(type)}
+                                disabled={isUploading}
+                              >
+                                {isUploading ? "Uploading…" : "Upload"}
+                              </button>
+                            )}
+
+                            <input
+                              type="file"
+                              ref={(el) => (fileInputRefs.current[type] = el)}
+                              style={{ display: "none" }}
+                              onChange={(e) => handleFileSelected(type, e)}
+                            />
+                          </div>
+                        </td>
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
+            </div>
+          )}
+        </div>
       )}
     </div>
   );

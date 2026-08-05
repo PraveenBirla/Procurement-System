@@ -27,15 +27,15 @@ const  suppliersService = {
        return res.data.data;
    }, 
    
-   async uploadeDocumments(data){
-     const res = await api.post("/supplier-documents", data);
-       return res.data.data;
-   }, 
+  //  async uploadeDocumments(data){
+  //    const res = await api.post("/supplier-documents", data);
+  //      return res.data.data;
+  //  }, 
    
-   async updatedeDocumments(documentId, data){
-     const res = await api.put(`/supplier-documents/${documentId}`, data);
-       return res.data.data;
-   }, 
+  //  async updatedeDocumments(documentId, data){
+  //    const res = await api.put(`/supplier-documents/${documentId}`, data);
+  //      return res.data.data;
+  //  }, 
 
    async deleteDocumments(documentId){
      const res = await api.delete(`/supplier-documents/${documentId}`);
@@ -54,7 +54,47 @@ const  suppliersService = {
         }
       });
        return res.data.data;
-     }  
+     },  
+
+     async uploadDocument(documentType, file) {
+
+    const formData = new FormData();
+
+    formData.append("documentType", documentType);
+    formData.append("file", file);
+
+    const res = await api.post(
+        "/supplier-documents/documents",
+        formData,
+        {
+            headers: {
+                "Content-Type": "multipart/form-data",
+            },
+        }
+    ); 
+    return res.data.data;
+} ,
+
+async updateDocument(documentId, file) {
+
+    const formData = new FormData();
+
+    formData.append("file", file);
+
+    const res = await api.put(
+        `/supplier-documents/documents/${documentId}`,
+        formData,
+        {
+            headers: {
+                "Content-Type": "multipart/form-data",
+            },
+        }
+    );
+
+    return res.data.data;
+}
+
+ 
 
 
 

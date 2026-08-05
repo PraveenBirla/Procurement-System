@@ -1,10 +1,12 @@
 package com.eps.enterprise_procurement_system.entities;
 
+import com.eps.enterprise_procurement_system.entities.enums.SupplierDocumentType;
 import com.eps.enterprise_procurement_system.entities.enums.VerificationStatus;
 import jakarta.persistence.*;
 import lombok.*;
 
 import java.time.LocalDate;
+import java.time.LocalDateTime;
 
 @Entity
 @Table(name = "supplier_document")
@@ -19,42 +21,17 @@ public class SupplierDocument {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "supplier_id", nullable = false,
-            foreignKey = @ForeignKey(name = "fk_supplier_doc_supplier"))
+    @ManyToOne
+    @JoinColumn(name = "supplier_id")
     private Supplier supplier;
 
-    @Column(name = "document_type", length = 50)
-    private String documentType;
+    @Enumerated(EnumType.STRING)
+    private SupplierDocumentType documentType;
 
-    @Column(name = "document_number", length = 100)
-    private String documentNumber;
-
-    @Column(name = "file_name")
     private String fileName;
 
-    @Column(name = "file_path")
-    private String filePath;
+    private String fileUrl;
 
-    @Column(name = "file_size")
-    private Long fileSize;
+    private LocalDateTime uploadedAt;
 
-    @Column(name = "content_type")
-    private String contentType;
-
-    @Column(name = "expiry_date")
-    private LocalDate expiryDate;
-
-    @Enumerated(EnumType.STRING)
-    @Column(name = "verification_status", nullable = false, length = 30)
-    @Builder.Default
-    private VerificationStatus verificationStatus = VerificationStatus.PENDING;
-
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "verified_by", foreignKey = @ForeignKey(name = "fk_supplier_doc_verified_by"))
-    private User verifiedBy;
-
-    @Lob
-    @Column(name = "remarks")
-    private String remarks;
 }
