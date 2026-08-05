@@ -46,6 +46,9 @@ public class PurchaseOrder {
     @Column(name = "po_url")
     private String pdfURL ;
 
+    @Column(name = "invoice_url")
+     private String invoiceURL;
+
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "generated_by", foreignKey = @ForeignKey(name = "fk_po_generated_by"))

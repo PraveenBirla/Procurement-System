@@ -45,6 +45,15 @@ const  suppliersService = {
     async getSuppliersOrder(){
        const res = await api.get("/purchase-orders/supplier");
        return res.data.data;
+     } ,
+    
+     async getSuppliersOrderByStatus(status){
+       const res = await api.get("/purchase-orders/status/supplier",{
+        params: {
+         status,
+        }
+      });
+       return res.data.data;
      }  
 
 

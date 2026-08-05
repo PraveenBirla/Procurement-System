@@ -109,6 +109,8 @@ public class PurchaseOrderService {
 
                 dto.setPdfURL(purchaseOrder.getPdfURL());
 
+                dto.setInvoiceURL(purchaseOrder.getInvoiceURL());
+
                 dto.setExpectedDeliveryDate(purchaseOrder.getExpectedDeliveryDate());
 
                 dto.setCreatedAt(purchaseOrder.getCreatedAt());
@@ -368,6 +370,8 @@ public class PurchaseOrderService {
 
                 return convertToDTO(saved);
         }
+
+
 
         private void applyTransitionLogic(PurchaseOrder order, PurchaseOrderStatus from, PurchaseOrderStatus to, User user) {
 
@@ -736,19 +740,31 @@ public class PurchaseOrderService {
                 return pdfService.generatePurchaseOrder(order);
         }
 
-        public byte[] generateInvoice(Long poId) {
+        @Transactional
+        public  PurchaseOrderResponseDTO generateInvoice(Long poId) {
 
                 PurchaseOrder order = purchaseOrderRepo.findById(poId)
-                                .orElseThrow(() -> new ResponseStatusException(
+                                 .orElseThrow(() -> new ResponseStatusException(
                                                 HttpStatus.NOT_FOUND, "Purchase Order not found"));
 
                 if (order.getStatus() != PurchaseOrderStatus.PO_RECEIVED) {
 
                         throw new ResponseStatusException(
-                                        HttpStatus.BAD_REQUEST, "Invoice can be generated only after goods are received");
+                                         HttpStatus.BAD_REQUEST, "Invoice can be generated only after goods are received");
                 }
 
-                return pdfService.generateInvoice(order);
+                byte[] pdf =  pdfService.generateInvoice(order);
+
+                String url = cloudinaryService.uploadFile(pdf,"Invoice" + order.getRequisition().getId());
+
+                order.setStatus(PurchaseOrderStatus.IN_DELIVERY);
+                order.setInvoiceURL(url);
+
+                purchaseOrderRepo.save(order);
+
+                savePurchaseOrderHistory(order,PurchaseOrderStatus.IN_DELIVERY, currentUser.get());
+
+                return convertToDTO(order);
         }
 
         public byte[] exportPoItems(Long poId) {
@@ -827,5 +843,20 @@ public class PurchaseOrderService {
         purchaseOrderRepo.save(po);
         savePurchaseOrderHistory(po , PurchaseOrderStatus.SENT_TO_SUPPLIER, currentUser.get());
         requisitionRepo.save(requisition);
+    }
+
+    public List<PurchaseOrderResponseDTO> getSupplierPurchaseOrdersByStatus(
+
+            PurchaseOrderStatus status) {
+
+            Supplier supplier = supplierRepo.findByUserId(currentUser.get().getId())
+                    .orElseThrow(() -> new RuntimeException("Suplier Not Found"));
+
+        return purchaseOrderRepo
+                .findBySupplierIdAndStatus(supplier.getId(), status)
+                .stream()
+                .map(this::convertToDTO)
+                .toList();
+
     }
 }

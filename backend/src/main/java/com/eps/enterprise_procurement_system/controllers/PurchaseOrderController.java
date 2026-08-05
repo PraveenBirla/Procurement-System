@@ -70,7 +70,7 @@ public class PurchaseOrderController {
     // Get Purchase Orders By Status
 
     @GetMapping("/status/{status}")
-    @PreAuthorize("hasAnyRole('ADMIN','PROCUREMENT','FINANCE','MANAGER')")
+    @PreAuthorize("hasAnyRole('ADMIN','PROCUREMENT','FINANCE','MANAGER' , SUPPLIER)")
     public ResponseEntity<ApiResponse<List<PurchaseOrderResponseDTO>>> getByStatus(@PathVariable PurchaseOrderStatus status) {
 
         return ResponseEntity.ok(new ApiResponse<>(purchaseOrderService.getPurchaseOrdersByStatus(status)));
@@ -151,18 +151,25 @@ public class PurchaseOrderController {
 
     // Download Invoice PDF
 
-    @GetMapping("/{id}/invoice")
-    @PreAuthorize("hasAnyRole('ADMIN','PROCUREMENT','FINANCE')")
-    public ResponseEntity<byte[]> downloadInvoice(@PathVariable Long id) {
+//    @GetMapping("/{id}/invoice")
+//    @PreAuthorize("hasAnyRole('ADMIN','PROCUREMENT','FINANCE')")
+//    public ResponseEntity<byte[]> downloadInvoice(@PathVariable Long id) {
+//
+//        byte[] pdf = purchaseOrderService.generateInvoice(id);
+//
+//        return ResponseEntity.ok()
+//                .header(HttpHeaders.CONTENT_DISPOSITION,
+//                        "attachment; filename=Invoice_" + id + ".pdf")
+//                .contentType(MediaType.APPLICATION_PDF)
+//                .body(pdf);
+//    }
 
-        byte[] pdf = purchaseOrderService.generateInvoice(id);
-
-        return ResponseEntity.ok()
-                .header(HttpHeaders.CONTENT_DISPOSITION,
-                        "attachment; filename=Invoice_" + id + ".pdf")
-                .contentType(MediaType.APPLICATION_PDF)
-                .body(pdf);
+    @PostMapping("/{id}/invoice")
+    @PreAuthorize("hasAnyRole('ADMIN','PROCUREMENT','FINANCE', 'PROCUREMENT')")
+    public ResponseEntity<ApiResponse<PurchaseOrderResponseDTO>> generateInvoice(@PathVariable Long id){
+          return ResponseEntity.ok(new ApiResponse<>(purchaseOrderService.generateInvoice(id)));
     }
+
 
     // Download Goods Receipt PDF
 
@@ -239,6 +246,20 @@ public class PurchaseOrderController {
 
         purchaseOrderService.sendToSupplier(poId);
         return ResponseEntity.ok(new ApiResponse<>("Purchase Order sent successfully"));
+    }
+
+    @GetMapping("/status/supplier")
+    @PreAuthorize("hasRole('SUPPLIER')")
+    public ResponseEntity<ApiResponse<List<PurchaseOrderResponseDTO>>> getSupplierOrdersByStatus(
+            @RequestParam PurchaseOrderStatus status) {
+
+        return ResponseEntity.ok(
+                new ApiResponse<>(
+                        purchaseOrderService.getSupplierPurchaseOrdersByStatus(
+                                status
+                        )
+                )
+        );
     }
 
 

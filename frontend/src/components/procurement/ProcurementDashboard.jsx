@@ -1,19 +1,29 @@
 import { useState } from "react";
 import {
-  Package,
+ ClipboardList,
+  BadgeCheck,
+  ShoppingCart,
+  Truck,
+  PackageCheck,
   LogOut
 } from "lucide-react";  
 import authService from "../../services/authService";
 import { RequisitionSection } from "./RequisitionSection";
 import { ApprovedRequisitionSection } from "./ApprovedRequisitionSection";
 import { PurchaseOrderSection } from "./PurchaseOrderSection";
+import { DeliveredSection } from "./DeliveredOrder";
+import { CompletedOrderSection } from "./CompletedOrderSection"; 
+
 export const ProcurementDashboard = () => {
   const [activeSection, setActiveSection] = useState("requition");
 
   const menuItems = [
-    { id: "requition", label: "requition", icon: Package },
-     { id: "ApprovedRequition", label: "Approved Requition", icon: Package }, 
-     { id: "PurchaseOrders", label: "Purchase Orders", icon: Package }
+    { id: "requition", label: "requition", icon:ClipboardList },
+     { id: "ApprovedRequition", label: "Approved Requition", icon: BadgeCheck }, 
+     { id: "PurchaseOrders", label: "Purchase Orders", icon: ShoppingCart },
+     { id: "DeliveredOrders", label: "Delivered Orders", icon: Truck},
+     { id: "CompletedOrders", label: "Completed Orders", icon: PackageCheck}
+
   ];
 
   return (
@@ -46,7 +56,8 @@ export const ProcurementDashboard = () => {
         {activeSection === "requition" &&  <RequisitionSection/> }
         {activeSection === "ApprovedRequition" &&  <ApprovedRequisitionSection/> }
         {activeSection === "PurchaseOrders" && <PurchaseOrderSection/> }
-         
+          {activeSection === "DeliveredOrders" && <DeliveredSection/> }
+           {activeSection === "CompletedOrders" && <CompletedOrderSection/> }
       </main>
     </div>
   );

@@ -39,4 +39,6 @@ public class PurchaseOrderResponseDTO {
     private List<PoItemResponseDTO> items;
 
     private  String pdfURL;
+
+    private String invoiceURL;
 }
