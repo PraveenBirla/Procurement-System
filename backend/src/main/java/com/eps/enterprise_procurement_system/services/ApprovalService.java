@@ -5,11 +5,13 @@ import com.eps.enterprise_procurement_system.dto.ApprovalResponseDTO;
 import com.eps.enterprise_procurement_system.dto.PurchaseRequisitionResponseDTO;
 import com.eps.enterprise_procurement_system.dto.RequisitionItemResponseDTO;
 import com.eps.enterprise_procurement_system.entities.Approval;
+import com.eps.enterprise_procurement_system.entities.PurchaseOrder;
 import com.eps.enterprise_procurement_system.entities.PurchaseRequisition;
 import com.eps.enterprise_procurement_system.entities.RequisitionItem;
 import com.eps.enterprise_procurement_system.entities.User;
 import com.eps.enterprise_procurement_system.entities.enums.ApprovalStatus;
 import com.eps.enterprise_procurement_system.entities.enums.ApprovalType;
+import com.eps.enterprise_procurement_system.entities.enums.RequisitionStatus;
 import com.eps.enterprise_procurement_system.repositories.ApprovalRepo;
 import com.eps.enterprise_procurement_system.repositories.PurchaseRequisitionRepo;
 import com.eps.enterprise_procurement_system.repositories.UserRepository;
@@ -205,17 +207,40 @@ public class ApprovalService {
         return response;
     }
 
-    public List<PurchaseRequisitionResponseDTO> getProcurementRequisitions(ApprovalStatus status) {
-        List<PurchaseRequisition>  requisitions =  approvalRepo.findRequisitionsByApprovalTypeAndStatus(
-                ApprovalType.PROCUREMENT,
-                status
-        );
+    public List<PurchaseRequisitionResponseDTO> getProcurementRequisitions( ApprovalStatus status) {
 
-        List<PurchaseRequisitionResponseDTO> response = requisitions.stream()
-                .map(this::mapToResponseDTO)
+        List<PurchaseRequisition> requisitions =
+                approvalRepo.findRequisitionsByApprovalTypeAndStatus(
+                        ApprovalType.PROCUREMENT,
+                        status
+                );
+
+        return requisitions.stream()
+                .map(req -> PurchaseRequisitionResponseDTO.builder()
+                        .id(req.getId())
+                        .requisitionNo(req.getRequisitionNo())
+                        .title(req.getTitle())
+                        .description(req.getDescription())
+
+                        .status(req.getStatus())
+                        .totalEstimatedAmount(req.getTotalEstimatedAmount())
+                        .isDuplicate(req.getIsDuplicate())
+                        .createdAt(req.getCreatedAt())
+                        .updatedAt(req.getUpdatedAt())
+
+                        .items(
+                                req.getItems().stream()
+                                        .map(item -> RequisitionItemResponseDTO.builder()
+                                                .id(item.getId())
+                                                .productId(item.getProduct().getId())
+                                                .categoryId(item.getProduct().getCategory().getId())
+                                                .productName(item.getProduct().getName())
+                                                .quantity(item.getQuantity())
+                                                .unitPrice(item.getUnitPrice())
+                                                .build())
+                                        .toList()
+                        )
+                        .build())
                 .toList();
-
-        return response;
-
-        }
+    }
 }

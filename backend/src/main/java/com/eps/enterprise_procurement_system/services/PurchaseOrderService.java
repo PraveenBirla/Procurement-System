@@ -1,39 +1,19 @@
 package com.eps.enterprise_procurement_system.services;
 
-import com.eps.enterprise_procurement_system.dto.GoodsReceiptItemRequestDTO;
-import com.eps.enterprise_procurement_system.dto.PoItemRequestDTO;
-import com.eps.enterprise_procurement_system.dto.PoItemResponseDTO;
-import com.eps.enterprise_procurement_system.dto.PurchaseOrderHistoryResponseDTO;
-import com.eps.enterprise_procurement_system.dto.PurchaseOrderRequestDTO;
-import com.eps.enterprise_procurement_system.dto.PurchaseOrderResponseDTO;
-import com.eps.enterprise_procurement_system.entities.GoodsReceipt;
-import com.eps.enterprise_procurement_system.entities.GoodsReceiptItem;
-import com.eps.enterprise_procurement_system.entities.Inventory;
-import com.eps.enterprise_procurement_system.entities.PoItem;
-import com.eps.enterprise_procurement_system.entities.PurchaseOrder;
-import com.eps.enterprise_procurement_system.entities.PurchaseOrderHistory;
-import com.eps.enterprise_procurement_system.entities.PurchaseRequisition;
-import com.eps.enterprise_procurement_system.entities.RequisitionItem;
-import com.eps.enterprise_procurement_system.entities.ReturnReplacement;
-import com.eps.enterprise_procurement_system.entities.Supplier;
-import com.eps.enterprise_procurement_system.entities.User;
+import com.eps.enterprise_procurement_system.advices.ApiResponse;
+import com.eps.enterprise_procurement_system.dto.*;
+import com.eps.enterprise_procurement_system.entities.*;
 import com.eps.enterprise_procurement_system.entities.enums.NotificationType;
 import com.eps.enterprise_procurement_system.entities.enums.PurchaseOrderStatus;
 import com.eps.enterprise_procurement_system.entities.enums.QualityStatus;
 import com.eps.enterprise_procurement_system.entities.enums.RequisitionStatus;
 import com.eps.enterprise_procurement_system.entities.enums.ReturnStatus;
-import com.eps.enterprise_procurement_system.repositories.GoodsReceiptRepo;
-import com.eps.enterprise_procurement_system.repositories.InventoryRepo;
-import com.eps.enterprise_procurement_system.repositories.PoItemRepo;
-import com.eps.enterprise_procurement_system.repositories.PurchaseOrderHistoryRepo;
-import com.eps.enterprise_procurement_system.repositories.PurchaseOrderRepo;
-import com.eps.enterprise_procurement_system.repositories.PurchaseRequisitionRepo;
-import com.eps.enterprise_procurement_system.repositories.ReturnReplacementRepo;
-import com.eps.enterprise_procurement_system.repositories.SupplierRepo;
-import com.eps.enterprise_procurement_system.repositories.UserRepository;
+import com.eps.enterprise_procurement_system.repositories.*;
 
+import com.eps.enterprise_procurement_system.util.CurrentUser;
 import lombok.RequiredArgsConstructor;
 
+import org.jspecify.annotations.Nullable;
 import org.modelmapper.ModelMapper;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
@@ -68,6 +48,10 @@ public class PurchaseOrderService {
         private final PurchaseOrderHistoryRepo purchaseOrderHistoryRepo;
         private final NotificationService notificationService;
         private final AuditService auditService;
+        private final RequisitionStatusHistoryRepo historyRepo;
+        private  final  CloudinaryService cloudinaryService;
+        private final  CurrentUser currentUser;
+
 
         private String generatePONumber() {
 
@@ -118,13 +102,14 @@ public class PurchaseOrderService {
 
                 dto.setRequisitionNo(purchaseOrder.getRequisition().getRequisitionNo());
 
-                dto.setSupplierId(purchaseOrder.getSupplier().getId());
-
-                dto.setSupplierName(purchaseOrder.getSupplier().getUser().getFullName());
 
                 dto.setStatus(purchaseOrder.getStatus());
 
                 dto.setTotalAmount(purchaseOrder.getTotalAmount());
+
+                dto.setPdfURL(purchaseOrder.getPdfURL());
+
+                dto.setInvoiceURL(purchaseOrder.getInvoiceURL());
 
                 dto.setExpectedDeliveryDate(purchaseOrder.getExpectedDeliveryDate());
 
@@ -178,9 +163,12 @@ public class PurchaseOrderService {
                         .toList();
         }
 
-        public List<PurchaseOrderResponseDTO> getSupplierOrders(Long supplierId) {
+        public List<PurchaseOrderResponseDTO> getSupplierOrders() {
 
-                return purchaseOrderRepo.findBySupplier_Id(supplierId)
+            Supplier supplier = supplierRepo.findByUserId(currentUser.get().getId())
+                    .orElseThrow(() -> new RuntimeException("supplier not found"));
+
+                return purchaseOrderRepo.findBySupplier_Id(supplier.getId())
                         .stream()
                         .map(this::convertToDTO)
                         .toList();
@@ -216,13 +204,13 @@ public class PurchaseOrderService {
         public PurchaseOrderResponseDTO generatePurchaseOrder(
                 PurchaseOrderRequestDTO dto, User procurementOfficer) {
 
-                // Fetch Approved Requisition
+
                 PurchaseRequisition requisition = getRequisition(dto.getRequisitionId());
 
                 // Validate delivery date is in future
-                if (dto.getExpectedDeliveryDate() != null && 
+                if (dto.getExpectedDeliveryDate() != null &&
                 dto.getExpectedDeliveryDate().isBefore(LocalDate.now())) {
-                        throw new ResponseStatusException(HttpStatus.BAD_REQUEST, 
+                        throw new ResponseStatusException(HttpStatus.BAD_REQUEST,
                         "Expected delivery date must be in the future");
                 }
 
@@ -327,6 +315,11 @@ public class PurchaseOrderService {
 
                 PurchaseOrder saved = purchaseOrderRepo.save(purchaseOrder);
 
+               byte[] pdfBytes = pdfService.generatePurchaseOrder(saved);
+
+               String url = cloudinaryService.uploadFile(pdfBytes,  "purchase-order-" + saved.getPoNumber()) ;
+               saved.setPdfURL(url);
+
                 boolean allOrdered = requisition.getItems()
                         .stream()
                         .allMatch(item ->
@@ -339,6 +332,17 @@ public class PurchaseOrderService {
                 }
 
                 requisitionRepo.save(requisition);
+
+            historyRepo.save(RequisitionStatusHistory.builder()
+                    .requisition(requisition)
+                    .oldStatus(requisition.getStatus())
+                    .newStatus(RequisitionStatus.PO_GENERATED)
+                    .changedBy(procurementOfficer)
+                    .remarks("purchase order generated")
+                    .build()
+            );
+
+            savePurchaseOrderHistory(purchaseOrder, PurchaseOrderStatus.GENERATED,  procurementOfficer);
 
                 notificationService.notify(
                         supplier,
@@ -366,6 +370,8 @@ public class PurchaseOrderService {
 
                 return convertToDTO(saved);
         }
+
+
 
         private void applyTransitionLogic(PurchaseOrder order, PurchaseOrderStatus from, PurchaseOrderStatus to, User user) {
 
@@ -424,8 +430,11 @@ public class PurchaseOrderService {
                 // Apply business logic based on transition
                 applyTransitionLogic(order, currentStatus, newStatus, user);
 
+
                 order.setStatus(newStatus);
                 PurchaseOrder saved = purchaseOrderRepo.save(order);
+
+                savePurchaseOrderHistory(saved, saved.getStatus(),user);
 
                 // Notify stakeholders
                 String reason = stateMachine.getTransitionReason(currentStatus, newStatus);
@@ -689,7 +698,19 @@ public class PurchaseOrderService {
                         List<PurchaseOrderHistory> historyList = purchaseOrderHistoryRepo
                                 .findByPurchaseOrderIdOrderByChangedAtAsc(poId);
                         return historyList.stream().map(
-                                history -> modelMapper.map(history, PurchaseOrderHistoryResponseDTO.class)
+                                history ->
+                                     PurchaseOrderHistoryResponseDTO.builder()
+                                             .id(history.getId())
+                                             .purchaseOrderId(history.getPurchaseOrder().getId())
+                                             .poNumber(history.getPurchaseOrder().getPoNumber())
+                                             .changedById(history.getChangedBy().getId())
+                                             .changedAt(history.getChangedAt())
+                                             .oldStatus(history.getOldStatus())
+                                             .newStatus(history.getNewStatus())
+                                             .changedByName(history.getChangedBy().getFullName())
+                                             .remarks(history.getRemarks())
+                                             .changedAt(history.getChangedAt())
+                                             .build()
                         ).toList();
                 }
                 else {
@@ -708,7 +729,7 @@ public class PurchaseOrderService {
                 return convertToDTO(order);
         }
 
-        //Pdfs and excels
+
         public byte[] generatePurchaseOrderPdf(Long poId) {
 
                 PurchaseOrder order = purchaseOrderRepo.findById(poId)
@@ -719,19 +740,31 @@ public class PurchaseOrderService {
                 return pdfService.generatePurchaseOrder(order);
         }
 
-        public byte[] generateInvoice(Long poId) {
+        @Transactional
+        public  PurchaseOrderResponseDTO generateInvoice(Long poId) {
 
                 PurchaseOrder order = purchaseOrderRepo.findById(poId)
-                                .orElseThrow(() -> new ResponseStatusException(
+                                 .orElseThrow(() -> new ResponseStatusException(
                                                 HttpStatus.NOT_FOUND, "Purchase Order not found"));
 
                 if (order.getStatus() != PurchaseOrderStatus.PO_RECEIVED) {
 
                         throw new ResponseStatusException(
-                                        HttpStatus.BAD_REQUEST, "Invoice can be generated only after goods are received");
+                                         HttpStatus.BAD_REQUEST, "Invoice can be generated only after goods are received");
                 }
 
-                return pdfService.generateInvoice(order);
+                byte[] pdf =  pdfService.generateInvoice(order);
+
+                String url = cloudinaryService.uploadFile(pdf,"Invoice" + order.getRequisition().getId());
+
+                order.setStatus(PurchaseOrderStatus.IN_DELIVERY);
+                order.setInvoiceURL(url);
+
+                purchaseOrderRepo.save(order);
+
+                savePurchaseOrderHistory(order,PurchaseOrderStatus.IN_DELIVERY, currentUser.get());
+
+                return convertToDTO(order);
         }
 
         public byte[] exportPoItems(Long poId) {
@@ -772,5 +805,58 @@ public class PurchaseOrderService {
                 return excelService.exportPurchaseOrders(orders);
         }
 
-    
+        public void savePurchaseOrderHistory(PurchaseOrder purchaseOrder, PurchaseOrderStatus status, User changedBy){
+               PurchaseOrderHistory history = new PurchaseOrderHistory();
+
+               history.setPurchaseOrder(purchaseOrder);
+               history.setOldStatus(purchaseOrder.getStatus());
+               history.setNewStatus(status);
+               history.setChangedBy(changedBy);
+               history.setChangedAt(LocalDateTime.now());
+
+               purchaseOrderHistoryRepo.save(history);
+        }
+
+        @Transactional
+    public  void sendToSupplier(Long id ) {
+
+        PurchaseOrder po = purchaseOrderRepo.findById(id)
+                .orElseThrow(() -> new ResponseStatusException(
+                        HttpStatus.NOT_FOUND,
+                        "Purchase Order not found"));
+
+        if (po.getStatus() != PurchaseOrderStatus.GENERATED) {
+            throw new ResponseStatusException(
+                    HttpStatus.BAD_REQUEST,
+                    "Purchase Order is already sent");
+        }
+
+        PurchaseRequisition requisition =  requisitionRepo.findById(po.getRequisition().getId())
+                 .orElseThrow(() -> new ResponseStatusException(
+                    HttpStatus.NOT_FOUND,
+                    "requisition not found"));
+                ;
+
+          requisition.setStatus(RequisitionStatus.SENT_TO_SUPPLIER);
+
+        po.setStatus(PurchaseOrderStatus.SENT_TO_SUPPLIER);
+        purchaseOrderRepo.save(po);
+        savePurchaseOrderHistory(po , PurchaseOrderStatus.SENT_TO_SUPPLIER, currentUser.get());
+        requisitionRepo.save(requisition);
+    }
+
+    public List<PurchaseOrderResponseDTO> getSupplierPurchaseOrdersByStatus(
+
+            PurchaseOrderStatus status) {
+
+            Supplier supplier = supplierRepo.findByUserId(currentUser.get().getId())
+                    .orElseThrow(() -> new RuntimeException("Suplier Not Found"));
+
+        return purchaseOrderRepo
+                .findBySupplierIdAndStatus(supplier.getId(), status)
+                .stream()
+                .map(this::convertToDTO)
+                .toList();
+
+    }
 }

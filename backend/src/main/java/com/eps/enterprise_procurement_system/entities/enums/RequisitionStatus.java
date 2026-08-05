@@ -16,5 +16,6 @@ public enum RequisitionStatus {
     APPROVED,
     SOURCING,
     PO_GENERATED,
-    CANCELLED
+    CANCELLED,
+    SENT_TO_SUPPLIER
 }

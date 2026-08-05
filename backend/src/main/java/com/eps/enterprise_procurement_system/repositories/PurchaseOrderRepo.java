@@ -28,4 +28,8 @@ public interface PurchaseOrderRepo extends JpaRepository<PurchaseOrder, Long> {
     List<PurchaseOrder> findByExpectedDeliveryDateBefore(LocalDate date);
 
     List<PurchaseOrder> findByStatusAndSupplier_Id(PurchaseOrderStatus status, Long supplierId);
+
+    List<PurchaseOrder> findBySupplierIdAndStatus(
+            Long supplierId,
+            PurchaseOrderStatus status);
 }

@@ -37,4 +37,8 @@ public class PurchaseOrderResponseDTO {
     private LocalDateTime createdAt;
 
     private List<PoItemResponseDTO> items;
+
+    private  String pdfURL;
+
+    private String invoiceURL;
 }

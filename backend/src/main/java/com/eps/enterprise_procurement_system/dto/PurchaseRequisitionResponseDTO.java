@@ -40,4 +40,6 @@ public class PurchaseRequisitionResponseDTO {
     private LocalDateTime updatedAt;
 
     private List<RequisitionItemResponseDTO> items;
+
+    private String poURL;
 }
