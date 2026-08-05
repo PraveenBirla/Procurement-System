@@ -19,9 +19,13 @@ public class RequisitionItemResponseDTO {
 
     private Long categoryId;
 
+    private String categoryName;
+
     private String productName;
 
     private Integer quantity;
 
     private BigDecimal unitPrice;
+
+    private BigDecimal totalPrice;
 }

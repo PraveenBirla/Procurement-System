@@ -264,13 +264,13 @@ public class PurchaseOrderService {
 
                         RequisitionItem reqItem = requisition.getItems()
                                 .stream()
-                                .filter(i -> i.getId() == itemDTO.getRequisitionItemId())
+                                .filter(i -> i.getProduct().getId() == itemDTO.getProductId())
                                 .findFirst()
                                 .orElseThrow(() ->
                                         new ResponseStatusException(
                                                 HttpStatus.NOT_FOUND,
                                                 "Requisition Item not found : "
-                                                        + itemDTO.getRequisitionItemId()));
+                                                        + itemDTO.getProductId()));
                 if (poItemRepo.existsByRequisitionItem_Id(reqItem.getId())) {
 
                         throw new ResponseStatusException(

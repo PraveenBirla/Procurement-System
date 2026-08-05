@@ -375,7 +375,7 @@ export const  RequisitionSection = () => {
                     if (remarkError) setRemarkError("");
                   }}
                   placeholder={
-                    actionModal.type === "approve"
+                    actionModal.type === "approved"
                       ? "Add a note for this approval…"
                       : "Reason for rejection…"
                   }

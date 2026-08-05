@@ -148,12 +148,22 @@ export const ApprovedRequisitionSection = () => {
       return;
     }
 
+    if (!poModalReq?.items || poModalReq.items.length === 0) {
+      setPoError("No requisition items found");
+      return;
+    }
+
     try {
       setSubmittingPO(true);
       const po = await purchaseOrderService.generatePurchaseOrder({
         requisitionId: poModalReq.id,
         supplierId: Number(selectedSupplierId),
         expectedDeliveryDate,
+        poItems: poModalReq.items.map((item) => ({
+          productId: item.productId,
+          quantity: item.quantity,
+          unitPrice: item.unitPrice
+        }))
       });
 
       setPoMap((prev) => ({ ...prev, [poModalReq.id]: po.id }));

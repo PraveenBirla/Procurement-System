@@ -3,8 +3,10 @@ package com.eps.enterprise_procurement_system.services;
 import com.eps.enterprise_procurement_system.dto.ApprovalRequestDTO;
 import com.eps.enterprise_procurement_system.dto.ApprovalResponseDTO;
 import com.eps.enterprise_procurement_system.dto.PurchaseRequisitionResponseDTO;
+import com.eps.enterprise_procurement_system.dto.RequisitionItemResponseDTO;
 import com.eps.enterprise_procurement_system.entities.Approval;
 import com.eps.enterprise_procurement_system.entities.PurchaseRequisition;
+import com.eps.enterprise_procurement_system.entities.RequisitionItem;
 import com.eps.enterprise_procurement_system.entities.User;
 import com.eps.enterprise_procurement_system.entities.enums.ApprovalStatus;
 import com.eps.enterprise_procurement_system.entities.enums.ApprovalType;
@@ -31,15 +33,38 @@ public class ApprovalService {
     private final UserRepository userRepo;
     private final ModelMapper modelMapper;
 
+    private RequisitionItemResponseDTO convertItemToDTO(RequisitionItem item) {
+        RequisitionItemResponseDTO dto = new RequisitionItemResponseDTO();
+        
+        dto.setId(item.getId());
+        if (item.getProduct() != null) {
+            dto.setProductId(item.getProduct().getId());
+            dto.setProductName(item.getProduct().getName());
+            if (item.getProduct().getCategory() != null) {
+                dto.setCategoryId(item.getProduct().getCategory().getId());
+                dto.setCategoryName(item.getProduct().getCategory().getCategoryName());
+            }
+        }
+        
+        dto.setQuantity(item.getQuantity());
+        dto.setUnitPrice(item.getUnitPrice());
+        dto.setTotalPrice(item.getTotalPrice());
+        return dto;
+    }
+
     private ApprovalResponseDTO convertToDTO(Approval approval) {
 
-        ApprovalResponseDTO dto = modelMapper.map(approval, ApprovalResponseDTO.class);
+        ApprovalResponseDTO dto = new ApprovalResponseDTO();
 
         dto.setId(approval.getId());
+        dto.setApprovalType(approval.getApprovalType());
         dto.setRequisitionId(approval.getRequisition().getId());
         dto.setRequisitionNo(approval.getRequisition().getRequisitionNo());
         dto.setApproverId(approval.getApprover().getId());
         dto.setApproverName(approval.getApprover().getFullName());
+        dto.setStatus(approval.getStatus());
+        dto.setRemarks(approval.getRemarks());
+        dto.setDecidedAt(approval.getDecidedAt());
 
         return dto;
     }
@@ -133,22 +158,21 @@ public class ApprovalService {
     }
 
     public List<PurchaseRequisitionResponseDTO> getManagerRequisitions(
-            ApprovalStatus status) {
+                    ApprovalStatus status) {
 
-        List<PurchaseRequisition>  requisitions =  approvalRepo.findRequisitionsByApprovalTypeAndStatus(
-                ApprovalType.MANAGER,
-                status
-        );
+            List<PurchaseRequisition> requisitions = approvalRepo.findRequisitionsByApprovalTypeAndStatus(
+                            ApprovalType.MANAGER,
+                            status);
 
-        List<PurchaseRequisitionResponseDTO> response = requisitions.stream()
-                .map(this::mapToResponseDTO)
-                .toList();
+            List<PurchaseRequisitionResponseDTO> response = requisitions.stream()
+                            .map(this::mapToResponseDTO)
+                            .toList();
 
-        return response;
+            return response;
     }
 
     private PurchaseRequisitionResponseDTO mapToResponseDTO(PurchaseRequisition req) {
-        return PurchaseRequisitionResponseDTO.builder()
+        PurchaseRequisitionResponseDTO dto = PurchaseRequisitionResponseDTO.builder()
                 .id(req.getId())
                 .requisitionNo(req.getRequisitionNo())
                 .title(req.getTitle())
@@ -157,7 +181,14 @@ public class ApprovalService {
                 .status(req.getStatus())
                 .createdAt(req.getCreatedAt())
                 .employeeName(req.getEmployee().getFullName())
-                .build();
+                .isDuplicate(req.getIsDuplicate())
+                .updatedAt(req.getUpdatedAt())
+                        .build();
+                
+        if (req.getItems() != null) {
+            dto.setItems(req.getItems().stream().map(this::convertItemToDTO).toList());
+        }
+        return dto;
     }
 
     public List<PurchaseRequisitionResponseDTO> getFinanceRequisitions(ApprovalStatus status) {
