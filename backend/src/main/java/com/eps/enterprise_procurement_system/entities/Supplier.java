@@ -42,6 +42,10 @@ public class    Supplier {
     @Column(name = "rating", precision = 3, scale = 2)
     private BigDecimal rating;
 
+    @Column(name= "is_verified" , nullable = false)
+    @Builder.Default
+    private Boolean isVerified  = false;
+
     @Column(name = "is_active", nullable = false)
     @Builder.Default
     private Boolean isActive = true;

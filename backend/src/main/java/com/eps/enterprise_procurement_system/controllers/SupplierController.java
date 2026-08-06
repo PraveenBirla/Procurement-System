@@ -1,6 +1,7 @@
 package com.eps.enterprise_procurement_system.controllers;
 
 import com.eps.enterprise_procurement_system.advices.ApiResponse;
+import com.eps.enterprise_procurement_system.dto.AllSupplierResponseDTO;
 import com.eps.enterprise_procurement_system.dto.SupplierRequestDTO;
 import com.eps.enterprise_procurement_system.dto.SupplierResponseDTO;
 import com.eps.enterprise_procurement_system.services.SupplierService;
@@ -25,7 +26,7 @@ public class SupplierController {
 
     @PreAuthorize("hasAnyRole('ADMIN','PROCUREMENT','FINANCE','MANAGER')")
 
-    public ResponseEntity<ApiResponse<List<SupplierResponseDTO>>> getAllSuppliers() {
+    public ResponseEntity<ApiResponse<List<AllSupplierResponseDTO>>> getAllSuppliers() {
 
         return ResponseEntity.ok(
                 new ApiResponse<>(supplierService.getAllSuppliers()));
@@ -107,4 +108,29 @@ public class SupplierController {
                         Map.of("message",
                                 supplierService.deleteSupplier(id))));
     }
+
+    @PutMapping("/{id}/verify")
+    @PreAuthorize("hasRole('ADMIN')")
+    public ResponseEntity<ApiResponse<Map<String,String>>> verifySupplier(
+            @PathVariable Long id){
+
+        return ResponseEntity.ok(
+                new ApiResponse<>(
+                        Map.of("message",supplierService.verifySupplier(id))
+                )
+        );
+    }
+
+    @PutMapping("/{id}/unverify")
+    @PreAuthorize("hasRole('ADMIN')")
+    public ResponseEntity<ApiResponse<Map<String,String>>> unverifySupplier(
+            @PathVariable Long id){
+
+        return ResponseEntity.ok(
+                new ApiResponse<>(
+                        Map.of("message",supplierService.unverifySupplier(id))
+                )
+        );
+    }
+
 }

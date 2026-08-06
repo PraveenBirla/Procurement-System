@@ -2,6 +2,7 @@ package com.eps.enterprise_procurement_system.entities;
 
 import com.eps.enterprise_procurement_system.entities.enums.SupplierDocumentType;
 import com.eps.enterprise_procurement_system.entities.enums.VerificationStatus;
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import jakarta.persistence.*;
 import lombok.*;
 
@@ -23,6 +24,7 @@ public class SupplierDocument {
 
     @ManyToOne
     @JoinColumn(name = "supplier_id")
+    @JsonIgnore
     private Supplier supplier;
 
     @Enumerated(EnumType.STRING)

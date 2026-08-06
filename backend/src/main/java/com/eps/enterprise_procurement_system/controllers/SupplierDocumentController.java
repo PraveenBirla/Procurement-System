@@ -36,9 +36,7 @@ public class SupplierDocumentController {
     private final CloudinaryService cloudinaryService;
     private final SupplierDocumentRepo supplierDocumentRepo;
 
-    // ==========================================================
-    // ADMIN / PROCUREMENT
-    // ==========================================================
+
 
     @GetMapping
     @PreAuthorize("hasAnyRole('ADMIN','PROCUREMENT','SUPPLIER')")
@@ -58,9 +56,7 @@ public class SupplierDocumentController {
                         supplierDocumentService.getDocumentsBySupplier(supplierId)));
     }
 
-    // ==========================================================
-    // LOGGED-IN SUPPLIER
-    // ==========================================================
+
 
     @GetMapping("/my-documents")
     @PreAuthorize("hasRole('SUPPLIER')")

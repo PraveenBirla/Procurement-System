@@ -10,6 +10,7 @@ import {
 } from "lucide-react";
 import "./AdminDashboard.css";  
 import { ProductSection } from "./ProductSection";
+import { SupplierSection } from "./SupplierSection";
 import authService from "../../services/authService";
 
 export const AdminDashboard = () => {
@@ -62,7 +63,7 @@ export const AdminDashboard = () => {
         {activeSection === "users" && <div>User Management Section</div>}
         {/* {activeSection === "requests" && <div>Procurement Requests Section</div>} */}
         {activeSection === "products" &&  <ProductSection/>}
-         {activeSection === "suppliers" &&  <div>supplier section</div>}
+         {activeSection === "suppliers" &&  <SupplierSection/>}
         {activeSection === "reports" && <div>Reports Section</div>}
         {activeSection === "settings" && <div>Settings Section</div>}
       </main>

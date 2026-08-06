@@ -92,13 +92,34 @@ async updateDocument(documentId, file) {
     );
 
     return res.data.data;
-}
+}, 
 
- 
+   async getAllSuppliers(){
+        const res = await api.get("/suppliers");
+       return res.data.data;
+  },
 
+  async activateSupplier(Id){
+        const res = await api.put(`/suppliers/${Id}/activate`);
+       return res.data.data;
+  }, 
 
+   async deactivateSupplier(Id){
+        const res = await api.put(`/suppliers/${Id}/deactivate`);
+       return res.data.data;
+  }, 
 
+  async verifySupplier(Id){
+        const res = await api.put(`/suppliers/${Id}/verify`);
+       return res.data.data;
+  },
 
+  async unverifySupplier(Id){
+        const res = await api.put(`/suppliers/${Id}/unverify`);
+       return res.data.data;
+  }, 
+
+  
 } 
 
 export default suppliersService;

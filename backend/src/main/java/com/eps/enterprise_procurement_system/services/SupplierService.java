@@ -1,17 +1,21 @@
 package com.eps.enterprise_procurement_system.services;
 
+import com.eps.enterprise_procurement_system.dto.AllSupplierResponseDTO;
 import com.eps.enterprise_procurement_system.dto.SupplierRequestDTO;
 import com.eps.enterprise_procurement_system.dto.SupplierResponseDTO;
 import com.eps.enterprise_procurement_system.entities.ProductCategory;
 import com.eps.enterprise_procurement_system.entities.Supplier;
+import com.eps.enterprise_procurement_system.entities.SupplierDocument;
 import com.eps.enterprise_procurement_system.entities.User;
 import com.eps.enterprise_procurement_system.entities.enums.Role;
 import com.eps.enterprise_procurement_system.repositories.ProductCategoryRepo;
+import com.eps.enterprise_procurement_system.repositories.SupplierDocumentRepo;
 import com.eps.enterprise_procurement_system.repositories.SupplierRepo;
 import com.eps.enterprise_procurement_system.util.CurrentUser;
 
 import lombok.RequiredArgsConstructor;
 
+import org.apache.xmlbeans.impl.xb.xsdschema.NamedGroup;
 import org.modelmapper.ModelMapper;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
@@ -28,6 +32,7 @@ public class SupplierService {
     private final ProductCategoryRepo categoryRepo;
     private final ModelMapper modelMapper;
     private final CurrentUser currentUser;
+    private final SupplierDocumentRepo supplierDocumentRepo;
 
     private SupplierResponseDTO convertToDTO(Supplier supplier) {
 
@@ -46,14 +51,33 @@ public class SupplierService {
 
         dto.setRating(supplier.getRating());
         dto.setIsActive(supplier.getIsActive());
+        dto.setIsVerified(supplier.getIsVerified());
 
         return dto;
     }
 
-    public List<SupplierResponseDTO> getAllSuppliers() {
+    public List<AllSupplierResponseDTO> getAllSuppliers() {
         return supplierRepo.findAll()
                 .stream()
-                .map(this::convertToDTO)
+                .map(supplier -> {
+                    AllSupplierResponseDTO dto = new AllSupplierResponseDTO();
+                    dto.setId(supplier.getId());
+                    dto.setName(supplier.getUser().getFullName());
+                    dto.setAddress(supplier.getAddress());
+                    dto.setEmail(supplier.getUser().getEmail());
+                    dto.setPhone(supplier.getPhone());
+                    dto.setCompanyName(supplier.getCompanyName());
+                    dto.setCategoryName(supplier.getCategory().getCategoryName());
+                    dto.setIsVerified(supplier.getIsVerified());
+                    dto.setRating(supplier.getRating());
+                    dto.setIsActive(supplier.getIsActive());
+
+                    List<SupplierDocument> documents = supplierDocumentRepo.findBySupplier_Id(supplier.getId());
+
+                    dto.setSupplierDocumentList(documents);
+
+                    return dto;
+                })
                 .toList();
     }
 
@@ -189,10 +213,40 @@ public class SupplierService {
 
     public List<SupplierResponseDTO> getSuppliersByCategoryId(Long categoryId) {
 
-        return supplierRepo.findByCategoryId(categoryId)
+        return supplierRepo.findByCategoryIdAndIsActiveTrueAndIsVerifiedTrue(categoryId)
                 .stream()
                 .map(this::convertToDTO)
                 .toList();
 
+    }
+
+    public String verifySupplier(Long id) {
+
+        Supplier supplier = supplierRepo.findById(id)
+                .orElseThrow(() -> new RuntimeException("Supplier Not Found"));
+
+        if(supplier.getIsVerified()){
+            throw new RuntimeException("Supplier Already Verified");
+        }
+
+        supplier.setIsVerified(true);
+        supplierRepo.save(supplier);
+
+        return "Verified";
+    }
+
+    public String unverifySupplier(Long id) {
+
+        Supplier supplier = supplierRepo.findById(id)
+                .orElseThrow(() -> new RuntimeException("Supplier Not Found"));
+
+        if(!supplier.getIsVerified()){
+            throw new RuntimeException("Supplier Already Not Verified");
+        }
+
+        supplier.setIsVerified(false);
+        supplierRepo.save(supplier);
+
+        return "Marked as UnVerified";
     }
 }

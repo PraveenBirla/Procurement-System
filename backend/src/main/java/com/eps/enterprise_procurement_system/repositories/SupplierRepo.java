@@ -11,7 +11,7 @@ import java.util.List;
 public interface SupplierRepo extends JpaRepository<Supplier, Long> {
 
 
-    List<Supplier> findByCategoryId(Long categoryId);
+    List<Supplier> findByCategoryIdAndIsActiveTrueAndIsVerifiedTrue(Long categoryId);
 
     boolean existsByUser_Id(Long id);
 
