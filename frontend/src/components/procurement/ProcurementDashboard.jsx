@@ -18,7 +18,7 @@ export const ProcurementDashboard = () => {
   const [activeSection, setActiveSection] = useState("requition");
 
   const menuItems = [
-    { id: "requition", label: "requition", icon:ClipboardList },
+    { id: "requition", label: "Requition", icon:ClipboardList },
      { id: "ApprovedRequition", label: "Approved Requition", icon: BadgeCheck }, 
      { id: "PurchaseOrders", label: "Purchase Orders", icon: ShoppingCart },
      { id: "DeliveredOrders", label: "Delivered Orders", icon: Truck},

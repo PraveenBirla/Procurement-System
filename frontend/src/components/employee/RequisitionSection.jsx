@@ -271,7 +271,17 @@ export const RequisitionSection = () => {
             ) : requisitions.length > 0 ? (
               requisitions.map((req) => (
                 <tr key={req.id}>
-                  <td data-label="Requisition No">{req.requisitionNo}</td>
+                  <td data-label="Requisition No">
+                    <div className="req-number-cell">
+                        {req.requisitionNo}
+                        {/* Duplicate Flag Badge */}
+                        {req.isDuplicate && (
+                          <span className="duplicate-badge" title="Potential duplicate requisition detected">
+                            Duplicate
+                          </span>
+                        )}
+                      </div>
+                  </td>
                   <td data-label="Title">{req.title}</td>
                   <td data-label="Department">{req.departmentName}</td>
                   <td data-label="Status">

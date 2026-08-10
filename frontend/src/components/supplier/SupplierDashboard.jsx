@@ -21,12 +21,12 @@ export const  SupplierDashboard  = () => {
   const [activeSection, setActiveSection] = useState("profile");
 
   const menuItems = [
-    { id: "profile", label: "profile", icon: CircleUserRound },
-    { id: "orders", label: "orders", icon: Package},
-     { id: "acceptedorders", label: "accepted orders", icon: CheckCircle},
-      {id: "indelivery", label: "indelivery orders", icon: Truck},
-       {id: "delivered", label: "delivered orders", icon: PackageCheck},
-        {id: "completed", label: "completed orders", icon: CheckCircle}
+    { id: "profile", label: "Profile", icon: CircleUserRound },
+    { id: "orders", label: "Orders", icon: Package},
+     { id: "acceptedorders", label: "Accepted Orders", icon: CheckCircle},
+      {id: "indelivery", label: "Indelivery Orders", icon: Truck},
+       {id: "delivered", label: "Delivered Orders", icon: PackageCheck},
+        {id: "completed", label: "Completed Orders", icon: CheckCircle}
   ];
 
   return (

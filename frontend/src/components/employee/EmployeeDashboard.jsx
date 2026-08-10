@@ -10,7 +10,7 @@ export const EmployeeDashboard = () => {
   const [activeSection, setActiveSection] = useState("requition");
 
   const menuItems = [
-    { id: "requition", label: "requition", icon: Package }, 
+    { id: "requition", label: "Requition", icon: Package }, 
   ];
 
   return (

@@ -4,6 +4,20 @@
   gap: 2rem;
 }
 
+.duplicate-badge {
+  display: inline-block;
+  background-color: #fff3cd;
+  color: #856404;
+  border: 1px solid #ffeeba;
+  font-size: 0.7rem;
+  font-weight: 600;
+  padding: 2px 6px;
+  border-radius: 4px;
+  margin-left: 8px;
+  vertical-align: middle;
+  text-transform: uppercase;
+}
+
 .section-header {
   display: flex;
   justify-content: space-between;

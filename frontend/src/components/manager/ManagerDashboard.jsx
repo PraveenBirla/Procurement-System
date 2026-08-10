@@ -10,7 +10,7 @@ export const ManagerDashboard = () => {
   const [activeSection, setActiveSection] = useState("requition");
 
   const menuItems = [
-    { id: "requition", label: "requition", icon: Package }, 
+    { id: "requition", label: "Requition", icon: Package }, 
   ];
 
   return (
