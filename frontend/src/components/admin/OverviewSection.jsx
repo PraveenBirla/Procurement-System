@@ -115,7 +115,7 @@ export const OverviewSection = () => {
           <div className="metric-content">
             <div className="metric-label">Total Approved Spend</div>
             <div className="metric-value">
-              ${metrics.totalSpend.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+              ₹{metrics.totalSpend.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
             </div>
           </div>
         </div>
@@ -142,7 +142,7 @@ export const OverviewSection = () => {
                 <div className="recent-meta">
                   <div style={{ display: 'flex', gap: '1rem', alignItems: 'center' }}>
                     <span className="recent-amount">
-                      ${(po.totalAmount || 0).toLocaleString(undefined, { minimumFractionDigits: 2 })}
+                      ₹{(po.totalAmount || 0).toLocaleString(undefined, { minimumFractionDigits: 2 })}
                     </span>
                     <span className={`status-badge ${getStatusClass(po.status)}`}>
                       {po.status || 'UNKNOWN'}

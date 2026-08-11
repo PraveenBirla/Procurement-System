@@ -5,6 +5,10 @@ const userService = {
         const response = await api.get('/users');
         return response.data?.data;
     },
+    getUsersExceptAdmin: async () => {
+        const response = await api.get('/users/role');
+        return response.data?.data;
+    },
     
     getUserById: async (id) => {
         const response = await api.get(`/users/${id}`);

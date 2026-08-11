@@ -63,19 +63,19 @@ export const ReportsSection = () => {
         <div className="summary-card total">
           <div className="summary-title">Total PO Volume</div>
           <div className="summary-value">
-            ${totalSpend.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+            ₹{totalSpend.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
           </div>
         </div>
         <div className="summary-card approved">
           <div className="summary-title">Approved Spend</div>
           <div className="summary-value">
-            ${approvedSpend.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+            ₹{approvedSpend.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
           </div>
         </div>
         <div className="summary-card pending">
           <div className="summary-title">Pending Spend</div>
           <div className="summary-value">
-            ${pendingSpend.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+            ₹{pendingSpend.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
           </div>
         </div>
       </div>
@@ -119,7 +119,7 @@ export const ReportsSection = () => {
                     </span>
                   </td>
                   <td style={{ fontWeight: 600, color: '#0f172a' }}>
-                    ${(po.totalAmount || 0).toLocaleString(undefined, { minimumFractionDigits: 2 })}
+                    ₹{(po.totalAmount || 0).toLocaleString(undefined, { minimumFractionDigits: 2 })}
                   </td>
                 </tr>
               ))}

@@ -30,7 +30,7 @@ export const UserManagementSection = () => {
     setLoading(true);
     try {
       const [usersData, deptsData] = await Promise.all([
-        userService.getUsers(),
+        userService.getUsersExceptAdmin(),
         api.get('/depts').then(res => res.data?.data)
       ]);
       setUsers(usersData || []);

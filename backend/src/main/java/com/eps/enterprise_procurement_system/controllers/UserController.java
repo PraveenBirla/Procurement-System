@@ -2,6 +2,7 @@ package com.eps.enterprise_procurement_system.controllers;
 
 import java.util.List;
 
+import org.springframework.data.jpa.repository.Query;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
@@ -15,6 +16,7 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
 import com.eps.enterprise_procurement_system.entities.User;
+import com.eps.enterprise_procurement_system.entities.enums.Role;
 import com.eps.enterprise_procurement_system.repositories.UserRepository;
 
 import lombok.RequiredArgsConstructor;
@@ -33,6 +35,11 @@ public class UserController {
     @GetMapping
     public List<User> list() {
         return repo.findAll();
+    }
+
+    @GetMapping("/role")
+    public List<User> getUsersExceptRoleAdmin() {
+        return repo.findAllExceptAdmin();
     }
 
     @GetMapping("/{id}")

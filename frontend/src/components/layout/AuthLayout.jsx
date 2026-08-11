@@ -26,7 +26,7 @@ export default function AuthLayout({ children, title, subtitle }) {
             </span>
           </div>
           <p className="text-primary-200 text-sm mt-1">
-            Enterprise Procurement System
+            Smart Procurement and Purchase Order Management System
           </p>
         </div>
 
@@ -36,7 +36,7 @@ export default function AuthLayout({ children, title, subtitle }) {
             Streamline your procurement workflow
           </h1>
           <p className="text-primary-100 text-base leading-relaxed max-w-sm">
-            Manage purchase requisitions, track orders, and collaborate with suppliers — all from one secure platform.
+            Manage purchase requisitions, track orders, and collaborate with suppliers - all from one secure platform.
           </p>
 
           {/* Feature list */}
