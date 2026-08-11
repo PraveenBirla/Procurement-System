@@ -44,7 +44,7 @@ public class PurchaseRequisition {
     @Enumerated(EnumType.STRING)
     @Column(name = "status", nullable = false, length = 40)
 
-    private RequisitionStatus status  ;
+    private RequisitionStatus status;
 
     @Column(name = "is_duplicate", nullable = false)
     @Builder.Default

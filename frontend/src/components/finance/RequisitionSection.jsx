@@ -189,7 +189,17 @@ export const  RequisitionSection = () => {
                 const actionable = isActionable(req);
                 return (
                   <tr key={req.id}>
-                    <td data-label="Requisition No">{req.requisitionNo}</td>
+                    <td data-label="Requisition No">
+                      <div className="req-number-cell">
+                        {req.requisitionNo}
+                        {/* Duplicate Flag Badge */}
+                        {req.isDuplicate && (
+                          <span className="duplicate-badge" title="Potential duplicate requisition detected">
+                            Duplicate
+                          </span>
+                        )}
+                      </div>
+                    </td>
                     <td data-label="Title">{req.title}</td>
                     <td data-label="Department">{req.departmentName}</td>
                     <td data-label="Status">
@@ -375,7 +385,7 @@ export const  RequisitionSection = () => {
                     if (remarkError) setRemarkError("");
                   }}
                   placeholder={
-                    actionModal.type === "approve"
+                    actionModal.type === "approved"
                       ? "Add a note for this approval…"
                       : "Reason for rejection…"
                   }

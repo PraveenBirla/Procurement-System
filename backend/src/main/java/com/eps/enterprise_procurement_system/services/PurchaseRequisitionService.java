@@ -49,37 +49,51 @@ public class PurchaseRequisitionService {
     private final ModelMapper modelMapper;
     private final DuplicateCheckService duplicateCheckService;
 
-    public PurchaseRequisitionResponseDTO mapToDto(PurchaseRequisition saved) {
-        PurchaseRequisitionResponseDTO response = modelMapper.map(saved, PurchaseRequisitionResponseDTO.class);
+    public PurchaseRequisitionResponseDTO mapToDto(PurchaseRequisition requisition) {
 
-        response.setEmployeeName(saved.getEmployee().getFullName());
+        PurchaseRequisitionResponseDTO dto = PurchaseRequisitionResponseDTO.builder().id(requisition.getId())
+                .requisitionNo(requisition.getRequisitionNo())
+                .title(requisition.getTitle())
+                .description(requisition.getDescription())
+                .status(requisition.getStatus())
+                .totalEstimatedAmount(requisition.getTotalEstimatedAmount())
+                .isDuplicate(requisition.getIsDuplicate())
+                .createdAt(requisition.getCreatedAt())
+                .updatedAt(requisition.getUpdatedAt())
+                .build();
+        // Employee 
+        if (requisition.getEmployee() != null) {
+            dto.setEmployeeName(requisition.getEmployee().getFullName());
 
-        response.setDepartmentName(
-                saved.getEmployee()
-                    .getDepartment()
-                    .getDepartmentName()
-        );
+            // Department comes through Employee/User 
+            if (requisition.getEmployee().getDepartment() != null) {
+                dto.setDepartmentName(requisition.getEmployee().getDepartment().getDepartmentName());
+            }
+        }
+        // Requisition Items 
+        if (requisition.getItems() != null) {
+            dto.setItems(requisition.getItems().stream().map(this::convertItemToDTO).toList());
+        }
+        return dto;
+    }
 
-        response.setItems(
-                saved.getItems()
-                    .stream()
-                    .map(item -> {
-
-                        RequisitionItemResponseDTO dto = new RequisitionItemResponseDTO();
-
-                        dto.setId(item.getId());
-                        dto.setProductId(item.getProduct().getId());
-                        dto.setCategoryId(item.getProduct().getCategory().getId());
-                        dto.setProductName(item.getProduct().getName());
-                        dto.setQuantity(item.getQuantity());
-                        dto.setUnitPrice(item.getUnitPrice());
-
-                        return dto;
-                    })
-                    .toList()
-        );
-
-        return response;
+    private RequisitionItemResponseDTO convertItemToDTO(RequisitionItem item) {
+        RequisitionItemResponseDTO dto = new RequisitionItemResponseDTO();
+        
+        dto.setId(item.getId());
+        if (item.getProduct() != null) {
+            dto.setProductId(item.getProduct().getId());
+            dto.setProductName(item.getProduct().getName());
+            if (item.getProduct().getCategory() != null) {
+                dto.setCategoryId(item.getProduct().getCategory().getId());
+                dto.setCategoryName(item.getProduct().getCategory().getCategoryName());
+            }
+        }
+        
+        dto.setQuantity(item.getQuantity());
+        dto.setUnitPrice(item.getUnitPrice());
+        dto.setTotalPrice(item.getTotalPrice());
+        return dto;
     }
 
     private RequisitionStatus getNextStatus(ApprovalType approvalType, boolean approved) {
@@ -155,6 +169,7 @@ public class PurchaseRequisitionService {
                     .product(product)
                     .quantity(itemDTO.getQuantity())
                     .unitPrice(itemDTO.getUnitPrice())
+                    .totalPrice(total)
                     .build();
 
             requisition.getItems().add(item);

@@ -172,6 +172,11 @@ export const ApprovedRequisitionSection = () => {
       return;
     }
 
+    if (!genModalReq?.items || genModalReq.items.length === 0) {
+      setPoError("No requisition items found");
+      return;
+    }
+
     const req = genModalReq;
     if (!req) return;
 
@@ -187,6 +192,11 @@ export const ApprovedRequisitionSection = () => {
         })),
         supplierId: Number(selectedSupplierId),
         expectedDeliveryDate,
+        poItems: genModalReq.items.map((item) => ({
+          productId: item.productId,
+          quantity: item.quantity,
+          unitPrice: item.unitPrice
+        }))
       });
 
       setPoMap((prev) => ({
