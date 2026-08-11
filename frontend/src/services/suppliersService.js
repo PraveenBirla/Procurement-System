@@ -1,6 +1,26 @@
 import api from './api';
 
 const  suppliersService = { 
+  // Admin Methods
+  async getAllSuppliers() {
+    const res = await api.get("/suppliers");
+    return res.data?.data || [];
+  },
+
+  async activateSupplier(id) {
+    const res = await api.put(`/suppliers/${id}/activate`);
+    return res.data?.data;
+  },
+
+  async deactivateSupplier(id) {
+    const res = await api.put(`/suppliers/${id}/deactivate`);
+    return res.data?.data;
+  },
+
+  async deleteSupplier(id) {
+    const res = await api.delete(`/suppliers/${id}`);
+    return res.data?.data;
+  },
  
   async getProfile(){
         const res = await api.get("/suppliers/me");
