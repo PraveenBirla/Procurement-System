@@ -1,6 +1,7 @@
 package com.eps.enterprise_procurement_system.entities.enums;
 
 public enum PurchaseOrderStatus {
+    PO_GENERATED,
     GENERATED,
     SENT_TO_SUPPLIER,
     PO_RECEIVED,
@@ -12,5 +13,6 @@ public enum PurchaseOrderStatus {
     REPLACEMENT_RECEIVED,
     PARTIALLY_RECEIVED,
     CANCELLED,
+    PROCUREMENT_ACCEPTED
 
 }

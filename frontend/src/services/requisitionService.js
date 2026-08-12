@@ -5,6 +5,11 @@ const requisitionService = {
      async getEmployeeRequisitions(){
        const res = await api.get("/requisitions/mine");
        return res.data.data;
+     }, 
+
+     async getAllRequisitions(){
+      const res = await api.get("/requisitions/all");
+      return res.data.data;
      },
      
      async createRequisition(requisition){

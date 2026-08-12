@@ -4,6 +4,7 @@ import {
   FileText,
   Settings,
   BarChart3,
+  ClipboardList,
   Building2,
   Package,
   LogOut
@@ -16,7 +17,7 @@ import { UserManagementSection } from "./UserManagementSection";
 import { SupplierManagementSection } from "./SupplierManagementSection";
 import { OverviewSection } from "./OverviewSection";
 import { ReportsSection } from "./ReportsSection";
- 
+import { RequisitionSection } from "./RequisitionSection";
 import authService from "../../services/authService";
 
 export const AdminDashboard = () => {
@@ -24,10 +25,10 @@ export const AdminDashboard = () => {
 
   const menuItems = [
     { id: "overview", label: "Overview", icon: BarChart3 },
+     { id: "requisition", label: "Requisition", icon: ClipboardList },
     { id: "users", label: "Users", icon: Users },
      { id: "suppliers", label: "Suppliers", icon: Building2 },
     {id:  "products", label: "Products", icon: Package},
-   
     { id: "reports", label: "Reports", icon: FileText },
      
   ];
@@ -63,10 +64,8 @@ export const AdminDashboard = () => {
         {activeSection === "users" && <UserManagementSection />}
           {activeSection === "suppliers" && <SupplierSection/>}
         {activeSection === "products" &&  <ProductSection/>}
-
-       
-        {activeSection === "reports" && <ReportsSection />}
- 
+        {activeSection === "requisition" && <RequisitionSection/>}
+        {activeSection === "reports" && <ReportsSection />} 
         {activeSection === "settings" && <div>Settings Section</div>}
       </main>
     </div>

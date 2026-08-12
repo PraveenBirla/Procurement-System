@@ -8,7 +8,7 @@ export const ProductSection = () => {
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(true);
 
-  // Modal state
+ 
   const [showProductModal, setShowProductModal] = useState(false);
   const [showCategoryModal, setShowCategoryModal] = useState(false);
   const [savingProduct, setSavingProduct] = useState(false);
@@ -251,7 +251,6 @@ export const ProductSection = () => {
               <th>Category</th>
               <th>Price</th>
               <th>Unit</th>
-              <th>Actions</th>
             </tr>
           </thead>
           <tbody>
@@ -262,15 +261,7 @@ export const ProductSection = () => {
                 <td>{p.categoryName}</td>
                 <td>{p.standardPrice}</td>
                 <td>{p.unit}</td>
-                <td>
-                  <button
-                    className="btn-warning"
-                    disabled={deletingId === p.id}
-                    onClick={() => handleDeleteProduct(p.id)}
-                  >
-                    {deletingId === p.id ? "Deleting…" : "Delete"}
-                  </button>
-                </td>
+               
               </tr>
             ))}
           </tbody>
@@ -291,13 +282,7 @@ export const ProductSection = () => {
                 <strong>{c.categoryName}</strong>
                 {c.description ? ` — ${c.description}` : ""}
               </span>
-              <button
-                className="btn-warning"
-                disabled={deletingId === c.id}
-                onClick={() => handleDeleteCategory(c.id)}
-              >
-                {deletingId === c.id ? "Deleting…" : "Delete"}
-              </button>
+              
             </li>
           ))}
         </ul>

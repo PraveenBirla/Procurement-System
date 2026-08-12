@@ -10,7 +10,7 @@ public class PurchaseOrderStateMachine {
 
     private static final Map<PurchaseOrderStatus, Set<PurchaseOrderStatus>> VALID_TRANSITIONS = 
         Map.ofEntries(
-            Map.entry(PurchaseOrderStatus.GENERATED, Set.of(
+            Map.entry(PurchaseOrderStatus.PO_GENERATED, Set.of(
                 PurchaseOrderStatus.SENT_TO_SUPPLIER,
                 PurchaseOrderStatus.CANCELLED
             )),
