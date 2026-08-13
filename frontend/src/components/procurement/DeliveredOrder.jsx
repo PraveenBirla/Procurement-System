@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { createPortal } from "react-dom";
 import purchaseOrderService from "../../services/purchaseOrderService";
+import suppliersService from "../../services/suppliersService";
 
 const DELIVERED_STATUS = "DELIVERED";
 const COMPLETED_STATUS = "COMPLETED";
@@ -17,6 +18,16 @@ export const  DeliveredSection = () => {
   const [loadingPoHistory, setLoadingPoHistory] = useState(false);
   const [trackingId, setTrackingId] = useState(null);
 
+  const [ratingPo, setRatingPo] = useState(null);
+
+  const [ratings, setRatings] = useState({
+    qualityRating: 0,
+    deliveryRating: 0,
+    priceRating: 0
+  });
+
+  const [submittingRating, setSubmittingRating] = useState(false);
+
   const getErrorMessage = (err) => {
     return (
       err?.response?.data?.error?.message ||
@@ -31,23 +42,37 @@ export const  DeliveredSection = () => {
   }, []);
 
   useEffect(() => {
+
+    const modalOpen = trackPo || ratingPo;
+
     document.body.style.overflow = trackPo ? "hidden" : "";
 
     const handleKey = (e) => {
-      if (e.key === "Escape") closeTrackModal();
-    };
+
+      if (e.key === "Escape") {
+
+        if (ratingPo && !submittingRating) {
+          closeRatingModal();
+        }
+
+        if (trackPo) {
+          closeTrackModal();
+        }
+      }
+    }
 
     document.addEventListener("keydown", handleKey);
     return () => {
       document.body.style.overflow = "";
       document.removeEventListener("keydown", handleKey);
     };
-  }, [trackPo]);
+  }, [trackPo, ratingPo, submittingRating]);
 
   const loadOrders = async () => {
     setLoading(true);
     try {
       const delivered = await purchaseOrderService.getPurchaseOrderByStatus(DELIVERED_STATUS);
+      // console.log(delivered);
       setOrders(delivered);
       setError("");
     } catch (err) {
@@ -68,16 +93,175 @@ export const  DeliveredSection = () => {
   };
 
   const handleConfirmDelivery = async (po) => {
-    setConfirmingId(po.id);
-    try {
-      await purchaseOrderService.updateStatus(po.id, { status: COMPLETED_STATUS });
-      await loadOrders();
-    } catch (err) {
-      setError(getErrorMessage(err));
-    } finally {
-      setConfirmingId(null);
+
+      setRatingPo(po);
+
+      setRatings({
+        qualityRating: 0,
+        deliveryRating: 0,
+        priceRating: 0
+      });
+
+      setError("");
+  };
+
+  const closeRatingModal = () => {
+
+    if (submittingRating) {
+      return;
+    }
+
+    setRatingPo(null);
+
+    setRatings({
+      qualityRating: 0,
+      deliveryRating: 0,
+      priceRating: 0
+    });
+  };
+
+  const handleRatingChange = (field, value) => {
+
+    setRatings((previous) => ({
+      ...previous,
+      [field]: value
+    }));
+  };
+
+  const getRatingLabelText = (score) => {
+    switch (score) {
+      case 1: return "Poor 😞";
+      case 2: return "Fair 😐";
+      case 3: return "Good 🙂";
+      case 4: return "Very Good 😊";
+      case 5: return "Excellent 🌟";
+      default: return "Click to rate";
     }
   };
+
+  const RatingStars = ({ field, label, description }) => {
+    const currentRating = ratings[field];
+
+    return (
+      <div className="enhanced-rating-card">
+        <div className="rating-card-header">
+          <div>
+            <span className="rating-category-title">{label}</span>
+            <p className="rating-category-desc">{description}</p>
+          </div>
+          <span className={`rating-status-badge ${currentRating > 0 ? "active" : ""}`}>
+            {getRatingLabelText(currentRating)}
+          </span>
+        </div>
+
+        <div className="rating-stars-row">
+          {[1, 2, 3, 4, 5].map((star) => (
+            <button
+              key={star}
+              type="button"
+              className={`rating-star-btn ${star <= currentRating ? "filled" : ""}`}
+              onClick={() => handleRatingChange(field, star)}
+              disabled={submittingRating}
+              aria-label={`${star} out of 5`}
+            >
+              ★
+            </button>
+          ))}
+        </div>
+      </div>
+    );
+  };
+
+  const getCurrentUserId = () => {
+
+    try {
+
+      const user = JSON.parse(
+        localStorage.getItem("user")
+      );
+
+      return user?.id || user?.userId || null;
+
+    } catch {
+
+      return null;
+
+    }
+  };
+
+  const handleSubmitRating = async () => {
+
+    if (!ratingPo) {
+      return;
+    }
+
+    if (ratings.qualityRating === 0 || ratings.deliveryRating === 0 || ratings.priceRating === 0) {
+
+      setError("Please provide a rating for Quality, Delivery and Price.");
+      return;
+    }
+
+    const reviewedById = ratingPo.generatedById;
+
+    if (!reviewedById) {
+
+      setError("Unable to identify the logged-in user.");
+      return;
+    }
+
+    setSubmittingRating(true);
+    setError("");
+
+    try {
+
+        await suppliersService.createSupplierPerformance({
+
+        supplierId: ratingPo.supplierId,
+
+        purchaseOrderId: ratingPo.id,
+
+        qualityRating: ratings.qualityRating,
+
+        deliveryRating: ratings.deliveryRating,
+
+        priceRating: ratings.priceRating,
+
+        reviewDate: new Date()
+          .toISOString()
+          .split("T")[0],
+
+        reviewedById: reviewedById
+
+      });
+
+      await purchaseOrderService.updateStatus(
+        ratingPo.id,
+        {
+          status: COMPLETED_STATUS
+        }
+      );
+
+      setRatingPo(null);
+
+      setRatings({
+        qualityRating: 0,
+        deliveryRating: 0,
+        priceRating: 0
+      });
+
+      await loadOrders();
+
+    } catch (err) {
+
+      console.error("Supplier performance submission error:", err);
+
+      setError(getErrorMessage(err));
+
+    } finally {
+      setSubmittingRating(false);
+    }
+  };
+
 
   const handleTrack = async (po) => {
     setTrackingId(po.id);
@@ -209,6 +393,123 @@ export const  DeliveredSection = () => {
           </tbody>
         </table>
       </div>
+
+      {ratingPo &&
+
+        createPortal(
+
+          <div
+            className="modal-overlay"
+            onClick={closeRatingModal}
+          >
+
+            <div className="modal-content supplier-rating-modal"
+              onClick={(e) => e.stopPropagation()}>
+
+              {/* HEADER */}
+
+              <div className="modal-header">
+
+                <div>
+
+                  <h2>Supplier Performance Rating</h2>
+
+                  <p>{ratingPo.supplierName || "-"}</p>
+
+                  <small>PO: {ratingPo.poNumber}</small>
+
+                </div>
+
+                <button className="modal-close" onClick={closeRatingModal}
+                  disabled={submittingRating}
+                  aria-label="Close"
+                >
+                  ×
+                </button>
+
+              </div>
+
+
+              {/* DESCRIPTION */}
+
+              <div className="rating-info">
+
+                <p>
+                  Please rate the supplier's performance
+                  for this purchase order.
+                </p>
+
+              </div>
+
+
+              {/* QUALITY */}
+
+              <RatingStars
+                field="qualityRating"
+                label="Quality"
+              />
+
+
+              {/* DELIVERY */}
+
+              <RatingStars
+                field="deliveryRating"
+                label="Delivery"
+              />
+
+
+              {/* PRICE */}
+
+              <RatingStars
+                field="priceRating"
+                label="Price"
+              />
+
+
+              {/* OVERALL PREVIEW */}
+
+              <div className="overall-rating">
+
+                <strong>
+                  Overall Rating
+                </strong>
+
+                <span>
+
+                  {(
+                    (
+                      ratings.qualityRating +
+                      ratings.deliveryRating +
+                      ratings.priceRating
+                    ) / 3
+                  ).toFixed(2)}
+
+                  / 5
+
+                </span>
+
+              </div>
+
+
+              {/* FOOTER */}
+
+              <div className="modal-actions">
+
+                <button className="close-btn" onClick={closeRatingModal} disabled={submittingRating}>
+                  Cancel
+                </button>
+
+                <button className="approve-btn" onClick={handleSubmitRating} disabled={submittingRating}>
+
+                  {submittingRating ? "Submitting...": "Submit Rating"}
+                </button>
+
+              </div>
+            </div>
+          </div>,
+          document.body
+
+        )}
 
       {/* Track PO Modal */}
       {trackPo &&

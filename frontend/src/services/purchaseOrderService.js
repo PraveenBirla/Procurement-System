@@ -41,7 +41,8 @@ const purchaseOrderService = {
   },
 
    async updateStatus(poId, data){
-    const res = await api.put(`/purchase-orders/${poId}/status`, data)
+        const res = await api.put(`/purchase-orders/${poId}/status`, data)
+        console.log(data);
        return res.data.data ;
   },
 

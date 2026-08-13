@@ -212,15 +212,12 @@ public class SupplierService {
         return "Supplier deactivated successfully";
     }
 
-    public List<SupplierResponseDTO> getSuppliersByCategoryId(Long categoryId, VerificationStatus status) {
-        if (status == VerificationStatus.VERIFIED) {
+    public List<SupplierResponseDTO> getVerifiedSuppliersByCategoryId(Long categoryId, VerificationStatus status) {
 
             return supplierRepo.findByCategoryIdAndIsActiveTrueAndStatus(categoryId, status)
                     .stream()
                     .map(this::convertToDTO)
                     .toList();
-        }
-        return null;
     }
 
     public String updateSupplierVerification(Long id, String status) {

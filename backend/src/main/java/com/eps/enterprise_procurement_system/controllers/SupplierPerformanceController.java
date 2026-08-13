@@ -57,7 +57,7 @@ public class SupplierPerformanceController {
     }
     
     @PostMapping
-    @PreAuthorize("hasAnyRole('EMPLOYEE','PROCUREMENT')")
+    @PreAuthorize("hasAnyRole('PROCUREMENT')")
     public ResponseEntity<ApiResponse<SupplierPerformanceResponseDTO>> create(
             @Valid @RequestBody SupplierPerformanceRequestDTO dto) {
 

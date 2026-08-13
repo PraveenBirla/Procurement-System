@@ -38,10 +38,8 @@ const suppliersService = {
     return res.data.data;
   },
 
-  async getAllSuppliersByCategoriyId(id) {
-    const res = await api.get(`/suppliers/${id}/category`, {
-      params: "VERIFIED"
-    });
+  async getAllVerifiedSuppliersByCategoryId(id) {
+    const res = await api.get(`/suppliers/${id}/category`);
     return res.data.data;
   },
 
@@ -145,6 +143,11 @@ const suppliersService = {
     );
 
     return res.data.data;
+  },
+
+  async createSupplierPerformance(data) {
+    const res = await api.post("/supplier-performance", data);
+    return res.data?.data;
   },
 
   // async unverifySupplier(Id){

@@ -121,7 +121,6 @@ export const ApprovedRequisitionSection = () => {
   // ---------- Generate PO (modal: supplier + date selected here) ----------
   const openGenerateModal = async (req) => {
     const categoryId = req.items?.[0]?.categoryId;
-
     setGenModalReq(req);
     setSelectedSupplierId("");
     setExpectedDeliveryDate("");
@@ -131,10 +130,11 @@ export const ApprovedRequisitionSection = () => {
       setGenError("categories not found");
       return;
     }
-
+    
     setLoadingSuppliers(true);
+    
     try {
-      const list = await suppliersService.getAllSuppliersByCategoriyId(categoryId);
+      const list = await suppliersService.getAllVerifiedSuppliersByCategoryId(categoryId);
       setSuppliers(list);
     } catch (err) {
       setGenError(getErrorMessage(err));
@@ -145,7 +145,6 @@ export const ApprovedRequisitionSection = () => {
    
   const handleOpenPdf = (req) => {
   const po = getPo(req);
-
   if (po?.pdfURL) {
     window.open(po.pdfURL, "_blank");
   } else {
@@ -168,7 +167,7 @@ export const ApprovedRequisitionSection = () => {
       return;
     }
     if (!expectedDeliveryDate) {
-      setGenError("Expected delivery date zaroori hai");
+      setGenError("Expected delivery date is mandatory");
       return;
     }
 
@@ -178,6 +177,7 @@ export const ApprovedRequisitionSection = () => {
     }
 
     const req = genModalReq;
+    
     if (!req) return;
 
     setError("");
@@ -185,11 +185,11 @@ export const ApprovedRequisitionSection = () => {
       setSubmittingGenerate(true);
       const po = await purchaseOrderService.generatePurchaseOrder({
         requisitionId: req.id,
-        poItems: req.items.map((item) => ({
-          requisitionItemId: item.id,
-          quantity: item.quantity,
-          unitPrice: item.unitPrice,
-        })),
+        // poItems: req.items.map((item) => ({
+        //   requisitionItemId: item.id,
+        //   quantity: item.quantity,
+        //   unitPrice: item.unitPrice,
+        // })),
         supplierId: Number(selectedSupplierId),
         expectedDeliveryDate,
         poItems: genModalReq.items.map((item) => ({

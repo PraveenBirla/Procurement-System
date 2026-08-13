@@ -44,4 +44,6 @@ public class SupplierDocument {
 
     @Column(columnDefinition = "TEXT")
     private String remarks;
+
+    private LocalDateTime verifiedAt;
 }

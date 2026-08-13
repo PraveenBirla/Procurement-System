@@ -24,9 +24,11 @@ public class PurchaseOrderHistory {
     private PurchaseOrder purchaseOrder;
 
     @Enumerated(EnumType.STRING)
+    @Column(name = "new_status", length = 50)
     private PurchaseOrderStatus oldStatus;
 
     @Enumerated(EnumType.STRING)
+    @Column(name = "old_status", length = 50)
     private PurchaseOrderStatus newStatus;
 
     @ManyToOne

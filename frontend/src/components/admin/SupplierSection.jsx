@@ -127,6 +127,9 @@ export const SupplierSection = () => {
       );
 
       const updatedSuppliers = await supplierService.getAllSuppliers();
+
+      // console.log("After verification - Updated suppliers:", updatedSuppliers);
+
       setSuppliers(updatedSuppliers || []);
 
       const updatedSupplier = updatedSuppliers.find(
@@ -167,9 +170,7 @@ export const SupplierSection = () => {
     }
 
     if (!remarks.trim()) {
-      setError(
-        "Please provide remarks before rejecting the document."
-      );
+      setError("Please provide remarks before rejecting the document.");
       return;
     }
 
@@ -187,6 +188,8 @@ export const SupplierSection = () => {
 
       const updatedSuppliers = await supplierService.getAllSuppliers();
 
+      // console.log("After rejection - Updated suppliers:", updatedSuppliers);
+
       setSuppliers(updatedSuppliers || []);
 
       const updatedSupplier = updatedSuppliers.find(
@@ -194,6 +197,8 @@ export const SupplierSection = () => {
       );
 
       if (updatedSupplier) {
+
+        // console.log("Modal supplier status after reject:", updatedSupplier.status);
         setDocsSupplier(updatedSupplier);
       }
 
@@ -221,11 +226,7 @@ export const SupplierSection = () => {
         <div className="error-box">
           <span>{error}</span>
 
-          <button
-            className="error-dismiss"
-            onClick={() => setError("")}
-            aria-label="Dismiss error"
-          >
+          <button className="error-dismiss" onClick={() => setError("")} aria-label="Dismiss error">
             ×
           </button>
         </div>
@@ -255,12 +256,9 @@ export const SupplierSection = () => {
               </tr>
             ) : suppliers.length > 0 ? (
               suppliers.map((supplier) => {
-                const isActivating =
-                  actioning.id === supplier.id &&
-                  actioning.action === "active";
+                const isActivating = actioning.id === supplier.id && actioning.action === "active";
                 
-                const supplierStatus =
-                  supplier.status || supplier.verificationStatus;
+                const supplierStatus = supplier.status || supplier.verificationStatus;
 
                 return (
                   <tr key={supplier.id}>
@@ -269,12 +267,7 @@ export const SupplierSection = () => {
                         <strong>{supplier.companyName}</strong>
                       </div>
 
-                      <div
-                        style={{
-                          fontSize: "0.85em",
-                          opacity: 0.7,
-                        }}
-                      >
+                      <div style={{fontSize: "0.85em", opacity: 0.7,}}>
                         {supplier.name}
                       </div>
                     </td>
@@ -283,12 +276,7 @@ export const SupplierSection = () => {
                     <td data-label="Contact">
                       <div>{supplier.email}</div>
 
-                      <div
-                        style={{
-                          fontSize: "0.85em",
-                          opacity: 0.7,
-                        }}
-                      >
+                      <div style={{fontSize: "0.85em", opacity: 0.7,}}>
                         {supplier.phone}
                       </div>
                     </td>
@@ -305,13 +293,9 @@ export const SupplierSection = () => {
 
 
                     <td data-label="Verification Status">
-                      <span
-                        className={`status-badge ${
-                          supplierStatus === "VERIFIED"
-                            ? "approved"
-                            : supplierStatus === "REJECTED"
-                            ? "rejected"
-                            : "pending"
+                      <span className={`status-badge ${
+                          supplierStatus === "VERIFIED"?
+                             "approved": supplierStatus === "REJECTED"? "rejected": "pending"
                         }`}
                       >
                         {supplierStatus || "PENDING"}
@@ -320,11 +304,8 @@ export const SupplierSection = () => {
 
 
                     <td data-label="Active">
-                      <span
-                        className={`status-badge ${
-                          supplier.isActive ? "approved" : "rejected"
-                        }`}
-                      >
+                      <span className={`status-badge 
+                      ${supplier.isActive ? "approved" : "rejected"}`}>
                         {supplier.isActive ? "Active" : "Inactive"}
                       </span>
                     </td>
@@ -344,29 +325,15 @@ export const SupplierSection = () => {
                     <td data-label="Action">
                       <div className="action-group">
 
-                        <button
-                          className="approve-btn"
-                          onClick={() => openDocuments(supplier)}
-                        >
-                          View and Verify
+                        <button className="approve-btn" onClick={() => openDocuments(supplier)}>
+                          View and Verify ({supplier.supplierDocumentList?.length || 0})
                         </button>
 
-                        <button
-                          className={
-                            supplier.isActive
-                              ? "reject-btn"
-                              : "approve-btn"
-                          }
-                          onClick={() =>
-                            handleToggleActive(supplier)
-                          }
+                        <button className={supplier.isActive? "reject-btn": "approve-btn"}
+                          onClick={() => handleToggleActive(supplier)}
                           disabled={isActivating}
                         >
-                          {isActivating
-                            ? "..."
-                            : supplier.isActive
-                            ? "Deactivate"
-                            : "Activate"}
+                          {isActivating? "...": supplier.isActive? "Deactivate": "Activate"}
                         </button>
                       </div>
                     </td>
@@ -387,10 +354,7 @@ export const SupplierSection = () => {
       {docsSupplier &&
         createPortal(
           <div className="modal-overlay" onClick={closeDocsModal}>
-            <div
-              className="modal-content"
-              onClick={(e) => e.stopPropagation()}
-            >
+            <div className="modal-content" onClick={(e) => e.stopPropagation()}>
 
               <div className="modal-header">
                 <div>
@@ -400,29 +364,20 @@ export const SupplierSection = () => {
 
                   <span
                     className={`status-badge ${
-                      docsSupplier.status === "VERIFIED"
-                        ? "approved"
-                        : docsSupplier.status === "REJECTED"
-                        ? "rejected"
-                        : "pending"
+                      docsSupplier.status === "VERIFIED"? "approved": docsSupplier.status === "REJECTED"? "rejected": "pending"
                     }`}
                   >
                     Supplier Status: {docsSupplier.status || "PENDING"}
                   </span>
                 </div>
 
-                <button
-                  className="modal-close"
-                  onClick={closeDocsModal}
-                  aria-label="Close"
-                >
+                <button className="modal-close" onClick={closeDocsModal} aria-label="Close">
                   ×
                 </button>
               </div>
 
 
-              {docsSupplier.supplierDocumentList &&
-              docsSupplier.supplierDocumentList.length > 0 ? (
+              {docsSupplier.supplierDocumentList && docsSupplier.supplierDocumentList.length > 0 ? (
                 <div className="table-wrapper">
                   <table className="table">
                     <thead>
@@ -438,9 +393,7 @@ export const SupplierSection = () => {
 
                     <tbody>
                       {docsSupplier.supplierDocumentList.map((doc) => {
-                        const processing =
-                          actioning.id === doc.id &&
-                          actioning.action === "process-document";
+                        const processing = actioning.id === doc.id && actioning.action === "process-document";
 
                         return (
                           <tr key={doc.id}>
@@ -454,26 +407,17 @@ export const SupplierSection = () => {
                             </td>
 
                             <td data-label="Uploaded At">
-                              {doc.uploadedAt
-                                ? new Date(
-                                    doc.uploadedAt
-                                  ).toLocaleString()
-                                : "-"}
+                              {doc.uploadedAt? new Date(doc.uploadedAt).toLocaleString(): "-"}
                             </td>
 
                             <td data-label="Status">
                               <span
                                 className={`status-badge ${
-                                  doc.verificationStatus ===
-                                  "VERIFIED"
-                                    ? "approved"
-                                    : doc.verificationStatus ===
-                                      "REJECTED"
-                                    ? "rejected"
-                                    : "pending"
+                                  doc.status === "VERIFIED"? "approved": doc.status ===
+                                      "REJECTED"? "rejected": "pending"
                                 }`}
                               >
-                                {doc.verificationStatus || "PENDING"}
+                                {doc.status || "PENDING"}
                               </span>
                             </td>
 
@@ -484,40 +428,23 @@ export const SupplierSection = () => {
                             <td data-label="Action">
                               <div className="action-group">
 
-                                <button
-                                  className="view-btn"
-                                  onClick={() =>
-                                    handleViewDocument(doc)
-                                  }
-                                >
+                                <button className="view-btn" onClick={() => handleViewDocument(doc)}>
                                   View
                                 </button>
 
-                                <button
-                                  className="approve-btn"
-                                  disabled={
-                                    processing ||
-                                    doc.verificationStatus ===
+                                <button className="approve-btn" disabled={processing ||
+                                  doc.verificationStatus ===
                                       "VERIFIED"
                                   }
-                                  onClick={() =>
-                                    handleVerifyDocument(doc)
-                                  }
+                                  onClick={() => handleVerifyDocument(doc)}
                                 >
-                                  {processing? "..." : doc.verificationStatus ===
-                                    "VERIFIED"? "Verified": "Verify"}
+                                  {processing? "..." : doc.verificationStatus === "VERIFIED"? "Verified": "Verify"}
                                 </button>
 
-                                <button
-                                  className="reject-btn"
-                                  disabled={
-                                    processing ||
-                                    doc.verificationStatus ===
-                                      "REJECTED"
+                                <button className="reject-btn" disabled={processing ||
+                                    doc.verificationStatus === "REJECTED"
                                   }
-                                  onClick={() =>
-                                    startRejectDocument(doc)
-                                  }
+                                  onClick={() =>startRejectDocument(doc)}
                                 >
                                   {doc.verificationStatus === "REJECTED"? "Rejected": "Reject"}
                                 </button>

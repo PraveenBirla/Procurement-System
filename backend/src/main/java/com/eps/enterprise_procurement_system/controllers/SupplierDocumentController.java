@@ -18,6 +18,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
+import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
@@ -103,7 +104,13 @@ public class SupplierDocumentController {
                     @PathVariable Long id, @RequestBody DocumentVerificationRequestDTO request) {
 
             return ResponseEntity.ok(
-                            new ApiResponse<>(Map.of("message", supplierDocumentService.updateVerificationStatus(id, request))));
+                            new ApiResponse<>(Map.of("message",
+                                            supplierDocumentService.updateVerificationStatus(id, request))));
+    }
+
+    @Scheduled(cron = "0 0 0 * * *")
+        public void checkExpiredSupplierDocuments() {
+        supplierDocumentService.resetExpiredDocuments();
     }
     
 }

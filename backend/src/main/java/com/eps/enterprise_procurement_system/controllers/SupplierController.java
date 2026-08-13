@@ -35,8 +35,8 @@ public class SupplierController {
 
     @GetMapping("/{categoryId}/category")
     @PreAuthorize("hasAnyRole('ADMIN',  'PROCUREMENT_OFFICER')")
-    public ResponseEntity<ApiResponse<List<SupplierResponseDTO>>> getSuppliersByCategoryId(@Valid  @PathVariable Long categoryId, @RequestBody VerificationStatus status) {
-        return ResponseEntity.ok(new ApiResponse<>( supplierService.getSuppliersByCategoryId(categoryId, VerificationStatus.VERIFIED)));
+    public ResponseEntity<ApiResponse<List<SupplierResponseDTO>>> getVerifiedSuppliersByCategoryId(@Valid  @PathVariable Long categoryId) {
+        return ResponseEntity.ok(new ApiResponse<>( supplierService.getVerifiedSuppliersByCategoryId(categoryId, VerificationStatus.VERIFIED)));
     }
 
 

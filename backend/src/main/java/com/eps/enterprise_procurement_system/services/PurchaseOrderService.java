@@ -94,7 +94,7 @@ public class PurchaseOrderService {
         private PurchaseOrderResponseDTO convertToDTO(PurchaseOrder purchaseOrder) {
 
                 PurchaseOrderResponseDTO dto = new PurchaseOrderResponseDTO();
-
+                
                 dto.setId(purchaseOrder.getId());
                 dto.setPoNumber(purchaseOrder.getPoNumber());
 
@@ -102,6 +102,9 @@ public class PurchaseOrderService {
 
                 dto.setRequisitionNo(purchaseOrder.getRequisition().getRequisitionNo());
 
+                dto.setSupplierId(purchaseOrder.getSupplier().getId());
+
+                dto.setSupplierName(purchaseOrder.getSupplier().getUser().getFullName());
 
                 dto.setStatus(purchaseOrder.getStatus());
 
@@ -417,7 +420,6 @@ public class PurchaseOrderService {
                 PurchaseOrder order = purchaseOrderRepo.findById(orderId)
                         .orElseThrow(() -> new ResponseStatusException(
                                 HttpStatus.NOT_FOUND, "Purchase Order not found"));
-                
                 PurchaseOrderStatus currentStatus = order.getStatus();
 
                 if (!stateMachine.isValidTransition(currentStatus, newStatus)) {

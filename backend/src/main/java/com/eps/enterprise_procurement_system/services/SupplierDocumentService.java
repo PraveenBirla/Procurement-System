@@ -124,7 +124,7 @@ public class SupplierDocumentService {
                 .findById(documentId)
                 .orElseThrow(() ->
                         new RuntimeException("Supplier document not found"));
-
+                        
         VerificationStatus status = request.getStatus();
 
         // Update individual document
@@ -133,6 +133,8 @@ public class SupplierDocumentService {
 
         supplierDocumentRepo.save(document);
 
+        if(document.getStatus()==VerificationStatus.VERIFIED)
+            document.setVerifiedAt(LocalDateTime.now());
         // Get supplier
         Supplier supplier = document.getSupplier();
 
@@ -153,15 +155,10 @@ public class SupplierDocumentService {
                         doc.getStatus() == VerificationStatus.VERIFIED);
 
         if (anyRejected) {
-
             supplierStatus = VerificationStatus.REJECTED;
-
         } else if (allVerified) {
-
             supplierStatus = VerificationStatus.VERIFIED;
-
         } else {
-
             supplierStatus = VerificationStatus.PENDING;
         }
 
@@ -171,6 +168,25 @@ public class SupplierDocumentService {
         supplierRepo.save(supplier);
 
         return "Document status updated successfully";
+    }
+
+    @Transactional
+    public void resetExpiredDocuments() {
+
+        LocalDateTime expiryDate = LocalDateTime.now().minusYears(1);
+
+        List<SupplierDocument> documents = supplierDocumentRepo.findByStatusAndVerifiedAtBefore(
+                    VerificationStatus.VERIFIED,
+                    expiryDate);
+
+        for (SupplierDocument document : documents) {
+
+            DocumentVerificationRequestDTO dto = DocumentVerificationRequestDTO.builder()
+                    .remarks("Annual verification expired. Re-verification required.")
+                    .status(VerificationStatus.EXPIRED).build();
+
+            updateVerificationStatus(document.getId(), dto);
+        }
     }
 
 //    public SupplierDocumentResponseDTO verifyDocument(Long id, VerificationStatus status, User verifier, String remarks) {
