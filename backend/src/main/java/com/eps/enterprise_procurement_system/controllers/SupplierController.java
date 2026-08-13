@@ -1,8 +1,10 @@
 package com.eps.enterprise_procurement_system.controllers;
 
 import com.eps.enterprise_procurement_system.advices.ApiResponse;
+import com.eps.enterprise_procurement_system.dto.AllSupplierResponseDTO;
 import com.eps.enterprise_procurement_system.dto.SupplierRequestDTO;
 import com.eps.enterprise_procurement_system.dto.SupplierResponseDTO;
+import com.eps.enterprise_procurement_system.entities.enums.VerificationStatus;
 import com.eps.enterprise_procurement_system.services.SupplierService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
@@ -25,7 +27,7 @@ public class SupplierController {
 
     @PreAuthorize("hasAnyRole('ADMIN','PROCUREMENT','FINANCE','MANAGER')")
 
-    public ResponseEntity<ApiResponse<List<SupplierResponseDTO>>> getAllSuppliers() {
+    public ResponseEntity<ApiResponse<List<AllSupplierResponseDTO>>> getAllSuppliers() {
 
         return ResponseEntity.ok(
                 new ApiResponse<>(supplierService.getAllSuppliers()));
@@ -33,8 +35,8 @@ public class SupplierController {
 
     @GetMapping("/{categoryId}/category")
     @PreAuthorize("hasAnyRole('ADMIN',  'PROCUREMENT_OFFICER')")
-    public ResponseEntity<ApiResponse<List<SupplierResponseDTO>>> getSuppliersByCategoryId(@Valid  @PathVariable Long categoryId) {
-        return ResponseEntity.ok(new ApiResponse<>( supplierService.getSuppliersByCategoryId(categoryId)));
+    public ResponseEntity<ApiResponse<List<SupplierResponseDTO>>> getSuppliersByCategoryId(@Valid  @PathVariable Long categoryId, @RequestBody VerificationStatus status) {
+        return ResponseEntity.ok(new ApiResponse<>( supplierService.getSuppliersByCategoryId(categoryId, VerificationStatus.VERIFIED)));
     }
 
 
@@ -107,4 +109,33 @@ public class SupplierController {
                         Map.of("message",
                                 supplierService.deleteSupplier(id))));
     }
+
+    @PutMapping("/{id}/verify")
+    @PreAuthorize("hasRole('ADMIN', 'PROCUREMENT')")
+    public ResponseEntity<ApiResponse<Map<String,String>>> updateSupplierVerification(
+            @PathVariable Long id, @RequestBody Map<String, String> request){
+
+        String status = request.get("status");
+
+        String message = supplierService.updateSupplierVerification(id, status);
+
+        return ResponseEntity.ok(
+                new ApiResponse<>(
+                        Map.of("message", message)
+                )
+        );
+    }
+
+//     @PutMapping("/{id}/unverify")
+//     @PreAuthorize("hasRole('ADMIN', 'PROCUREMENT')")
+//     public ResponseEntity<ApiResponse<Map<String,String>>> unverifySupplier(
+//             @PathVariable Long id){
+
+//         return ResponseEntity.ok(
+//                 new ApiResponse<>(
+//                         Map.of("message",supplierService.unverifySupplier(id))
+//                 )
+//         );
+//     }
+
 }

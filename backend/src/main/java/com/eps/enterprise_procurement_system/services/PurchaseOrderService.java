@@ -207,14 +207,14 @@ public class PurchaseOrderService {
 
                 PurchaseRequisition requisition = getRequisition(dto.getRequisitionId());
 
-                // Validate delivery date is in future
+
                 if (dto.getExpectedDeliveryDate() != null &&
                 dto.getExpectedDeliveryDate().isBefore(LocalDate.now())) {
                         throw new ResponseStatusException(HttpStatus.BAD_REQUEST,
                         "Expected delivery date must be in the future");
                 }
 
-                // Only approved requisitions can generate PO
+
                 if (requisition.getStatus() != RequisitionStatus.APPROVED
                 && requisition.getStatus() != RequisitionStatus.PARTIALLY_ORDERED) {
 
@@ -223,15 +223,15 @@ public class PurchaseOrderService {
                                         "Purchase Order can be generated only for APPROVED requisitions");
                 }
 
-                // Fetch Supplier
+
                 Supplier supplier = getSupplier(dto.getSupplierId());
 
-                // Supplier must be active
+
                 if (!supplier.getIsActive()) {
                         throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Supplier is inactive");
                 }
 
-                // Prevent duplicate PO generation
+
                 if (purchaseOrderRepo.existsByRequisition_Id(requisition.getId()) && requisition.getStatus()!=RequisitionStatus.PARTIALLY_ORDERED) {
 
                         throw new ResponseStatusException(
@@ -293,7 +293,7 @@ public class PurchaseOrderService {
                         .supplier(supplier)
                         .generatedBy(procurementOfficer)
                         .expectedDeliveryDate(dto.getExpectedDeliveryDate())
-                        .status(PurchaseOrderStatus.GENERATED)
+                        .status(PurchaseOrderStatus.PO_GENERATED)
                         .totalAmount(calculateTotal(selectedItems))
                         .build();
 
@@ -301,7 +301,7 @@ public class PurchaseOrderService {
 
                         PoItem poItem = PoItem.builder()
                                 .purchaseOrder(purchaseOrder)
-                                .requisitionItem(reqItem)     // if this relation exists
+                                .requisitionItem(reqItem)
                                 .product(reqItem.getProduct())
                                 .quantity(reqItem.getQuantity())
                                 .unitPrice(reqItem.getUnitPrice())
@@ -342,7 +342,7 @@ public class PurchaseOrderService {
                     .build()
             );
 
-            savePurchaseOrderHistory(purchaseOrder, PurchaseOrderStatus.GENERATED,  procurementOfficer);
+            savePurchaseOrderHistory(purchaseOrder, PurchaseOrderStatus.PROCUREMENT_ACCEPTED, PurchaseOrderStatus.PO_GENERATED,  procurementOfficer);
 
                 notificationService.notify(
                         supplier,
@@ -434,7 +434,7 @@ public class PurchaseOrderService {
                 order.setStatus(newStatus);
                 PurchaseOrder saved = purchaseOrderRepo.save(order);
 
-                savePurchaseOrderHistory(saved, saved.getStatus(),user);
+                savePurchaseOrderHistory(saved, currentStatus, saved.getStatus(),user);
 
                 // Notify stakeholders
                 String reason = stateMachine.getTransitionReason(currentStatus, newStatus);
@@ -756,13 +756,13 @@ public class PurchaseOrderService {
                 byte[] pdf =  pdfService.generateInvoice(order);
 
                 String url = cloudinaryService.uploadFile(pdf,"Invoice" + order.getRequisition().getId());
-
+                PurchaseOrderStatus currentStatus = order.getStatus();
                 order.setStatus(PurchaseOrderStatus.IN_DELIVERY);
                 order.setInvoiceURL(url);
 
                 purchaseOrderRepo.save(order);
 
-                savePurchaseOrderHistory(order,PurchaseOrderStatus.IN_DELIVERY, currentUser.get());
+                savePurchaseOrderHistory(order,currentStatus, PurchaseOrderStatus.IN_DELIVERY, currentUser.get());
 
                 return convertToDTO(order);
         }
@@ -805,12 +805,12 @@ public class PurchaseOrderService {
                 return excelService.exportPurchaseOrders(orders);
         }
 
-        public void savePurchaseOrderHistory(PurchaseOrder purchaseOrder, PurchaseOrderStatus status, User changedBy){
+        public void savePurchaseOrderHistory(PurchaseOrder purchaseOrder, PurchaseOrderStatus oldStatus, PurchaseOrderStatus newStatus, User changedBy){
                PurchaseOrderHistory history = new PurchaseOrderHistory();
 
                history.setPurchaseOrder(purchaseOrder);
-               history.setOldStatus(purchaseOrder.getStatus());
-               history.setNewStatus(status);
+               history.setOldStatus(oldStatus);
+               history.setNewStatus(newStatus);
                history.setChangedBy(changedBy);
                history.setChangedAt(LocalDateTime.now());
 
@@ -825,7 +825,7 @@ public class PurchaseOrderService {
                         HttpStatus.NOT_FOUND,
                         "Purchase Order not found"));
 
-        if (po.getStatus() != PurchaseOrderStatus.GENERATED) {
+        if (po.getStatus() != PurchaseOrderStatus.PO_GENERATED) {
             throw new ResponseStatusException(
                     HttpStatus.BAD_REQUEST,
                     "Purchase Order is already sent");
@@ -838,10 +838,10 @@ public class PurchaseOrderService {
                 ;
 
           requisition.setStatus(RequisitionStatus.SENT_TO_SUPPLIER);
-
+        PurchaseOrderStatus currentStatus = po.getStatus();
         po.setStatus(PurchaseOrderStatus.SENT_TO_SUPPLIER);
         purchaseOrderRepo.save(po);
-        savePurchaseOrderHistory(po , PurchaseOrderStatus.SENT_TO_SUPPLIER, currentUser.get());
+        savePurchaseOrderHistory(po ,currentStatus, PurchaseOrderStatus.SENT_TO_SUPPLIER, currentUser.get());
         requisitionRepo.save(requisition);
     }
 

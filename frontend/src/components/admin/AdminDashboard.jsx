@@ -4,16 +4,20 @@ import {
   FileText,
   Settings,
   BarChart3,
+  ClipboardList,
   Building2,
   Package,
   LogOut
 } from "lucide-react";
 import "./AdminDashboard.css";  
 import { ProductSection } from "./ProductSection";
+ 
+import { SupplierSection } from "./SupplierSection";
 import { UserManagementSection } from "./UserManagementSection";
 import { SupplierManagementSection } from "./SupplierManagementSection";
 import { OverviewSection } from "./OverviewSection";
 import { ReportsSection } from "./ReportsSection";
+import { RequisitionSection } from "./RequisitionSection";
 import authService from "../../services/authService";
 
 export const AdminDashboard = () => {
@@ -21,9 +25,10 @@ export const AdminDashboard = () => {
 
   const menuItems = [
     { id: "overview", label: "Overview", icon: BarChart3 },
+     { id: "requisition", label: "Requisition", icon: ClipboardList },
     { id: "users", label: "Users", icon: Users },
+     { id: "suppliers", label: "Suppliers", icon: Building2 },
     {id:  "products", label: "Products", icon: Package},
-    { id: "suppliers", label: "Suppliers", icon: Building2 },
     { id: "reports", label: "Reports", icon: FileText },
      
   ];
@@ -57,10 +62,10 @@ export const AdminDashboard = () => {
       <main className="main-content animate-fade-in">
         {activeSection === "overview" && <OverviewSection />}
         {activeSection === "users" && <UserManagementSection />}
-        {/* {activeSection === "requests" && <div>Procurement Requests Section</div>} */}
+          {activeSection === "suppliers" && <SupplierSection/>}
         {activeSection === "products" &&  <ProductSection/>}
-        {activeSection === "suppliers" && <SupplierManagementSection />}
-        {activeSection === "reports" && <ReportsSection />}
+        {activeSection === "requisition" && <RequisitionSection/>}
+        {activeSection === "reports" && <ReportsSection />} 
         {activeSection === "settings" && <div>Settings Section</div>}
       </main>
     </div>

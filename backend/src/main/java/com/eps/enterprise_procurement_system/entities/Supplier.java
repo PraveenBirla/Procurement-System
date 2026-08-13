@@ -7,6 +7,8 @@ import java.math.BigDecimal;
 import java.util.ArrayList;
 import java.util.List;
 
+import com.eps.enterprise_procurement_system.entities.enums.VerificationStatus;
+
 @Entity
 @Table(name = "supplier")
 @Getter
@@ -14,7 +16,8 @@ import java.util.List;
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
-public class    Supplier {
+@Data
+public class Supplier {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -41,6 +44,11 @@ public class    Supplier {
 
     @Column(name = "rating", precision = 3, scale = 2)
     private BigDecimal rating;
+
+    @Enumerated(EnumType.STRING)
+    @Column(name = "status", nullable = false)
+    @Builder.Default
+    private VerificationStatus status = VerificationStatus.PENDING;
 
     @Column(name = "is_active", nullable = false)
     @Builder.Default

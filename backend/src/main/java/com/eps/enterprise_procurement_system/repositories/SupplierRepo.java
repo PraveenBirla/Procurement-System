@@ -1,6 +1,7 @@
 package com.eps.enterprise_procurement_system.repositories;
 
 import com.eps.enterprise_procurement_system.entities.Supplier;
+import com.eps.enterprise_procurement_system.entities.enums.VerificationStatus;
 
 import java.util.Optional;
 
@@ -11,7 +12,7 @@ import java.util.List;
 public interface SupplierRepo extends JpaRepository<Supplier, Long> {
 
 
-    List<Supplier> findByCategoryId(Long categoryId);
+    List<Supplier> findByCategoryIdAndIsActiveTrueAndStatus(Long categoryId, VerificationStatus status);
 
     boolean existsByUser_Id(Long id);
 

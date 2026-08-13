@@ -5,7 +5,8 @@ import {
   ShoppingCart,
   Truck,
   PackageCheck,
-  LogOut
+  LogOut,
+  Building2
 } from "lucide-react";  
 import authService from "../../services/authService";
 import { RequisitionSection } from "./RequisitionSection";
@@ -13,6 +14,7 @@ import { ApprovedRequisitionSection } from "./ApprovedRequisitionSection";
 import { PurchaseOrderSection } from "./PurchaseOrderSection";
 import { DeliveredSection } from "./DeliveredOrder";
 import { CompletedOrderSection } from "./CompletedOrderSection"; 
+import { SupplierSection } from "../admin/SupplierSection";
 
 export const ProcurementDashboard = () => {
   const [activeSection, setActiveSection] = useState("requition");
@@ -21,8 +23,10 @@ export const ProcurementDashboard = () => {
     { id: "requition", label: "Requition", icon:ClipboardList },
      { id: "ApprovedRequition", label: "Approved Requition", icon: BadgeCheck }, 
      { id: "PurchaseOrders", label: "Purchase Orders", icon: ShoppingCart },
+     
      { id: "DeliveredOrders", label: "Delivered Orders", icon: Truck},
-     { id: "CompletedOrders", label: "Completed Orders", icon: PackageCheck}
+     { id: "CompletedOrders", label: "Completed Orders", icon: PackageCheck},
+      { id: "suppliers", label: "Suppliers", icon: Building2 }
 
   ];
 
@@ -53,11 +57,13 @@ export const ProcurementDashboard = () => {
 
      
       <main className="main-content animate-fade-in">
-        {activeSection === "requition" &&  <RequisitionSection/> }
-        {activeSection === "ApprovedRequition" &&  <ApprovedRequisitionSection/> }
-        {activeSection === "PurchaseOrders" && <PurchaseOrderSection/> }
+          {activeSection === "requition" &&  <RequisitionSection/> }
+          {activeSection === "ApprovedRequition" &&  <ApprovedRequisitionSection/> }
+          {activeSection === "PurchaseOrders" && <PurchaseOrderSection/> }
+          {activeSection === "suppliers" && <SupplierSection/> }
           {activeSection === "DeliveredOrders" && <DeliveredSection/> }
-           {activeSection === "CompletedOrders" && <CompletedOrderSection/> }
+          {activeSection === "CompletedOrders" && <CompletedOrderSection/> }
+           
       </main>
     </div>
   );

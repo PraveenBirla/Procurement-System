@@ -1,5 +1,6 @@
 package com.eps.enterprise_procurement_system.services;
 
+import com.eps.enterprise_procurement_system.dto.DocumentVerificationRequestDTO;
 import com.eps.enterprise_procurement_system.dto.SupplierDocumentRequestDTO;
 import com.eps.enterprise_procurement_system.dto.SupplierDocumentResponseDTO;
 import com.eps.enterprise_procurement_system.entities.Supplier;
@@ -23,6 +24,7 @@ import org.springframework.web.server.ResponseStatusException;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.Optional;
 
 @Service
 @RequiredArgsConstructor
@@ -66,46 +68,6 @@ public class SupplierDocumentService {
         return "Document uploaded successfully";
 
     }
-
-//    public SupplierDocumentResponseDTO createDocument(SupplierDocumentRequestDTO dto, User currentUser) {
-//
-//        if(supplierDocumentRepo.existsByDocumentTypeAndDocumentNumber(dto.getDocumentType(),
-//            dto.getDocumentNumber())){
-//
-//            throw new ResponseStatusException(
-//                    HttpStatus.BAD_REQUEST,
-//                    "Document already uploaded");
-//        }
-//
-//        Supplier supplier = supplierRepo.findByUser_Id(currentUser.getId())
-//                .orElseThrow(() -> new ResponseStatusException(
-//                        HttpStatus.NOT_FOUND,
-//                        "Supplier not found"));
-//
-//        if(dto.getExpiryDate()!=null && dto.getExpiryDate().isBefore(LocalDate.now())){
-//
-//            throw new ResponseStatusException(
-//                    HttpStatus.BAD_REQUEST,
-//                    "Document already expired");
-//        }
-//
-//        SupplierDocument document = SupplierDocument.builder()
-//                .supplier(supplier)
-//                .documentType(dto.getDocumentType())
-//                .documentNumber(dto.getDocumentNumber())
-//                .fileName(dto.getFileName())
-//                .filePath(dto.getFilePath())
-//                .fileSize(dto.getFileSize())
-//                .contentType(dto.getContentType())
-//                .expiryDate(dto.getExpiryDate())
-//                .verificationStatus(VerificationStatus.PENDING)
-//                .remarks(dto.getRemarks())
-//                .build();
-//
-//        SupplierDocument saved = supplierDocumentRepo.save(document);
-//
-//        return convertToDTO(saved);
-//    }
     
     public List<SupplierDocumentResponseDTO> getAllDocuments() {
 
@@ -137,56 +99,79 @@ public class SupplierDocumentService {
     }
 
      @Transactional
-    public String updateDocument(Long documentId, MultipartFile file) {
+     public String updateDocument(Long documentId, MultipartFile file) {
 
-        SupplierDocument document = supplierDocumentRepo.findById(documentId)
-                .orElseThrow(() -> new ResponseStatusException(
-                        HttpStatus.NOT_FOUND,
-                        "Document not found"));
+         SupplierDocument document = supplierDocumentRepo.findById(documentId)
+                 .orElseThrow(() -> new ResponseStatusException(
+                         HttpStatus.NOT_FOUND,
+                         "Document not found"));
 
-        String fileUrl = cloudinaryService.uploadDocs(file);
+         String fileUrl = cloudinaryService.uploadDocs(file);
 
-        document.setFileName(file.getOriginalFilename());
-        document.setFileUrl(fileUrl);
-        document.setUploadedAt(LocalDateTime.now());
+         document.setFileName(file.getOriginalFilename());
+         document.setFileUrl(fileUrl);
+         document.setUploadedAt(LocalDateTime.now());
+
+         supplierDocumentRepo.save(document);
+
+         return "Document updated successfully";
+     }
+
+    @Transactional
+    public String updateVerificationStatus(Long documentId, DocumentVerificationRequestDTO request) {
+
+        SupplierDocument document = supplierDocumentRepo
+                .findById(documentId)
+                .orElseThrow(() ->
+                        new RuntimeException("Supplier document not found"));
+
+        VerificationStatus status = request.getStatus();
+
+        // Update individual document
+        document.setStatus(status);
+        document.setRemarks(request.getRemarks());
 
         supplierDocumentRepo.save(document);
 
-        return "Document updated successfully";
-    }
+        // Get supplier
+        Supplier supplier = document.getSupplier();
 
-//    public SupplierDocumentResponseDTO updateDocument(Long id, SupplierDocumentRequestDTO dto, User currentUser) {
-//
-//        SupplierDocument document = supplierDocumentRepo.findById(id)
-//                .orElseThrow(() -> new ResponseStatusException(
-//                        HttpStatus.NOT_FOUND, "Document not found"));
-//
-//        Supplier supplier = supplierRepo.findByUser_Id(currentUser.getId())
-//        .orElseThrow(() ->
-//                new ResponseStatusException(
-//                        HttpStatus.NOT_FOUND,
-//                        "Supplier profile not found"));
-//
-//        if (!document.getSupplier().getId().equals(supplier.getId())) {
-//            throw new ResponseStatusException(
-//                    HttpStatus.FORBIDDEN,
-//                    "You can update only your own documents");
-//        }
-//
-//        document.setDocumentType(dto.getDocumentType());
-//        document.setDocumentNumber(dto.getDocumentNumber());
-//        document.setFileName(dto.getFileName());
-//        document.setFilePath(dto.getFilePath());
-//        document.setFileSize(dto.getFileSize());
-//        document.setContentType(dto.getContentType());
-//        document.setExpiryDate(dto.getExpiryDate());
-//        document.setRemarks(dto.getRemarks());
-//
-//        SupplierDocument updated = supplierDocumentRepo.save(document);
-//
-//        return convertToDTO(updated);
-//    }
-//
+        // Get all supplier documents
+        List<SupplierDocument> documents =
+                supplierDocumentRepo.findBySupplier_Id(supplier.getId());
+
+        // Determine supplier status
+        VerificationStatus supplierStatus;
+
+        boolean anyRejected = documents.stream()
+                .anyMatch(doc ->
+                        doc.getStatus() == VerificationStatus.REJECTED);
+
+        boolean allVerified = !documents.isEmpty()
+                && documents.stream()
+                .allMatch(doc ->
+                        doc.getStatus() == VerificationStatus.VERIFIED);
+
+        if (anyRejected) {
+
+            supplierStatus = VerificationStatus.REJECTED;
+
+        } else if (allVerified) {
+
+            supplierStatus = VerificationStatus.VERIFIED;
+
+        } else {
+
+            supplierStatus = VerificationStatus.PENDING;
+        }
+
+        // Update supplier status
+        supplier.setStatus(supplierStatus);
+
+        supplierRepo.save(supplier);
+
+        return "Document status updated successfully";
+    }
 
 //    public SupplierDocumentResponseDTO verifyDocument(Long id, VerificationStatus status, User verifier, String remarks) {
 //

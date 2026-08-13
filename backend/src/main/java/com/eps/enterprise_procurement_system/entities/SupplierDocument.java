@@ -2,6 +2,7 @@ package com.eps.enterprise_procurement_system.entities;
 
 import com.eps.enterprise_procurement_system.entities.enums.SupplierDocumentType;
 import com.eps.enterprise_procurement_system.entities.enums.VerificationStatus;
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import jakarta.persistence.*;
 import lombok.*;
 
@@ -15,6 +16,7 @@ import java.time.LocalDateTime;
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
+@Data
 public class SupplierDocument {
 
     @Id
@@ -23,6 +25,7 @@ public class SupplierDocument {
 
     @ManyToOne
     @JoinColumn(name = "supplier_id")
+    @JsonIgnore
     private Supplier supplier;
 
     @Enumerated(EnumType.STRING)
@@ -34,4 +37,11 @@ public class SupplierDocument {
 
     private LocalDateTime uploadedAt;
 
+    @Enumerated(EnumType.STRING)
+    @Column(name= "status" , nullable = false)
+    @Builder.Default
+    private VerificationStatus status  = VerificationStatus.PENDING;
+
+    @Column(columnDefinition = "TEXT")
+    private String remarks;
 }

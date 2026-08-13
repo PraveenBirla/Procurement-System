@@ -1,17 +1,22 @@
 package com.eps.enterprise_procurement_system.services;
 
+import com.eps.enterprise_procurement_system.dto.AllSupplierResponseDTO;
 import com.eps.enterprise_procurement_system.dto.SupplierRequestDTO;
 import com.eps.enterprise_procurement_system.dto.SupplierResponseDTO;
 import com.eps.enterprise_procurement_system.entities.ProductCategory;
 import com.eps.enterprise_procurement_system.entities.Supplier;
+import com.eps.enterprise_procurement_system.entities.SupplierDocument;
 import com.eps.enterprise_procurement_system.entities.User;
 import com.eps.enterprise_procurement_system.entities.enums.Role;
+import com.eps.enterprise_procurement_system.entities.enums.VerificationStatus;
 import com.eps.enterprise_procurement_system.repositories.ProductCategoryRepo;
+import com.eps.enterprise_procurement_system.repositories.SupplierDocumentRepo;
 import com.eps.enterprise_procurement_system.repositories.SupplierRepo;
 import com.eps.enterprise_procurement_system.util.CurrentUser;
 
 import lombok.RequiredArgsConstructor;
 
+import org.apache.xmlbeans.impl.xb.xsdschema.NamedGroup;
 import org.modelmapper.ModelMapper;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
@@ -20,6 +25,7 @@ import org.springframework.web.server.ResponseStatusException;
 
 import java.math.BigDecimal;
 import java.util.List;
+import java.util.Optional;
 
 @Service
 @RequiredArgsConstructor
@@ -28,6 +34,7 @@ public class SupplierService {
     private final ProductCategoryRepo categoryRepo;
     private final ModelMapper modelMapper;
     private final CurrentUser currentUser;
+    private final SupplierDocumentRepo supplierDocumentRepo;
 
     private SupplierResponseDTO convertToDTO(Supplier supplier) {
 
@@ -50,10 +57,28 @@ public class SupplierService {
         return dto;
     }
 
-    public List<SupplierResponseDTO> getAllSuppliers() {
+    public List<AllSupplierResponseDTO> getAllSuppliers() {
         return supplierRepo.findAll()
                 .stream()
-                .map(this::convertToDTO)
+                .map(supplier -> {
+                    AllSupplierResponseDTO dto = new AllSupplierResponseDTO();
+                    dto.setId(supplier.getId());
+                    dto.setName(supplier.getUser().getFullName());
+                    dto.setAddress(supplier.getAddress());
+                    dto.setEmail(supplier.getUser().getEmail());
+                    dto.setPhone(supplier.getPhone());
+                    dto.setCompanyName(supplier.getCompanyName());
+                    dto.setCategoryId(supplier.getCategory().getId());
+                    dto.setCategoryName(supplier.getCategory().getCategoryName());
+                    dto.setRating(supplier.getRating());
+                    dto.setIsActive(supplier.getIsActive());
+                    dto.setStatus(supplier.getStatus());
+                    List<SupplierDocument> documents = supplierDocumentRepo.findBySupplier_Id(supplier.getId());
+
+                    dto.setSupplierDocumentList(documents);
+
+                    return dto;
+                })
                 .toList();
     }
 
@@ -187,12 +212,64 @@ public class SupplierService {
         return "Supplier deactivated successfully";
     }
 
-    public List<SupplierResponseDTO> getSuppliersByCategoryId(Long categoryId) {
+    public List<SupplierResponseDTO> getSuppliersByCategoryId(Long categoryId, VerificationStatus status) {
+        if (status == VerificationStatus.VERIFIED) {
 
-        return supplierRepo.findByCategoryId(categoryId)
-                .stream()
-                .map(this::convertToDTO)
-                .toList();
-
+            return supplierRepo.findByCategoryIdAndIsActiveTrueAndStatus(categoryId, status)
+                    .stream()
+                    .map(this::convertToDTO)
+                    .toList();
+        }
+        return null;
     }
+
+    public String updateSupplierVerification(Long id, String status) {
+        Supplier supplier = supplierRepo.findById(id)
+            .orElseThrow(() -> new RuntimeException("Supplier not found"));
+
+        VerificationStatus verificationStatus;
+
+        try {
+            verificationStatus = VerificationStatus.valueOf(status.toUpperCase());
+        } catch (IllegalArgumentException e) {
+            throw new RuntimeException("Invalid verification status: " + status);
+        }
+
+        supplier.setStatus(verificationStatus);
+
+        supplierRepo.save(supplier);
+
+        return "Supplier verification status updated to " + verificationStatus;
+    }
+
+    // public String verifySupplier(Long id) {
+
+    //     Supplier supplier = supplierRepo.findById(id)
+    //             .orElseThrow(() -> new RuntimeException("Supplier Not Found"));
+
+    //     if (supplier.getStatus() == VerificationStatus.VERIFIED) {
+    //         throw new RuntimeException("Supplier Already Verified");
+    //     }
+
+    //     // if()
+    //     supplier.setStatus(VerificationStatus.VERIFIED);
+    //     supplierRepo.save(supplier);
+
+    //     return "Verified";
+    // }
+
+    // public String unverifySupplier(Long id) {
+
+    //     Supplier supplier = supplierRepo.findById(id)
+    //             .orElseThrow(() -> new RuntimeException("Supplier Not Found"));
+
+    //     if(!supplier.getIsVerified()){
+    //         throw new RuntimeException("Supplier Already Not Verified");
+    //     }
+
+    //     supplier.setIsVerified(false);
+    //     supplierRepo.save(supplier);
+
+    //     return "Marked as UnVerified";
+    // }
 }

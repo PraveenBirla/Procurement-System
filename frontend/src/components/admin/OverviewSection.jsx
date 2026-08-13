@@ -1,162 +1,286 @@
-import { useState, useEffect } from "react";
-import { Users, Building2, ShoppingCart, DollarSign, Clock } from "lucide-react";
-import userService from "../../services/userService";
-import suppliersService from "../../services/suppliersService";
+import { useEffect, useState } from "react";
+import { createPortal } from "react-dom";
+import { ShoppingCart, DollarSign, Truck, CheckCircle2 } from "lucide-react";
 import purchaseOrderService from "../../services/purchaseOrderService";
 import "./OverviewSection.css";
 
 export const OverviewSection = () => {
+  const [orders, setOrders] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [metrics, setMetrics] = useState({
-    totalUsers: 0,
-    totalSuppliers: 0,
-    totalPOs: 0,
-    totalSpend: 0,
-    recentPOs: []
-  });
+  const [error, setError] = useState("");
+
+  // Track PO history modal
+  const [trackPo, setTrackPo] = useState(null);
+  const [poHistory, setPoHistory] = useState([]);
+  const [loadingPoHistory, setLoadingPoHistory] = useState(false);
+  const [trackingId, setTrackingId] = useState(null);
+
+  const getErrorMessage = (err) => {
+    return (
+      err?.response?.data?.error?.message ||
+      err?.response?.data?.message ||
+      err?.message ||
+      "Something went wrong"
+    );
+  };
 
   useEffect(() => {
-    loadDashboardData();
+    loadOrders();
   }, []);
 
-  const loadDashboardData = async () => {
+  useEffect(() => {
+    document.body.style.overflow = trackPo ? "hidden" : "";
+
+    const handleKey = (e) => {
+      if (e.key === "Escape") closeTrackModal();
+    };
+
+    document.addEventListener("keydown", handleKey);
+    return () => {
+      document.body.style.overflow = "";
+      document.removeEventListener("keydown", handleKey);
+    };
+  }, [trackPo]);
+
+  const loadOrders = async () => {
     setLoading(true);
     try {
-      const [users, suppliers, pos] = await Promise.all([
-        userService.getUsers().catch(() => []),
-        suppliersService.getAllSuppliers().catch(() => []),
-        purchaseOrderService.getAll().catch(() => [])
-      ]);
-
-      const activeUsers = users?.filter(u => u.isActive) || [];
-      const activeSuppliers = suppliers?.filter(s => s.isActive) || [];
-      const validPOs = pos || [];
-
-      // Calculate total spend from approved/delivered POs
-      const totalSpend = validPOs
-        .filter(po => po.status === 'APPROVED' || po.status === 'DELIVERED')
-        .reduce((sum, po) => sum + (po.totalAmount || 0), 0);
-
-      // Get 5 most recent POs
-      const recentPOs = [...validPOs]
-        .sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt))
-        .slice(0, 5);
-
-      setMetrics({
-        totalUsers: activeUsers.length,
-        totalSuppliers: activeSuppliers.length,
-        totalPOs: validPOs.length,
-        totalSpend,
-        recentPOs
-      });
-    } catch (error) {
-      console.error("Failed to load dashboard metrics", error);
+      const res = await purchaseOrderService.getAll();
+      setOrders(res);
+      setError("");
+    } catch (err) {
+      setError(getErrorMessage(err));
     } finally {
       setLoading(false);
     }
   };
 
-  const getStatusClass = (status) => {
-    if (!status) return 'status-default';
-    const s = status.toLowerCase();
-    if (s.includes('pending')) return 'status-pending';
-    if (s.includes('approve')) return 'status-approved';
-    if (s.includes('reject')) return 'status-rejected';
-    if (s.includes('deliver')) return 'status-delivered';
-    return 'status-default';
+  const handleViewPO = (po) => {
+    if (!po.pdfURL) return;
+    window.open(po.pdfURL, "_blank", "noopener,noreferrer");
   };
 
-  if (loading) {
-    return <div className="loading-state">Loading dashboard data...</div>;
-  }
+  const handleViewInvoice = (po) => {
+    if (!po.invoiceURL) return;
+    window.open(po.invoiceURL, "_blank", "noopener,noreferrer");
+  };
+
+  const handleTrack = async (po) => {
+    setTrackingId(po.id);
+    setTrackPo(po);
+    setPoHistory([]);
+    setLoadingPoHistory(true);
+
+    try {
+      const res = await purchaseOrderService.getPurchaseOrderHistory(po.id);
+      setPoHistory(res);
+    } catch (err) {
+      setError(getErrorMessage(err));
+      setTrackPo(null);
+    } finally {
+      setLoadingPoHistory(false);
+      setTrackingId(null);
+    }
+  };
+
+  const closeTrackModal = () => {
+    setTrackPo(null);
+    setPoHistory([]);
+  };
+
+  const totalPOs = orders.length;
+  const totalAmount = orders.reduce((sum, po) => sum + (po.totalAmount || 0), 0);
+  const inDeliveryCount = orders.filter((po) => po.status === "IN_DELIVERY").length;
+  const completedCount = orders.filter((po) => po.status === "COMPLETED").length;
 
   return (
-    <div className="overview-section animate-fade-in">
-      <div className="overview-header">
-        <h2>Dashboard Overview</h2>
-        <p>Welcome back! Here's what's happening in your procurement system today.</p>
+    <div className="admin-requisition-section">
+      <div className="section-header">
+        <h2 className="section-title">Purchase Orders</h2>
       </div>
 
-      <div className="metrics-grid">
-        <div className="metric-card">
-          <div className="metric-icon blue">
-            <Users size={24} />
-          </div>
-          <div className="metric-content">
-            <div className="metric-label">Active Users</div>
-            <div className="metric-value">{metrics.totalUsers}</div>
-          </div>
+      {error && (
+        <div className="error-box">
+          <span>{error}</span>
+          <button className="error-dismiss" onClick={() => setError("")} aria-label="Dismiss error">
+            ×
+          </button>
         </div>
+      )}
 
-        <div className="metric-card">
-          <div className="metric-icon amber">
-            <Building2 size={24} />
+      {!loading && (
+        <div className="metrics-grid">
+          <div className="metric-card">
+            <div className="metric-icon purple">
+              <ShoppingCart size={24} />
+            </div>
+            <div className="metric-content">
+              <div className="metric-label">Total Purchase Orders</div>
+              <div className="metric-value">{totalPOs}</div>
+            </div>
           </div>
-          <div className="metric-content">
-            <div className="metric-label">Active Suppliers</div>
-            <div className="metric-value">{metrics.totalSuppliers}</div>
-          </div>
-        </div>
 
-        <div className="metric-card">
-          <div className="metric-icon purple">
-            <ShoppingCart size={24} />
+          <div className="metric-card">
+            <div className="metric-icon green">
+              <DollarSign size={24} />
+            </div>
+            <div className="metric-content">
+              <div className="metric-label">Total Amount</div>
+              <div className="metric-value">
+                ₹{totalAmount.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+              </div>
+            </div>
           </div>
-          <div className="metric-content">
-            <div className="metric-label">Total Purchase Orders</div>
-            <div className="metric-value">{metrics.totalPOs}</div>
-          </div>
-        </div>
 
-        <div className="metric-card">
-          <div className="metric-icon green">
-            <DollarSign size={24} />
+          <div className="metric-card">
+            <div className="metric-icon amber">
+              <Truck size={24} />
+            </div>
+            <div className="metric-content">
+              <div className="metric-label">In Delivery</div>
+              <div className="metric-value">{inDeliveryCount}</div>
+            </div>
           </div>
-          <div className="metric-content">
-            <div className="metric-label">Total Approved Spend</div>
-            <div className="metric-value">
-              ₹{metrics.totalSpend.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+
+          <div className="metric-card">
+            <div className="metric-icon blue">
+              <CheckCircle2 size={24} />
+            </div>
+            <div className="metric-content">
+              <div className="metric-label">Completed</div>
+              <div className="metric-value">{completedCount}</div>
             </div>
           </div>
         </div>
+      )}
+
+      <div className="table-wrapper">
+        <table className="table">
+          <thead>
+            <tr>
+              <th>PO Number</th>
+              <th>Requisition No</th>
+              <th>Supplier</th>
+              <th>Status</th>
+              <th>Amount</th>
+              <th>Expected Delivery</th>
+              <th>Created</th>
+              <th>Action</th>
+            </tr>
+          </thead>
+
+          <tbody>
+            {loading ? (
+              <tr>
+                <td colSpan="8" className="no-data">
+                  Loading…
+                </td>
+              </tr>
+            ) : orders.length > 0 ? (
+              orders.map((po) => (
+                <tr key={po.id}>
+                  <td data-label="PO Number">{po.poNumber}</td>
+                  <td data-label="Requisition No">{po.requisitionNo}</td>
+                  <td data-label="Supplier">{po.supplierName || "-"}</td>
+                  <td data-label="Status">
+                    <span className={`status-badge ${po.status.toLowerCase()}`}>
+                      {po.status.replaceAll("_", " ")}
+                    </span>
+                  </td>
+                  <td data-label="Amount">₹{Number(po.totalAmount).toLocaleString()}</td>
+                  <td data-label="Expected Delivery">
+                    {po.expectedDeliveryDate
+                      ? new Date(po.expectedDeliveryDate).toLocaleDateString()
+                      : "-"}
+                  </td>
+                  <td data-label="Created">{new Date(po.createdAt).toLocaleDateString()}</td>
+                  <td data-label="Action">
+                    <div className="action-group">
+                      <button
+                        className="view-btn"
+                        onClick={() => handleViewPO(po)}
+                        disabled={!po.pdfURL}
+                      >
+                        View PO
+                      </button>
+
+                      <button
+                        className="view-btn"
+                        onClick={() => handleViewInvoice(po)}
+                        disabled={!po.invoiceURL}
+                      >
+                        View Invoice
+                      </button>
+
+                      <button
+                        className="track-btn"
+                        onClick={() => handleTrack(po)}
+                        disabled={trackingId === po.id}
+                      >
+                        {trackingId === po.id ? "…" : "Track"}
+                      </button>
+                    </div>
+                  </td>
+                </tr>
+              ))
+            ) : (
+              <tr>
+                <td colSpan="8" className="no-data">
+                  No Purchase Orders Found
+                </td>
+              </tr>
+            )}
+          </tbody>
+        </table>
       </div>
 
-      <div className="recent-activity-panel">
-        <div className="panel-header">
-          <h3>Recent Purchase Orders</h3>
-          <Clock size={20} color="#64748b" />
-        </div>
-        
-        {metrics.recentPOs.length === 0 ? (
-          <div style={{ color: '#64748b', textAlign: 'center', padding: '2rem 0' }}>
-            No recent purchase orders found.
-          </div>
-        ) : (
-          <div className="recent-list">
-            {metrics.recentPOs.map(po => (
-              <div className="recent-item" key={po.id}>
-                <div className="recent-info">
-                  <span className="recent-po">{po.poNumber}</span>
-                  <span className="recent-supplier">Supplier: {po.supplierName}</span>
-                </div>
-                <div className="recent-meta">
-                  <div style={{ display: 'flex', gap: '1rem', alignItems: 'center' }}>
-                    <span className="recent-amount">
-                      ₹{(po.totalAmount || 0).toLocaleString(undefined, { minimumFractionDigits: 2 })}
-                    </span>
-                    <span className={`status-badge ${getStatusClass(po.status)}`}>
-                      {po.status || 'UNKNOWN'}
-                    </span>
-                  </div>
-                  <span className="recent-date">
-                    {po.createdAt ? new Date(po.createdAt).toLocaleDateString() : 'N/A'}
-                  </span>
-                </div>
+      {/* Track PO Modal */}
+      {trackPo &&
+        createPortal(
+          <div className="modal-overlay" onClick={closeTrackModal}>
+            <div className="modal-content" onClick={(e) => e.stopPropagation()}>
+              <div className="modal-header">
+                <h2>Track PO — {trackPo.poNumber}</h2>
+                <button className="modal-close" onClick={closeTrackModal} aria-label="Close">
+                  ×
+                </button>
               </div>
-            ))}
-          </div>
+
+              {loadingPoHistory ? (
+                <p className="no-data">Loading history…</p>
+              ) : poHistory.length > 0 ? (
+                <div className="timeline">
+                  {poHistory.map((item, index) => (
+                    <div className="timeline-item" key={index}>
+                      <div className="timeline-dot"></div>
+                      <div className="timeline-content">
+                        <h4>{item.newStatus ? item.newStatus.replaceAll("_", " ") : "-"}</h4>
+                        <p>
+                          <b>Previous:</b> {item.oldStatus ? item.oldStatus.replaceAll("_", " ") : "-"}
+                        </p>
+                        <p>
+                          <b>Remarks:</b> {item.remarks || "-"}
+                        </p>
+                        <p>
+                          <b>Date:</b> {new Date(item.changedAt).toLocaleString()}
+                        </p>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <p className="no-data">No history available.</p>
+              )}
+
+              <div className="modal-actions">
+                <button className="close-btn" onClick={closeTrackModal}>
+                  Close
+                </button>
+              </div>
+            </div>
+          </div>,
+          document.body
         )}
-      </div>
     </div>
   );
 };

@@ -9,5 +9,4 @@ import com.eps.enterprise_procurement_system.entities.SupplierDocument;
 public interface SupplierDocumentRepo extends JpaRepository<SupplierDocument, Long> {
     List<SupplierDocument> findBySupplier_Id(Long supplierId);
 
-
 }

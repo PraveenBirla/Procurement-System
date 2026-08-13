@@ -1,6 +1,7 @@
 package com.eps.enterprise_procurement_system.controllers;
 
 import com.eps.enterprise_procurement_system.advices.ApiResponse;
+import com.eps.enterprise_procurement_system.dto.DocumentVerificationRequestDTO;
 import com.eps.enterprise_procurement_system.dto.SupplierDocumentRequestDTO;
 import com.eps.enterprise_procurement_system.dto.SupplierDocumentResponseDTO;
 import com.eps.enterprise_procurement_system.entities.Supplier;
@@ -36,9 +37,7 @@ public class SupplierDocumentController {
     private final CloudinaryService cloudinaryService;
     private final SupplierDocumentRepo supplierDocumentRepo;
 
-    // ==========================================================
-    // ADMIN / PROCUREMENT
-    // ==========================================================
+
 
     @GetMapping
     @PreAuthorize("hasAnyRole('ADMIN','PROCUREMENT','SUPPLIER')")
@@ -58,9 +57,7 @@ public class SupplierDocumentController {
                         supplierDocumentService.getDocumentsBySupplier(supplierId)));
     }
 
-    // ==========================================================
-    // LOGGED-IN SUPPLIER
-    // ==========================================================
+
 
     @GetMapping("/my-documents")
     @PreAuthorize("hasRole('SUPPLIER')")
@@ -100,49 +97,13 @@ public class SupplierDocumentController {
         );
     }
 
-//    @PutMapping("/{id}")
-//    @PreAuthorize("hasRole('SUPPLIER')")
-//    public ResponseEntity<ApiResponse<SupplierDocumentResponseDTO>> updateDocument(
-//            @PathVariable Long id,
-//            @Valid @RequestBody SupplierDocumentRequestDTO dto) {
-//
-//        return ResponseEntity.ok(
-//                new ApiResponse<>(
-//                        supplierDocumentService.updateDocument(
-//                                id,
-//                                dto,
-//                                currentUser.get())));
-//    }
+    @PutMapping("/{id}/verify")
+    @PreAuthorize("hasRole('ADMIN', 'PROCUREMENT')")
+    public ResponseEntity<ApiResponse<Map<String, String>>> verifyDocument(
+                    @PathVariable Long id, @RequestBody DocumentVerificationRequestDTO request) {
 
-//    @DeleteMapping("/{id}")
-//    @PreAuthorize("hasRole('SUPPLIER')")
-//    public ResponseEntity<ApiResponse<Map<String, String>>> deleteDocument( @PathVariable Long id) {
-//
-//        return ResponseEntity.ok(
-//                new ApiResponse<>(Map.of(
-//                            "message",
-//                            supplierDocumentService.deleteDocument(
-//                            id,
-//                            currentUser.get()))));
-//    }
-//
-//    // ==========================================================
-//    // PROCUREMENT / ADMIN VERIFICATION
-//    // ==========================================================
-//
-//    @PutMapping("/{id}/verify")
-//    @PreAuthorize("hasAnyRole('ADMIN','PROCUREMENT')")
-//    public ResponseEntity<ApiResponse<SupplierDocumentResponseDTO>> verifyDocument(
-//            @PathVariable Long id,
-//            @RequestParam VerificationStatus status,
-//            @RequestParam(required = false) String remarks) {
-//
-//        return ResponseEntity.ok(
-//                new ApiResponse<>(
-//                        supplierDocumentService.verifyDocument(
-//                                id,
-//                                status,
-//                                currentUser.get(),
-//                                remarks)));
-//    }
+            return ResponseEntity.ok(
+                            new ApiResponse<>(Map.of("message", supplierDocumentService.updateVerificationStatus(id, request))));
+    }
+    
 }

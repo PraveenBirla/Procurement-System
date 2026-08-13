@@ -23,4 +23,8 @@ public class SupplierDocumentResponseDTO {
     private String fileUrl;
 
     private LocalDateTime uploadedAt;
+
+    private VerificationStatus status;
+
+    private String remarks;
 }

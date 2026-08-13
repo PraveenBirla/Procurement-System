@@ -1,11 +1,15 @@
 package com.eps.enterprise_procurement_system.dto;
 
-import java.math.BigDecimal;
+import com.eps.enterprise_procurement_system.entities.SupplierDocument;
+import com.eps.enterprise_procurement_system.entities.enums.VerificationStatus;
 
 import lombok.Data;
 
+import java.math.BigDecimal;
+import java.util.List;
+
 @Data
-public class SupplierResponseDTO{
+public class AllSupplierResponseDTO {
 
     private Long id;
 
@@ -27,5 +31,8 @@ public class SupplierResponseDTO{
 
     private Boolean isActive;
 
-    private Boolean isVerified;
+    private VerificationStatus status;
+
+    private List<SupplierDocument> supplierDocumentList;
+
 }
