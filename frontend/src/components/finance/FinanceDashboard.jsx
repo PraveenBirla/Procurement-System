@@ -1,16 +1,44 @@
 import { useState } from "react";
 import {
+   LayoutDashboard,
+  Clock3,
+  CheckCircle2,
+  XCircle,
   Package,
   LogOut
 } from "lucide-react";  
 import authService from "../../services/authService";
 import { RequisitionSection } from "./RequisitionSection";
+import { RejectedSection } from "./RejectedSection";
+import { ApprovedSection } from "./ApprovedSection";
+import { PendingSection } from "./PendingSection";
+import { OverviewSection } from "./OverviewSection";
 
 export const FinanceDashboard = () => {
-  const [activeSection, setActiveSection] = useState("requition");
+  const [activeSection, setActiveSection] = useState("overview");
 
   const menuItems = [
-    { id: "requition", label: "Requition", icon: Package }, 
+   
+    {
+    id: "overview",
+    label: "Overview",
+    icon: LayoutDashboard,
+  },
+  {
+    id: "pending",
+    label: "Pending",
+    icon: Clock3,
+  },
+  {
+    id: "approved",
+    label: "Approved",
+    icon: CheckCircle2,
+  },
+  {
+    id: "rejected",
+    label: "Rejected",
+    icon: XCircle,
+  },
   ];
 
   return (
@@ -43,6 +71,18 @@ export const FinanceDashboard = () => {
         {activeSection === "requition" && (
            <RequisitionSection/>
         )}
+        {activeSection === "rejected" && (
+           <RejectedSection/>
+        )} 
+         {activeSection === "approved" && (
+           <ApprovedSection/>
+        )} 
+         {activeSection === "pending" && (
+           <PendingSection/>
+        )} 
+         {activeSection === "overview" && (
+           <OverviewSection/>
+        )} 
          
       </main>
     </div>
