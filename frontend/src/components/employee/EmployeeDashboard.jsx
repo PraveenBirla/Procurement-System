@@ -17,7 +17,7 @@ export const EmployeeDashboard = () => {
     <div className="admin-dashboard">
        
       <aside className="sidebar">
-        <div className="sidebar-header">Procurement  Employee</div>
+        <div className="sidebar-header">ProCure Employee</div>
         <nav className="menu">
           {menuItems.map((item) => (
             <button

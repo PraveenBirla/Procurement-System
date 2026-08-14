@@ -55,13 +55,15 @@ public class PurchaseRequisitionService {
                 .requisitionNo(requisition.getRequisitionNo())
                 .title(requisition.getTitle())
                 .description(requisition.getDescription())
+                .employeeName(requisition.getEmployee().getFullName())
+                .departmentName(requisition.getEmployee().getDepartment().getDepartmentName())
                 .status(requisition.getStatus())
                 .totalEstimatedAmount(requisition.getTotalEstimatedAmount())
                 .isDuplicate(requisition.getIsDuplicate())
                 .createdAt(requisition.getCreatedAt())
                 .updatedAt(requisition.getUpdatedAt())
                 .build();
-        // Employee 
+
         if (requisition.getEmployee() != null) {
             dto.setEmployeeName(requisition.getEmployee().getFullName());
 

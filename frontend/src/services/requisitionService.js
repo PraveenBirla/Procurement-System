@@ -37,7 +37,7 @@ const requisitionService = {
         params: {
          status,
         }
-      }
+      } 
       );
        return res.data.data;
      }, 

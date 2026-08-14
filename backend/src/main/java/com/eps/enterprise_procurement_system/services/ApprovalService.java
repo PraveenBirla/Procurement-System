@@ -179,6 +179,8 @@ public class ApprovalService {
                 .requisitionNo(req.getRequisitionNo())
                 .title(req.getTitle())
                 .description(req.getDescription())
+                .employeeName(req.getEmployee().getFullName())
+                .departmentName(req.getEmployee().getDepartment().getDepartmentName())
                 .totalEstimatedAmount(req.getTotalEstimatedAmount())
                 .status(req.getStatus())
                 .createdAt(req.getCreatedAt())
@@ -221,7 +223,8 @@ public class ApprovalService {
                         .requisitionNo(req.getRequisitionNo())
                         .title(req.getTitle())
                         .description(req.getDescription())
-
+                        .employeeName(req.getEmployee().getFullName())
+                        .departmentName(req.getEmployee().getDepartment().getDepartmentName())
                         .status(req.getStatus())
                         .totalEstimatedAmount(req.getTotalEstimatedAmount())
                         .isDuplicate(req.getIsDuplicate())

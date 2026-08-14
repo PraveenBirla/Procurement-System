@@ -279,7 +279,11 @@ export const RequisitionSection = () => {
               </p>
               <p>
                 <strong>Description:</strong> {selectedRequisition.description}
-              </p>
+              </p> 
+              <p>
+              <strong>Employee:</strong>{" "}
+               {selectedRequisition.employeeName || "-"}
+              </p> 
               <p>
                 <strong>Department:</strong> {selectedRequisition.departmentName}
               </p>

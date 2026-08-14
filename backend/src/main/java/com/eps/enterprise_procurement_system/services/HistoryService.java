@@ -31,7 +31,7 @@ public class HistoryService {
 
     public List<RequisitionStatusHistoryResponseDTO> getHistoryByRequitionId(Long id){
 
-        List<RequisitionStatusHistory> list =  requisitionStatusHistoryRepo.findByRequisition_IdOrderByChangedAtDesc(id);
+        List<RequisitionStatusHistory> list =  requisitionStatusHistoryRepo.findByRequisition_IdOrderByChangedAtAsc(id);
         System.out.println(list);
         return   list.stream()
                 .map(this::mapToDTO)

@@ -24,7 +24,7 @@ export const AdminDashboard = () => {
   const [activeSection, setActiveSection] = useState("overview");
 
   const menuItems = [
-    { id: "overview", label: "Overview", icon: BarChart3 },
+    { id: "overview", label: "Purchase Orders", icon: BarChart3 },
      { id: "requisition", label: "Requisition", icon: ClipboardList },
     { id: "users", label: "Users", icon: Users },
      { id: "suppliers", label: "Suppliers", icon: Building2 },
@@ -37,7 +37,7 @@ export const AdminDashboard = () => {
     <div className="admin-dashboard">
        
       <aside className="sidebar">
-        <div className="sidebar-header">Procurement Admin</div>
+        <div className="sidebar-header">ProCure Admin</div>
         <nav className="menu">
           {menuItems.map((item) => (
             <button

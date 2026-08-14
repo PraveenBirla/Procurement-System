@@ -15,11 +15,12 @@ import { PurchaseOrderSection } from "./PurchaseOrderSection";
 import { DeliveredSection } from "./DeliveredOrder";
 import { CompletedOrderSection } from "./CompletedOrderSection"; 
 import { SupplierSection } from "../admin/SupplierSection";
-
+import { OverviewSection } from "./OverviewSection";
 export const ProcurementDashboard = () => {
   const [activeSection, setActiveSection] = useState("requition");
 
-  const menuItems = [
+  const menuItems = [ 
+     { id: "overview", label: "Overview", icon:ClipboardList },
     { id: "requition", label: "Requition", icon:ClipboardList },
      { id: "ApprovedRequition", label: "Approved Requition", icon: BadgeCheck }, 
      { id: "PurchaseOrders", label: "Purchase Orders", icon: ShoppingCart },
@@ -34,7 +35,7 @@ export const ProcurementDashboard = () => {
     <div className="admin-dashboard">
        
       <aside className="sidebar">
-        <div className="sidebar-header">Procurement Manager</div>
+        <div className="sidebar-header">ProCure  Procurement</div>
         <nav className="menu"> 
           {menuItems.map((item) => (
             <button
@@ -63,7 +64,7 @@ export const ProcurementDashboard = () => {
           {activeSection === "suppliers" && <SupplierSection/> }
           {activeSection === "DeliveredOrders" && <DeliveredSection/> }
           {activeSection === "CompletedOrders" && <CompletedOrderSection/> }
-           
+          {activeSection === "overview" && <OverviewSection/> }
       </main>
     </div>
   );

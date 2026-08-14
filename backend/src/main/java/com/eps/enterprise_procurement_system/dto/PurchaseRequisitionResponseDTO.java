@@ -1,5 +1,6 @@
 package com.eps.enterprise_procurement_system.dto;
 
+import com.eps.enterprise_procurement_system.entities.Department;
 import com.eps.enterprise_procurement_system.entities.enums.RequisitionStatus;
 
 import lombok.AllArgsConstructor;
@@ -27,7 +28,7 @@ public class PurchaseRequisitionResponseDTO {
 
     private String employeeName;
 
-    private String departmentName;
+    private  String departmentName;
 
     private RequisitionStatus status;
 
