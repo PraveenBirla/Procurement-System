@@ -45,7 +45,8 @@ export const CompletedOrderSection = () => {
   const loadOrders = async () => {
     setLoading(true);
     try {
-      const res = await  purchaseOrderService.getPurchaseOrderByStatus(COMPLETED_STATUS);
+      const res = await purchaseOrderService.getPurchaseOrderByStatus(COMPLETED_STATUS);
+      console.log(res);
       setOrders(res);
       setError("");
     } catch (err) {
@@ -63,6 +64,11 @@ export const CompletedOrderSection = () => {
   const handleViewInvoice = (po) => {
     if (!po.invoiceURL) return;
     window.open(po.invoiceURL, "_blank", "noopener,noreferrer");
+  };
+
+  const handleViewGoodsReceipt = (po) => {
+    if (!po.pdfURL) return;
+    window.open(po.goodsReceiptURL, "_blank", "noopener,noreferrer");
   };
 
   const handleTrack = async (po) => {
@@ -157,6 +163,14 @@ export const CompletedOrderSection = () => {
                         disabled={!po.invoiceURL}
                       >
                         View Invoice
+                      </button>
+
+                      <button
+                        className="view-btn"
+                        onClick={() => handleViewGoodsReceipt(po)}
+                        disabled={!po.pdfURL}
+                      >
+                        View GR
                       </button>
 
                       <button

@@ -1,32 +1,71 @@
 import { useEffect, useState } from "react";
 import { createPortal } from "react-dom";
+
+import goodsReceiptService from "../../services/goodsReceiptService";
 import purchaseOrderService from "../../services/purchaseOrderService";
-import suppliersService from "../../services/suppliersService";
+import supplierService from "../../services/suppliersService";
 
 const DELIVERED_STATUS = "DELIVERED";
 const COMPLETED_STATUS = "COMPLETED";
 
-export const  DeliveredSection = () => {
+export const DeliveredSection = () => {
+  // =========================================================
+  // MAIN DATA
+  // =========================================================
+
   const [orders, setOrders] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
 
+  // PO -> Goods Receipt mapping
+  const [goodsReceiptMap, setGoodsReceiptMap] = useState({});
+
+  // =========================================================
+  // LOADING / ACTION STATES
+  // =========================================================
+
+  const [inspectingId, setInspectingId] = useState(null);
+  const [generatingGR, setGeneratingGR] = useState(false);
   const [confirmingId, setConfirmingId] = useState(null);
+  const [ratingSubmitting, setRatingSubmitting] = useState(false);
+  const [returnSubmitting, setReturnSubmitting] = useState(false);
+
+  // =========================================================
+  // MODALS
+  // =========================================================
+
+  const [inspectionPO, setInspectionPO] = useState(null);
+  const [inspectionItems, setInspectionItems] = useState([]);
+
+  const [viewingGR, setViewingGR] = useState(null);
+
+  const [ratingPO, setRatingPO] = useState(null);
+
+  const [returnPO, setReturnPO] = useState(null);
+  const [returnGR, setReturnGR] = useState(null);
 
   const [trackPo, setTrackPo] = useState(null);
   const [poHistory, setPoHistory] = useState([]);
   const [loadingPoHistory, setLoadingPoHistory] = useState(false);
   const [trackingId, setTrackingId] = useState(null);
 
-  const [ratingPo, setRatingPo] = useState(null);
+  // =========================================================
+  // RATING
+  // =========================================================
 
-  const [ratings, setRatings] = useState({
-    qualityRating: 0,
-    deliveryRating: 0,
-    priceRating: 0
-  });
+  const [qualityRating, setQualityRating] = useState(0);
+  const [deliveryRating, setDeliveryRating] = useState(0);
+  const [priceRating, setPriceRating] = useState(0);
 
-  const [submittingRating, setSubmittingRating] = useState(false);
+  // =========================================================
+  // RETURN / REPLACEMENT
+  // =========================================================
+
+  const [returnReason, setReturnReason] = useState("");
+
+  // =========================================================
+  // ERROR HANDLER
+  // =========================================================
 
   const getErrorMessage = (err) => {
     return (
@@ -37,43 +76,89 @@ export const  DeliveredSection = () => {
     );
   };
 
+  // =========================================================
+  // INITIAL LOAD
+  // =========================================================
+
   useEffect(() => {
     loadOrders();
   }, []);
 
+  // =========================================================
+  // BODY SCROLL LOCK
+  // =========================================================
+
   useEffect(() => {
+    const modalOpen =
+      inspectionPO ||
+      viewingGR ||
+      ratingPO ||
+      returnPO ||
+      trackPo;
 
-    const modalOpen = trackPo || ratingPo;
-
-    document.body.style.overflow = trackPo ? "hidden" : "";
+    document.body.style.overflow = modalOpen ? "hidden" : "";
 
     const handleKey = (e) => {
+      if (e.key !== "Escape") return;
 
-      if (e.key === "Escape") {
-
-        if (ratingPo && !submittingRating) {
-          closeRatingModal();
-        }
-
-        if (trackPo) {
-          closeTrackModal();
-        }
-      }
-    }
+      setInspectionPO(null);
+      setViewingGR(null);
+      setRatingPO(null);
+      setReturnPO(null);
+      setReturnGR(null);
+      closeTrackModal();
+    };
 
     document.addEventListener("keydown", handleKey);
+
     return () => {
       document.body.style.overflow = "";
       document.removeEventListener("keydown", handleKey);
     };
-  }, [trackPo, ratingPo, submittingRating]);
+  }, [
+    inspectionPO,
+    viewingGR,
+    ratingPO,
+    returnPO,
+    trackPo,
+  ]);
 
   const loadOrders = async () => {
     setLoading(true);
+
     try {
-      const delivered = await purchaseOrderService.getPurchaseOrderByStatus(DELIVERED_STATUS);
-      // console.log(delivered);
+      const delivered =
+        await purchaseOrderService.getPurchaseOrderByStatus(
+          DELIVERED_STATUS
+        );
+
       setOrders(delivered);
+
+      const grMap = {};
+
+      await Promise.all(
+        delivered.map(async (po) => {
+          try {
+            const gr =
+              await goodsReceiptService.getByPurchaseOrder(
+                po.id
+              );
+
+            if (gr) {
+              grMap[po.id] = gr;
+            }
+          } catch (err) {
+            /*
+             * No GR is expected for a new delivered PO.
+             *
+             * Do not show an error here because a missing GR
+             * is a normal state.
+             */
+          }
+        })
+      );
+
+      setGoodsReceiptMap(grMap);
       setError("");
     } catch (err) {
       setError(getErrorMessage(err));
@@ -83,183 +168,495 @@ export const  DeliveredSection = () => {
   };
 
   const handleViewPO = (po) => {
-    if (!po.pdfURL) return;
-    window.open(po.pdfURL, "_blank", "noopener,noreferrer");
-  };
-
-  const handleViewInvoice = (po) => {
-    if (!po.invoiceURL) return;
-    window.open(po.invoiceURL, "_blank", "noopener,noreferrer");
-  };
-
-  const handleConfirmDelivery = async (po) => {
-
-      setRatingPo(po);
-
-      setRatings({
-        qualityRating: 0,
-        deliveryRating: 0,
-        priceRating: 0
-      });
-
-      setError("");
-  };
-
-  const closeRatingModal = () => {
-
-    if (submittingRating) {
+    if (!po?.pdfURL) {
+      setError("PO PDF is not available.");
       return;
     }
 
-    setRatingPo(null);
-
-    setRatings({
-      qualityRating: 0,
-      deliveryRating: 0,
-      priceRating: 0
-    });
-  };
-
-  const handleRatingChange = (field, value) => {
-
-    setRatings((previous) => ({
-      ...previous,
-      [field]: value
-    }));
-  };
-
-  const getRatingLabelText = (score) => {
-    switch (score) {
-      case 1: return "Poor 😞";
-      case 2: return "Fair 😐";
-      case 3: return "Good 🙂";
-      case 4: return "Very Good 😊";
-      case 5: return "Excellent 🌟";
-      default: return "Click to rate";
-    }
-  };
-
-  const RatingStars = ({ field, label, description }) => {
-    const currentRating = ratings[field];
-
-    return (
-      <div className="enhanced-rating-card">
-        <div className="rating-card-header">
-          <div>
-            <span className="rating-category-title">{label}</span>
-            <p className="rating-category-desc">{description}</p>
-          </div>
-          <span className={`rating-status-badge ${currentRating > 0 ? "active" : ""}`}>
-            {getRatingLabelText(currentRating)}
-          </span>
-        </div>
-
-        <div className="rating-stars-row">
-          {[1, 2, 3, 4, 5].map((star) => (
-            <button
-              key={star}
-              type="button"
-              className={`rating-star-btn ${star <= currentRating ? "filled" : ""}`}
-              onClick={() => handleRatingChange(field, star)}
-              disabled={submittingRating}
-              aria-label={`${star} out of 5`}
-            >
-              ★
-            </button>
-          ))}
-        </div>
-      </div>
+    window.open(
+      po.pdfURL,
+      "_blank",
+      "noopener,noreferrer"
     );
   };
 
-  const getCurrentUserId = () => {
-
-    try {
-
-      const user = JSON.parse(
-        localStorage.getItem("user")
-      );
-
-      return user?.id || user?.userId || null;
-
-    } catch {
-
-      return null;
-
+  const handleViewInvoice = (po) => {
+    if (!po?.invoiceURL) {
+      setError("Invoice is not available.");
+      return;
     }
+
+    window.open(
+      po.invoiceURL,
+      "_blank",
+      "noopener,noreferrer"
+    );
   };
 
-  const handleSubmitRating = async () => {
 
-    if (!ratingPo) {
-      return;
-    }
-
-    if (ratings.qualityRating === 0 || ratings.deliveryRating === 0 || ratings.priceRating === 0) {
-
-      setError("Please provide a rating for Quality, Delivery and Price.");
-      return;
-    }
-
-    const reviewedById = ratingPo.generatedById;
-
-    if (!reviewedById) {
-
-      setError("Unable to identify the logged-in user.");
-      return;
-    }
-
-    setSubmittingRating(true);
+  const handleInspectGoods = async (po) => {
+    setInspectingId(po.id);
     setError("");
 
     try {
 
-        await suppliersService.createSupplierPerformance({
+      let existingGR = null;
 
-        supplierId: ratingPo.supplierId,
+      try {
+        existingGR =
+          await goodsReceiptService.getByPurchaseOrder(
+            po.id
+          );
+      } catch (err) {
+        // No GR -> normal inspection flow
+      }
 
-        purchaseOrderId: ratingPo.id,
+      if (existingGR) {
+        setGoodsReceiptMap((prev) => ({
+          ...prev,
+          [po.id]: existingGR,
+        }));
 
-        qualityRating: ratings.qualityRating,
+        handleAfterGoodsReceipt(
+          po,
+          existingGR
+        );
 
-        deliveryRating: ratings.deliveryRating,
+        return;
+      }
 
-        priceRating: ratings.priceRating,
+      const items = (po.items || []).map((item) => ({
+        id: item.id,
+        productId:
+          item.productId ||
+          item.product?.id,
 
-        reviewDate: new Date()
-          .toISOString()
-          .split("T")[0],
+        productName:
+          item.productName ||
+          item.product?.name ||
+          "-",
 
-        reviewedById: reviewedById
+        orderedQuantity:
+          Number(
+            item.quantity ||
+            item.orderedQuantity ||
+            0
+          ),
 
-      });
+        receivedQuantity:
+          Number(
+            item.quantity ||
+            item.orderedQuantity ||
+            0
+          ),
+
+        acceptedQuantity:
+          Number(
+            item.quantity ||
+            item.orderedQuantity ||
+            0
+          ),
+
+        rejectedQuantity: 0,
+
+        remarks: "",
+
+        inspected: false,
+      }));
+
+      setInspectionItems(items);
+      setInspectionPO(po);
+    } catch (err) {
+      setError(getErrorMessage(err));
+    } finally {
+      setInspectingId(null);
+    }
+  };
+
+  const handleAfterGoodsReceipt = (po, gr) => {
+    if (!gr) return;
+
+    const hasRejectedItems =
+      gr.items?.some(
+        (item) =>
+          Number(item.rejectedQuantity || 0) > 0
+      );
+
+    const qualityStatus =
+      gr.qualityStatus;
+
+    if (
+      hasRejectedItems ||
+      qualityStatus === "FAIL"
+    ) {
+      setReturnPO(po);
+      setReturnGR(gr);
+      return;
+    }
+
+    if (
+      qualityStatus === "PASS"
+    ) {
+      openRatingModal(po);
+    }
+  };
+
+  const updateInspectionItem = (
+    itemId,
+    field,
+    value
+  ) => {
+    setInspectionItems((prev) =>
+      prev.map((item) => {
+        if (item.id !== itemId) {
+          return item;
+        }
+
+        let updated = {
+          ...item,
+          [field]: value,
+        };
+
+        if (
+          field === "acceptedQuantity" ||
+          field === "receivedQuantity"
+        ) {
+          const received =
+            Number(
+              field === "receivedQuantity"
+                ? value
+                : item.receivedQuantity
+            );
+
+          const accepted =
+            Number(
+              field === "acceptedQuantity"
+                ? value
+                : item.acceptedQuantity
+            );
+
+          updated.rejectedQuantity =
+            Math.max(
+              0,
+              received - accepted
+            );
+        }
+
+        if (field === "inspected") {
+          updated.inspected = value;
+        }
+
+        return updated;
+      })
+    );
+  };
+
+  const allItemsInspected =
+    inspectionItems.length > 0 &&
+    inspectionItems.every(
+      (item) => item.inspected
+    );
+
+  const allGoodsPerfect =
+    inspectionItems.length > 0 &&
+    inspectionItems.every(
+      (item) =>
+        Number(item.rejectedQuantity || 0) === 0 &&
+        Number(item.acceptedQuantity || 0) ===
+          Number(item.receivedQuantity || 0)
+    );
+
+  const handleGenerateGoodsReceipt =
+    async () => {
+      if (!inspectionPO) {
+        return;
+      }
+
+      if (!allItemsInspected) {
+        setError(
+          "Please inspect every item before generating the Goods Receipt."
+        );
+        return;
+      }
+
+      setGeneratingGR(true);
+      setError("");
+
+      try {
+
+        let existingGR = null;
+
+        try {
+          existingGR =
+            await goodsReceiptService.getByPurchaseOrder(
+              inspectionPO.id
+            );
+        } catch (err) {
+          // No GR
+        }
+
+        if (existingGR) {
+          setGoodsReceiptMap((prev) => ({
+            ...prev,
+            [inspectionPO.id]: existingGR,
+          }));
+
+          setInspectionPO(null);
+          setInspectionItems([]);
+
+          handleAfterGoodsReceipt(
+            inspectionPO,
+            existingGR
+          );
+
+          return;
+        }
+
+        const qualityStatus = allGoodsPerfect? "PASS": "FAIL";
+
+
+        const request = {
+          purchaseOrderId: inspectionPO.id,
+
+          isDelayed: false,
+
+          receivedDate: new Date().toISOString().split("T")[0],
+
+          qualityStatus,
+
+          remarks: allGoodsPerfect
+            ? "All goods inspected and accepted."
+            : "Some goods were rejected during inspection.",
+
+          items: inspectionItems.map(
+            (item) => ({
+              productId: item.productId,
+
+              orderedQuantity: Number(item.orderedQuantity),
+
+              receivedQuantity: Number(item.receivedQuantity),
+
+              acceptedQuantity: Number(item.acceptedQuantity),
+
+              rejectedQuantity: Number(item.rejectedQuantity),
+
+              remarks: item.remarks || null,
+            })
+          ),
+        };
+
+        const createdGR =
+          await goodsReceiptService.createGoodsReceipt(inspectionPO.id,
+            request
+          );
+
+        setGoodsReceiptMap((prev) => ({
+          ...prev,
+          [inspectionPO.id]: createdGR,
+        }));
+
+        const currentPO = inspectionPO;
+
+        setInspectionPO(null);
+        setInspectionItems([]);
+
+        handleAfterGoodsReceipt(
+          currentPO,
+          createdGR
+        );
+
+      } catch (err) {
+        setError(getErrorMessage(err));
+      } finally {
+        setGeneratingGR(false);
+      }
+    };
+
+  const handleViewGoodsReceipt = (gr) => {
+    if (!po?.invoiceURL) {
+      setError("Invoice is not available.");
+      return;
+    }
+
+    window.open(
+      po.invoiceURL,
+      "_blank",
+      "noopener,noreferrer"
+    );
+  };
+
+  const openRatingModal = (po) => {
+    console.log(po);
+    setRatingPO(po);
+
+    setQualityRating(0);
+    setDeliveryRating(0);
+    setPriceRating(0);
+  };
+
+  const closeRatingModal = () => {
+    setRatingPO(null);
+
+    setQualityRating(0);
+    setDeliveryRating(0);
+    setPriceRating(0);
+  };
+
+  const handleSubmitRating = async () => {
+    if (!ratingPO) {
+      return;
+    }
+
+    if (
+      qualityRating === 0 ||
+      deliveryRating === 0 ||
+      priceRating === 0
+    ) {
+      setError(
+        "Please provide a rating for all fields."
+      );
+      return;
+    }
+
+    setRatingSubmitting(true);
+    setError("");
+
+    try {
+      const request = {
+        supplierId:
+          ratingPO.supplierId,
+
+        purchaseOrderId:
+          ratingPO.id,
+
+        qualityRating,
+
+        deliveryRating,
+
+        priceRating,
+
+        reviewDate:
+          new Date()
+            .toISOString()
+            .split("T")[0],
+
+        reviewedById:
+          ratingPO.generatedById,
+      };
+
+      await supplierService.createSupplierPerformance(
+        request
+      );
 
       await purchaseOrderService.updateStatus(
-        ratingPo.id,
+        ratingPO.id,
         {
-          status: COMPLETED_STATUS
+          status: COMPLETED_STATUS,
         }
       );
 
-      setRatingPo(null);
-
-      setRatings({
-        qualityRating: 0,
-        deliveryRating: 0,
-        priceRating: 0
-      });
+      closeRatingModal();
 
       await loadOrders();
 
     } catch (err) {
-
-      console.error("Supplier performance submission error:", err);
-
       setError(getErrorMessage(err));
-
     } finally {
-      setSubmittingRating(false);
+      setRatingSubmitting(false);
     }
+  };
+
+  const openReturnReplacementModal = (
+    po,
+    gr
+  ) => {
+    setReturnPO(po);
+    setReturnGR(gr);
+    setReturnReason("");
+  };
+
+  const closeReturnModal = () => {
+    setReturnPO(null);
+    setReturnGR(null);
+    setReturnReason("");
+  };
+
+  const handleSubmitReturn = async () => {
+    if (!returnPO || !returnGR) {
+      return;
+    }
+
+    if (!returnReason.trim()) {
+      setError(
+        "Please provide a reason for return/replacement."
+      );
+      return;
+    }
+
+    setReturnSubmitting(true);
+    setError("");
+
+    try {
+      const request = {
+        purchaseOrderId:
+          returnPO.id,
+
+        goodsReceiptId:
+          returnGR.id,
+
+        reason:
+          returnReason.trim(),
+
+        status: "RAISED",
+      };
+
+      await purchaseOrderService.createReturnReplacement(
+        request
+      );
+
+      closeReturnModal();
+
+      await loadOrders();
+
+    } catch (err) {
+      setError(getErrorMessage(err));
+    } finally {
+      setReturnSubmitting(false);
+    }
+  };
+
+  const handleConfirmDelivery = async (po) => {
+    const gr =
+      goodsReceiptMap[po.id];
+
+    if (!gr) {
+      setError(
+        "Goods Receipt must be generated before confirming delivery."
+      );
+      return;
+    }
+
+    const allPerfect =
+      gr.qualityStatus === "PASS" &&
+      !gr.items?.some(
+        (item) =>
+          Number(
+            item.rejectedQuantity || 0
+          ) > 0
+      );
+
+    if (!allPerfect) {
+      setError(
+        "Delivery cannot be confirmed because some goods were rejected."
+      );
+      return;
+    }
+
+    setError(
+      "Please complete supplier performance rating before confirming delivery."
+    );
+
+    openRatingModal(po);
   };
 
 
@@ -270,7 +667,11 @@ export const  DeliveredSection = () => {
     setLoadingPoHistory(true);
 
     try {
-      const res = await purchaseOrderService.getPurchaseOrderHistory(po.id);
+      const res =
+        await purchaseOrderService.getPurchaseOrderHistory(
+          po.id
+        );
+
       setPoHistory(res);
     } catch (err) {
       setError(getErrorMessage(err));
@@ -286,23 +687,74 @@ export const  DeliveredSection = () => {
     setPoHistory([]);
   };
 
+  const RatingInput = ({
+    value,
+    onChange,
+  }) => {
+    return (
+      <div
+        style={{
+          display: "flex",
+          gap: "8px",
+          marginTop: "8px",
+        }}
+      >
+        {[1, 2, 3, 4, 5].map(
+          (star) => (
+            <button
+              key={star}
+              type="button"
+              onClick={() =>
+                onChange(star)
+              }
+              style={{
+                border: "none",
+                background: "transparent",
+                cursor: "pointer",
+                fontSize: "28px",
+                opacity:
+                  star <= value
+                    ? 1
+                    : 0.3,
+              }}
+            >
+              ★
+            </button>
+          )
+        )}
+      </div>
+    );
+  };
+
   return (
     <div className="admin-requisition-section">
+
       <div className="section-header">
-        <h2 className="section-title">Delivered Purchase Orders</h2>
+        <h2 className="section-title">
+          Delivered Purchase Orders
+        </h2>
       </div>
 
       {error && (
         <div className="error-box">
           <span>{error}</span>
-          <button className="error-dismiss" onClick={() => setError("")} aria-label="Dismiss error">
+
+          <button
+            className="error-dismiss"
+            onClick={() =>
+              setError("")
+            }
+            aria-label="Dismiss error"
+          >
             ×
           </button>
         </div>
       )}
 
       <div className="table-wrapper">
+
         <table className="table">
+
           <thead>
             <tr>
               <th>PO Number</th>
@@ -317,85 +769,652 @@ export const  DeliveredSection = () => {
           </thead>
 
           <tbody>
+
             {loading ? (
+
               <tr>
-                <td colSpan="8" className="no-data">
+                <td
+                  colSpan="8"
+                  className="no-data"
+                >
                   Loading…
                 </td>
               </tr>
+
             ) : orders.length > 0 ? (
+
               orders.map((po) => {
-                const canConfirm = po.status === DELIVERED_STATUS;
+
+                const existingGR =
+                  goodsReceiptMap[po.id];
+
+                const inspecting =
+                  inspectingId ===
+                  po.id;
+
+                const canViewGR =
+                  !!existingGR;
+
+                const canConfirm =
+                  !!existingGR &&
+                  existingGR.qualityStatus ===
+                    "PASS" &&
+                  !existingGR.items?.some(
+                    (item) =>
+                      Number(
+                        item.rejectedQuantity ||
+                          0
+                      ) > 0
+                  );
+
                 return (
                   <tr key={po.id}>
-                    <td data-label="PO Number">{po.poNumber}</td>
-                    <td data-label="Requisition No">{po.requisitionNo}</td>
-                    <td data-label="Supplier">{po.supplierName || "-"}</td>
+
+                    {/* PO NUMBER */}
+
+                    <td data-label="PO Number">
+                      {po.poNumber}
+                    </td>
+
+                    {/* REQUISITION */}
+
+                    <td data-label="Requisition No">
+                      {po.requisitionNo}
+                    </td>
+
+                    {/* SUPPLIER */}
+
+                    <td data-label="Supplier">
+                      {po.supplierName ||
+                        "-"}
+                    </td>
+
+                    {/* STATUS */}
+
                     <td data-label="Status">
-                      <span className={`status-badge ${po.status.toLowerCase()}`}>
-                        {po.status.replaceAll("_", " ")}
+                      <span
+                        className={`status-badge ${
+                          po.status?.toLowerCase()
+                        }`}
+                      >
+                        {po.status
+                          ?.replaceAll(
+                            "_",
+                            " "
+                          )}
                       </span>
                     </td>
-                    <td data-label="Amount">₹{Number(po.totalAmount).toLocaleString()}</td>
+
+                    {/* AMOUNT */}
+
+                    <td data-label="Amount">
+                      ₹
+                      {Number(
+                        po.totalAmount || 0
+                      ).toLocaleString()}
+                    </td>
+
+                    {/* EXPECTED DELIVERY */}
+
                     <td data-label="Expected Delivery">
                       {po.expectedDeliveryDate
-                        ? new Date(po.expectedDeliveryDate).toLocaleDateString()
+                        ? new Date(
+                            po.expectedDeliveryDate
+                          ).toLocaleDateString()
                         : "-"}
                     </td>
-                    <td data-label="Created">{new Date(po.createdAt).toLocaleDateString()}</td>
+
+                    {/* CREATED */}
+
+                    <td data-label="Created">
+                      {po.createdAt
+                        ? new Date(
+                            po.createdAt
+                          ).toLocaleDateString()
+                        : "-"}
+                    </td>
+
+                    {/* ACTION */}
+
                     <td data-label="Action">
+
                       <div className="action-group">
+
+                        {/* VIEW PO */}
+
                         <button
                           className="view-btn"
-                          onClick={() => handleViewPO(po)}
-                          disabled={!po.pdfURL}
+                          onClick={() =>
+                            handleViewPO(
+                              po
+                            )
+                          }
+                          disabled={
+                            !po.pdfURL
+                          }
                         >
                           View PO
                         </button>
 
+                        {/* VIEW INVOICE */}
+
                         <button
                           className="view-btn"
-                          onClick={() => handleViewInvoice(po)}
-                          disabled={!po.invoiceURL}
+                          onClick={() =>
+                            handleViewInvoice(
+                              po
+                            )
+                          }
+                          disabled={
+                            !po.invoiceURL
+                          }
                         >
                           View Invoice
                         </button>
 
+                        {canViewGR ? (
+
+                          <button
+                            className="view-btn"
+                            onClick={() =>
+                              handleViewGoodsReceipt(
+                                existingGR
+                              )
+                            }
+                          >
+                            View GR
+                          </button>
+
+                        ) : (
+
+                          <button
+                            className="approve-btn"
+                            onClick={() =>
+                              handleInspectGoods(
+                                po
+                              )
+                            }
+                            disabled={
+                              inspecting
+                            }
+                          >
+                            {inspecting
+                              ? "Checking..."
+                              : "Inspect Goods"}
+                          </button>
+
+                        )}
+
                         {canConfirm && (
                           <button
                             className="approve-btn"
-                            onClick={() => handleConfirmDelivery(po)}
-                            disabled={confirmingId === po.id}
+                            onClick={() =>
+                              handleConfirmDelivery(
+                                po
+                              )
+                            }
+                            disabled={
+                              confirmingId ===
+                              po.id
+                            }
                           >
-                            {confirmingId === po.id ? "…" : "Confirm Delivery"}
+                            {confirmingId ===
+                            po.id
+                              ? "..."
+                              : "Confirm Delivery"}
                           </button>
                         )}
 
+                        {/* TRACK */}
+
                         <button
                           className="track-btn"
-                          onClick={() => handleTrack(po)}
-                          disabled={trackingId === po.id}
+                          onClick={() =>
+                            handleTrack(
+                              po
+                            )
+                          }
+                          disabled={
+                            trackingId ===
+                            po.id
+                          }
                         >
-                          {trackingId === po.id ? "…" : "Track"}
+                          {trackingId ===
+                          po.id
+                            ? "..."
+                            : "Track"}
                         </button>
+
                       </div>
+
                     </td>
+
                   </tr>
                 );
               })
+
             ) : (
+
               <tr>
-                <td colSpan="8" className="no-data">
+                <td
+                  colSpan="8"
+                  className="no-data"
+                >
                   No Purchase Orders Found
                 </td>
               </tr>
+
             )}
+
           </tbody>
+
         </table>
+
       </div>
 
-      {ratingPo &&
+      {inspectionPO &&
+        createPortal(
 
+          <div
+            className="modal-overlay"
+            onClick={() =>
+              setInspectionPO(null)
+            }
+          >
+
+            <div
+              className="modal-content"
+              onClick={(e) =>
+                e.stopPropagation()
+              }
+            >
+
+              <div className="modal-header">
+
+                <div>
+                  <h2>
+                    Inspect Goods
+                  </h2>
+
+                  <p>
+                    PO:{" "}
+                    <strong>
+                      {inspectionPO.poNumber}
+                    </strong>
+                  </p>
+                </div>
+
+                <button
+                  className="modal-close"
+                  onClick={() =>
+                    setInspectionPO(null)
+                  }
+                >
+                  ×
+                </button>
+
+              </div>
+
+              <div className="table-wrapper">
+
+                <table className="table">
+
+                  <thead>
+                    <tr>
+                      <th>Check</th>
+                      <th>Product</th>
+                      <th>Ordered</th>
+                      <th>Received</th>
+                      <th>Accepted</th>
+                      <th>Rejected</th>
+                      <th>Remarks</th>
+                    </tr>
+                  </thead>
+
+                  <tbody>
+
+                    {inspectionItems.map(
+                      (item) => (
+
+                        <tr key={item.id}>
+
+                          {/* CHECK */}
+
+                          <td>
+                            <input
+                              type="checkbox"
+                              checked={
+                                item.inspected
+                              }
+                              onChange={(e) =>
+                                updateInspectionItem(
+                                  item.id,
+                                  "inspected",
+                                  e.target.checked
+                                )
+                              }
+                            />
+                          </td>
+
+                          {/* PRODUCT */}
+
+                          <td>
+                            {item.productName}
+                          </td>
+
+                          {/* ORDERED */}
+
+                          <td>
+                            {item.orderedQuantity}
+                          </td>
+
+                          {/* RECEIVED */}
+
+                          <td>
+                            <input
+                              type="number"
+                              min="0"
+                              value={
+                                item.receivedQuantity
+                              }
+                              onChange={(e) =>
+                                updateInspectionItem(
+                                  item.id,
+                                  "receivedQuantity",
+                                  Number(
+                                    e.target.value
+                                  )
+                                )
+                              }
+                            />
+                          </td>
+
+                          {/* ACCEPTED */}
+
+                          <td>
+                            <input
+                              type="number"
+                              min="0"
+                              max={
+                                item.receivedQuantity
+                              }
+                              value={
+                                item.acceptedQuantity
+                              }
+                              onChange={(e) =>
+                                updateInspectionItem(
+                                  item.id,
+                                  "acceptedQuantity",
+                                  Number(
+                                    e.target.value
+                                  )
+                                )
+                              }
+                            />
+                          </td>
+
+                          {/* REJECTED */}
+
+                          <td>
+                            <input
+                              type="number"
+                              value={
+                                item.rejectedQuantity
+                              }
+                              disabled
+                              readOnly
+                            />
+                          </td>
+
+                          {/* REMARKS */}
+
+                          <td>
+                            <input
+                              type="text"
+                              value={
+                                item.remarks
+                              }
+                              onChange={(e) =>
+                                updateInspectionItem(
+                                  item.id,
+                                  "remarks",
+                                  e.target.value
+                                )
+                              }
+                              placeholder="Remarks"
+                            />
+                          </td>
+
+                        </tr>
+                      )
+                    )}
+
+                  </tbody>
+
+                </table>
+
+              </div>
+
+              <div
+                style={{
+                  marginTop: "15px",
+                }}
+              >
+                <strong>
+                  Inspection:
+                </strong>{" "}
+
+                {allItemsInspected
+                  ? allGoodsPerfect
+                    ? "All goods are perfect."
+                    : "Some goods are rejected."
+                  : "Please inspect every item."}
+              </div>
+
+              <div className="modal-actions">
+
+                <button
+                  className="close-btn"
+                  onClick={() =>
+                    setInspectionPO(null)
+                  }
+                >
+                  Cancel
+                </button>
+
+                <button
+                  className={
+                    allItemsInspected
+                      ? "approve-btn"
+                      : "approve-btn"
+                  }
+                  disabled={
+                    !allItemsInspected ||
+                    generatingGR
+                  }
+                  onClick={
+                    handleGenerateGoodsReceipt
+                  }
+                >
+                  {generatingGR
+                    ? "Generating..."
+                    : "Generate Goods Receipt"}
+                </button>
+
+              </div>
+
+            </div>
+
+          </div>,
+
+          document.body
+        )}
+
+      {viewingGR &&
+        createPortal(
+
+          <div
+            className="modal-overlay"
+            onClick={() =>
+              setViewingGR(null)
+            }
+          >
+
+            <div
+              className="modal-content"
+              onClick={(e) =>
+                e.stopPropagation()
+              }
+            >
+
+              <div className="modal-header">
+
+                <div>
+                  <h2>
+                    Goods Receipt
+                  </h2>
+
+                  <p>
+                    GR Number:{" "}
+                    <strong>
+                      {
+                        viewingGR.goodsReceiptNumber
+                      }
+                    </strong>
+                  </p>
+                </div>
+
+                <button
+                  className="modal-close"
+                  onClick={() =>
+                    setViewingGR(null)
+                  }
+                >
+                  ×
+                </button>
+
+              </div>
+
+              <p>
+                <strong>
+                  Quality Status:
+                </strong>{" "}
+
+                <span
+                  className={`status-badge ${
+                    viewingGR.qualityStatus ===
+                    "PASS"
+                      ? "approved"
+                      : viewingGR.qualityStatus ===
+                        "FAIL"
+                      ? "rejected"
+                      : "pending"
+                  }`}
+                >
+                  {viewingGR.qualityStatus ||
+                    "PENDING"}
+                </span>
+              </p>
+
+              <p>
+                <strong>
+                  Received Date:
+                </strong>{" "}
+                {viewingGR.receivedDate
+                  ? new Date(
+                      viewingGR.receivedDate
+                    ).toLocaleDateString()
+                  : "-"}
+              </p>
+
+              <div className="table-wrapper">
+
+                <table className="table">
+
+                  <thead>
+                    <tr>
+                      <th>Product</th>
+                      <th>Ordered</th>
+                      <th>Received</th>
+                      <th>Accepted</th>
+                      <th>Rejected</th>
+                      <th>Remarks</th>
+                    </tr>
+                  </thead>
+
+                  <tbody>
+
+                    {viewingGR.items?.map(
+                      (item) => (
+
+                        <tr key={item.id}>
+
+                          <td>
+                            {item.productName ||
+                              item.product?.name ||
+                              "-"}
+                          </td>
+
+                          <td>
+                            {
+                              item.orderedQuantity
+                            }
+                          </td>
+
+                          <td>
+                            {
+                              item.receivedQuantity
+                            }
+                          </td>
+
+                          <td>
+                            {
+                              item.acceptedQuantity
+                            }
+                          </td>
+
+                          <td>
+                            {
+                              item.rejectedQuantity
+                            }
+                          </td>
+
+                          <td>
+                            {item.remarks ||
+                              "-"}
+                          </td>
+
+                        </tr>
+                      )
+                    )}
+
+                  </tbody>
+
+                </table>
+
+              </div>
+
+              <div className="modal-actions">
+
+                <button
+                  className="close-btn"
+                  onClick={() =>
+                    setViewingGR(null)
+                  }
+                >
+                  Close
+                </button>
+
+              </div>
+
+            </div>
+
+          </div>,
+
+          document.body
+        )}
+
+      {ratingPO &&
         createPortal(
 
           <div
@@ -403,161 +1422,361 @@ export const  DeliveredSection = () => {
             onClick={closeRatingModal}
           >
 
-            <div className="modal-content supplier-rating-modal"
-              onClick={(e) => e.stopPropagation()}>
-
-              {/* HEADER */}
+            <div
+              className="modal-content"
+              onClick={(e) =>
+                e.stopPropagation()
+              }
+            >
 
               <div className="modal-header">
 
                 <div>
+                  <h2>
+                    Supplier Performance
+                  </h2>
 
-                  <h2>Supplier Performance Rating</h2>
+                  <p>
+                    Supplier:{" "}
+                    <strong>
+                      {
+                        ratingPO.supplierName ||
+                        "-"
+                      }
+                    </strong>
+                  </p>
 
-                  <p>{ratingPo.supplierName || "-"}</p>
-
-                  <small>PO: {ratingPo.poNumber}</small>
-
+                  <p>
+                    PO:{" "}
+                    <strong>
+                      {
+                        ratingPO.poNumber
+                      }
+                    </strong>
+                  </p>
                 </div>
 
-                <button className="modal-close" onClick={closeRatingModal}
-                  disabled={submittingRating}
-                  aria-label="Close"
+                <button
+                  className="modal-close"
+                  onClick={
+                    closeRatingModal
+                  }
                 >
                   ×
                 </button>
 
               </div>
 
-
-              {/* DESCRIPTION */}
-
-              <div className="rating-info">
-
-                <p>
-                  Please rate the supplier's performance
-                  for this purchase order.
-                </p>
-
-              </div>
-
-
               {/* QUALITY */}
 
-              <RatingStars
-                field="qualityRating"
-                label="Quality"
-              />
+              <div className="form-group">
 
+                <label>
+                  Quality Rating
+                </label>
+
+                <RatingInput
+                  value={
+                    qualityRating
+                  }
+                  onChange={
+                    setQualityRating
+                  }
+
+                />
+
+              </div>
 
               {/* DELIVERY */}
 
-              <RatingStars
-                field="deliveryRating"
-                label="Delivery"
-              />
+              <div className="form-group">
 
+                <label>
+                  Delivery Rating
+                </label>
+
+                <RatingInput
+                  value={
+                    deliveryRating
+                  }
+                  onChange={
+                    setDeliveryRating
+                  }
+                />
+
+              </div>
 
               {/* PRICE */}
 
-              <RatingStars
-                field="priceRating"
-                label="Price"
-              />
+              <div className="form-group">
 
+                <label>
+                  Price Rating
+                </label>
 
-              {/* OVERALL PREVIEW */}
-
-              <div className="overall-rating">
-
-                <strong>
-                  Overall Rating
-                </strong>
-
-                <span>
-
-                  {(
-                    (
-                      ratings.qualityRating +
-                      ratings.deliveryRating +
-                      ratings.priceRating
-                    ) / 3
-                  ).toFixed(2)}
-
-                  / 5
-
-                </span>
+                <RatingInput
+                  value={
+                    priceRating
+                  }
+                  onChange={
+                    setPriceRating
+                  }
+                />
 
               </div>
 
-
-              {/* FOOTER */}
-
               <div className="modal-actions">
 
-                <button className="close-btn" onClick={closeRatingModal} disabled={submittingRating}>
+                <button
+                  className="close-btn"
+                  onClick={
+                    closeRatingModal
+                  }
+                >
                   Cancel
                 </button>
 
-                <button className="approve-btn" onClick={handleSubmitRating} disabled={submittingRating}>
-
-                  {submittingRating ? "Submitting...": "Submit Rating"}
+                <button
+                  className="approve-btn"
+                  disabled={
+                    ratingSubmitting ||
+                    qualityRating === 0 ||
+                    deliveryRating === 0 ||
+                    priceRating === 0
+                  }
+                  onClick={
+                    handleSubmitRating
+                  }
+                >
+                  {ratingSubmitting
+                    ? "Submitting..."
+                    : "Submit Rating"}
                 </button>
 
               </div>
-            </div>
-          </div>,
-          document.body
 
+            </div>
+
+          </div>,
+
+          document.body
         )}
 
-      {/* Track PO Modal */}
-      {trackPo &&
+      {returnPO &&
+        returnGR &&
         createPortal(
-          <div className="modal-overlay" onClick={closeTrackModal}>
-            <div className="modal-content" onClick={(e) => e.stopPropagation()}>
+
+          <div
+            className="modal-overlay"
+            onClick={
+              closeReturnModal
+            }
+          >
+
+            <div
+              className="modal-content"
+              onClick={(e) =>
+                e.stopPropagation()
+              }
+            >
+
               <div className="modal-header">
-                <h2>Track PO — {trackPo.poNumber}</h2>
-                <button className="modal-close" onClick={closeTrackModal} aria-label="Close">
+
+                <div>
+                  <h2>
+                    Return / Replacement
+                  </h2>
+
+                  <p>
+                    PO:{" "}
+                    <strong>
+                      {
+                        returnPO.poNumber
+                      }
+                    </strong>
+                  </p>
+                </div>
+
+                <button
+                  className="modal-close"
+                  onClick={
+                    closeReturnModal
+                  }
+                >
                   ×
                 </button>
+
+              </div>
+
+              <p>
+                Some goods were rejected
+                during inspection.
+              </p>
+
+              <div className="table-wrapper">
+
+                <table className="table">
+
+                  <thead>
+                    <tr>
+                      <th>Product</th>
+                      <th>Received</th>
+                      <th>Accepted</th>
+                      <th>Rejected</th>
+                    </tr>
+                  </thead>
+
+                  <tbody>
+
+                    {returnGR.items?.filter(
+                        (item) => Number(item.rejectedQuantity || 0) > 0)
+                      .map(
+                        (item) => (
+
+                          <tr key={item.id}>
+
+                            <td>{item.productName || item.product?.name || "-"}</td>
+
+                            <td>{item.receivedQuantity}</td>
+
+                            <td>{item.acceptedQuantity}</td>
+
+                            <td>{item.rejectedQuantity}</td>
+
+                          </tr>
+
+                        )
+                      )}
+
+                  </tbody>
+
+                </table>
+
+              </div>
+
+              <div className="form-group">
+
+                <label>
+                  Reason for Return /
+                  Replacement
+                </label>
+
+                <textarea rows="4" value={returnReason}
+                  onChange={(e) =>
+                    setReturnReason(e.target.value)
+                  }
+                  placeholder="Enter reason..."
+                />
+
+              </div>
+
+              <div className="modal-actions">
+
+                <button className="close-btn" onClick={closeReturnModal}>
+                  Cancel
+                </button>
+
+                <button
+                  className="reject-btn"
+                  disabled={returnSubmitting || !returnReason.trim()}
+                  onClick={handleSubmitReturn}>
+                  {returnSubmitting? "Submitting..." : "Create Return / Replacement"}
+                </button>
+
+              </div>
+
+            </div>
+
+          </div>,
+
+          document.body
+        )}
+
+      {trackPo && createPortal(
+
+          <div className="modal-overlay" onClick={closeTrackModal}>
+
+            <div className="modal-content" onClick={(e) => e.stopPropagation()}>
+
+              <div className="modal-header">
+
+                <h2>Track PO —{" "}
+                  {trackPo.poNumber}
+                </h2>
+
+                <button className="modal-close" onClick={closeTrackModal}>
+                  ×
+                </button>
+
               </div>
 
               {loadingPoHistory ? (
+
                 <p className="no-data">Loading history…</p>
+
               ) : poHistory.length > 0 ? (
+
                 <div className="timeline">
+
                   {poHistory.map((item, index) => (
-                    <div className="timeline-item" key={index}>
-                      <div className="timeline-dot"></div>
-                      <div className="timeline-content">
-                        <h4>{item.newStatus ? item.newStatus.replaceAll("_", " ") : "-"}</h4>
-                        <p>
-                          <b>Previous:</b> {item.oldStatus ? item.oldStatus.replaceAll("_", " ") : "-"}
-                        </p>
-                        <p>
-                          <b>Remarks:</b> {item.remarks || "-"}
-                        </p>
-                        <p>
-                          <b>Date:</b> {new Date(item.changedAt).toLocaleString()}
-                        </p>
+
+                      <div className="timeline-item" key={index}>
+
+                        <div className="timeline-dot"></div>
+
+                        <div className="timeline-content">
+
+                          <h4>
+                            {item.newStatus? item.newStatus.replaceAll("_"," "): "-"}
+                          </h4>
+
+                          <p>
+                            <b>Previous:</b>{" "}
+                            {item.oldStatus? item.oldStatus.replaceAll("_", " "): "-"}
+                          </p>
+
+                          <p>
+                            <b>Remarks:</b>
+                            {" "}{item.remarks || "-"}
+                          </p>
+
+                          <p>
+                            <b>
+                              Date:
+                            </b>{" "}
+                            {item.changedAt? new Date(item.changedAt).toLocaleString(): "-"}
+                          </p>
+
+                        </div>
+
                       </div>
-                    </div>
-                  ))}
+
+                    )
+                  )}
+
                 </div>
+
               ) : (
+
                 <p className="no-data">No history available.</p>
+
               )}
 
               <div className="modal-actions">
+
                 <button className="close-btn" onClick={closeTrackModal}>
                   Close
                 </button>
+
               </div>
+
             </div>
+
           </div>,
+
           document.body
         )}
+
     </div>
   );
 };

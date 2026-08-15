@@ -114,6 +114,8 @@ public class PurchaseOrderService {
 
                 dto.setInvoiceURL(purchaseOrder.getInvoiceURL());
 
+                dto.setGoodsReceiptURL(purchaseOrder.getGoodsReceiptURL());
+
                 dto.setExpectedDeliveryDate(purchaseOrder.getExpectedDeliveryDate());
 
                 dto.setCreatedAt(purchaseOrder.getCreatedAt());
@@ -494,205 +496,248 @@ public class PurchaseOrderService {
         public String deletePurchaseOrder(Long id) {
 
                 PurchaseOrder order = purchaseOrderRepo.findById(id)
-                        .orElseThrow(() -> new ResponseStatusException(
-                                HttpStatus.NOT_FOUND, "Purchase Order not found"));
+                                .orElseThrow(() -> new ResponseStatusException(
+                                                HttpStatus.NOT_FOUND, "Purchase Order not found"));
 
                 purchaseOrderRepo.delete(order);
                 return "Purchase Order Deleted Successfully";
         }
 
-        private void createReturn(PurchaseOrder order, GoodsReceipt receipt, String reason, User user){
-
-                ReturnReplacement rr = ReturnReplacement.builder()
-                                .purchaseOrder(order)
-                                .goodsReceipt(receipt)
-                                .reason(reason)
-                                .raisedBy(user)
-                                .status(ReturnStatus.RAISED)
-                                .build();
-
-                returnReplacementRepo.save(rr);
-        }
-
         @Transactional
-        public byte[] receiveGoods(Long poId, List<GoodsReceiptItemRequestDTO> items,
-                                User warehouseUser) {
+        public String confirmDelivery(Long purchaseOrderId) {
 
-                PurchaseOrder order = purchaseOrderRepo.findById(poId)
-                        .orElseThrow(() -> new ResponseStatusException(
-                                HttpStatus.NOT_FOUND,
-                                "Purchase Order not found"));
+                PurchaseOrder po = purchaseOrderRepo.findById(purchaseOrderId)
+                                .orElseThrow(() ->
+                                        new RuntimeException("Purchase order not found"));
 
-                if (order.getStatus() != PurchaseOrderStatus.DELIVERED) {
-                        throw new ResponseStatusException(
-                                HttpStatus.BAD_REQUEST,
-                                "Purchase Order is not ready for receiving.");
+                if (po.getStatus() != PurchaseOrderStatus.DELIVERED) {
+                        throw new RuntimeException(
+                                "Only delivered purchase orders can be confirmed");
                 }
 
-                Map<Long, GoodsReceiptItemRequestDTO> receivedItems =
-                        items.stream().collect(Collectors.toMap(
-                                GoodsReceiptItemRequestDTO::getProductId,
-                                Function.identity()));
+                GoodsReceipt receipt =
+                        goodsReceiptRepo
+                                .findByPurchaseOrder_Id(purchaseOrderId)
+                                .orElseThrow(() ->
+                                        new RuntimeException(
+                                                "Goods receipt must be created first"));
 
-                boolean hasIssue = false;
+                boolean perfect =
+                        receipt.getItems()
+                                .stream()
+                                .allMatch(item ->
+                                        item.getReceivedQuantity().equals(item.getOrderedQuantity()) &&
+                                        item.getAcceptedQuantity().equals(item.getOrderedQuantity()) &&
+                                        item.getRejectedQuantity() == 0
+                                );
 
-                GoodsReceipt receipt = GoodsReceipt.builder()
-                        .goodsReceiptNumber("REQ-" + UUID.randomUUID().toString().replace("-", "").toUpperCase().substring(0, 8))
-                        .purchaseOrder(order)
-                        .receivedDate(LocalDate.now())
-                        .inspectedBy(warehouseUser)
-                        .inspectedAt(LocalDateTime.now())
-                        .qualityStatus(QualityStatus.PASS)
-                        .remarks("Inspection Completed")
-                        .build();
+                if (!perfect) {throw new RuntimeException(
+                                "Delivery cannot be confirmed because one or more items are defective, rejected, or incomplete");
+                }
 
+                receipt.setQualityStatus(QualityStatus.PASS);
+                receipt.setInspectedAt(LocalDateTime.now());
+
+                po.setStatus(PurchaseOrderStatus.COMPLETED);
+
+                purchaseOrderRepo.save(po);
                 goodsReceiptRepo.save(receipt);
 
-                List<GoodsReceiptItem> receiptItems = new ArrayList<>();
-
-                for (PoItem poItem : order.getPoItems()) {
-
-                        GoodsReceiptItemRequestDTO dto = receivedItems.get(poItem.getProduct().getId());
-
-                        if (dto == null) {
-
-                                createReturn(
-                                        order,
-                                        receipt,
-                                        "Product not received : " + poItem.getProduct().getName(),
-                                        warehouseUser);
-
-                                hasIssue = true;
-                                continue;
-                        }
-
-                        if (dto.getAcceptedQuantity() + dto.getRejectedQuantity() != dto.getReceivedQuantity()) {
-
-                                throw new ResponseStatusException(
-                                        HttpStatus.BAD_REQUEST,
-                                        "Accepted + Rejected quantity must equal Received quantity for "
-                                                + poItem.getProduct().getName());
-                        }
-
-                        GoodsReceiptItem receiptItem =
-                                GoodsReceiptItem.builder()
-                                        .goodsReceipt(receipt)
-                                        .product(poItem.getProduct())
-                                        .orderedQuantity(poItem.getQuantity())
-                                        .receivedQuantity(dto.getReceivedQuantity())
-                                        .acceptedQuantity(dto.getAcceptedQuantity())
-                                        .rejectedQuantity(dto.getRejectedQuantity())
-                                        .remarks(dto.getRemarks())
-                                        .build();
-
-                        receiptItems.add(receiptItem);
-
-                        int ordered = poItem.getQuantity();
-                        int received = dto.getReceivedQuantity();
-
-                        if (received < ordered) {
-
-                                createReturn(
-                                        order,
-                                        receipt,
-                                        "Short quantity. Ordered " + ordered + " but received " + received + " for "
-                                                + poItem.getProduct().getName(),
-                                        warehouseUser);
-
-                                hasIssue = true;
-                        }
-
-                        if (received > ordered) {
-
-                                createReturn(
-                                        order,
-                                        receipt,
-                                        "Overshipment. Ordered "
-                                                + ordered
-                                                + " but received "
-                                                + received
-                                                + " for "
-                                                + poItem.getProduct().getName(),
-                                        warehouseUser);
-
-                                hasIssue = true;
-                        }
-
-                        if (dto.getRejectedQuantity() > 0) {
-
-                                createReturn(
-                                        order,
-                                        receipt,
-                                        dto.getRejectedQuantity() + " defective units of " + poItem.getProduct().getName(),
-                                        warehouseUser);
-
-                                hasIssue = true;
-                        }
-
-                        Inventory inventory = inventoryRepo.findByProduct_Id(poItem.getProduct().getId())
-                                .orElseThrow(() -> new ResponseStatusException(
-                                                HttpStatus.NOT_FOUND,"Inventory not found"));
-
-                        inventory.setQuantityOnHand(inventory.getQuantityOnHand() + dto.getAcceptedQuantity());
-
-                        inventory.setLastPurchaseOrder(order);
-
-                        inventoryRepo.save(inventory);
-                }
-
-                receipt.setItems(receiptItems);
-
-                receipt.setQualityStatus(hasIssue ? QualityStatus.FAIL : QualityStatus.PASS);
-
-                receipt.setRemarks(hasIssue ? "Inspection completed with issues" : "Inspection passed");
-
-                goodsReceiptRepo.save(receipt);
-
-                if (hasIssue) {
-
-                        order.setStatus(PurchaseOrderStatus.RETURN_INITIATED);
-
-                        purchaseOrderRepo.save(order);
-
-                        auditService.log(
-                                "PurchaseOrder",
-                                order.getId(),
-                                "RETURN_INITIATED",
-                                warehouseUser,
-                                "Inspection failed");
-
-                        notificationService.notify(
-                                order.getSupplier(),
-                                null,
-                                order,
-                                NotificationType.RETURN,
-                                "Replacement/Return required for "
-                                        + order.getPoNumber());
-
-                } 
-                else {
-
-                        order.setStatus(PurchaseOrderStatus.COMPLETED);
-
-                        purchaseOrderRepo.save(order);
-
-                        auditService.log(
-                                "PurchaseOrder",
-                                order.getId(),
-                                "GOODS_RECEIVED",
-                                warehouseUser,
-                                "Inspection successful");
-
-                        notificationService.notify(
-                                order.getGeneratedBy(),
-                                null,
-                                order,
-                                NotificationType.PURCHASE_ORDER,
-                                "Goods received successfully for " + order.getPoNumber());
-                }
-
-                return pdfService.generateGoodsReceipt(receipt);
+                return "Delivery confirmed successfully";
         }
+
+        // private void createReturn(PurchaseOrder order, GoodsReceipt receipt, String reason, User user){
+
+        //         ReturnReplacement rr = ReturnReplacement.builder()
+        //                         .purchaseOrder(order)
+        //                         .goodsReceipt(receipt)
+        //                         .reason(reason)
+        //                         .raisedBy(user)
+        //                         .status(ReturnStatus.RAISED)
+        //                         .build();
+
+        //         returnReplacementRepo.save(rr);
+        // }
+
+        // @Transactional
+        // public byte[] receiveGoods(Long poId, List<GoodsReceiptItemRequestDTO> items,
+        //                         User warehouseUser) {
+
+        //         PurchaseOrder order = purchaseOrderRepo.findById(poId)
+        //                 .orElseThrow(() -> new ResponseStatusException(
+        //                         HttpStatus.NOT_FOUND,
+        //                         "Purchase Order not found"));
+
+        //         if (order.getStatus() != PurchaseOrderStatus.DELIVERED) {
+        //                 throw new ResponseStatusException(
+        //                         HttpStatus.BAD_REQUEST,
+        //                         "Purchase Order is not ready for receiving.");
+        //         }
+
+        //         Map<Long, GoodsReceiptItemRequestDTO> receivedItems =
+        //                 items.stream().collect(Collectors.toMap(
+        //                         GoodsReceiptItemRequestDTO::getProductId,
+        //                         Function.identity()));
+
+        //         boolean hasIssue = false;
+
+        //         GoodsReceipt receipt = GoodsReceipt.builder()
+        //                 .goodsReceiptNumber("REQ-" + UUID.randomUUID().toString().replace("-", "").toUpperCase().substring(0, 8))
+        //                 .purchaseOrder(order)
+        //                 .receivedDate(LocalDate.now())
+        //                 .inspectedBy(warehouseUser)
+        //                 .inspectedAt(LocalDateTime.now())
+        //                 .qualityStatus(QualityStatus.PASS)
+        //                 .remarks("Inspection Completed")
+        //                 .build();
+
+        //         goodsReceiptRepo.save(receipt);
+
+        //         List<GoodsReceiptItem> receiptItems = new ArrayList<>();
+
+        //         for (PoItem poItem : order.getPoItems()) {
+
+        //                 GoodsReceiptItemRequestDTO dto = receivedItems.get(poItem.getProduct().getId());
+
+        //                 if (dto == null) {
+
+        //                         createReturn(
+        //                                 order,
+        //                                 receipt,
+        //                                 "Product not received : " + poItem.getProduct().getName(),
+        //                                 warehouseUser);
+
+        //                         hasIssue = true;
+        //                         continue;
+        //                 }
+
+        //                 if (dto.getAcceptedQuantity() + dto.getRejectedQuantity() != dto.getReceivedQuantity()) {
+
+        //                         throw new ResponseStatusException(
+        //                                 HttpStatus.BAD_REQUEST,
+        //                                 "Accepted + Rejected quantity must equal Received quantity for "
+        //                                         + poItem.getProduct().getName());
+        //                 }
+
+        //                 GoodsReceiptItem receiptItem =
+        //                         GoodsReceiptItem.builder()
+        //                                 .goodsReceipt(receipt)
+        //                                 .product(poItem.getProduct())
+        //                                 .orderedQuantity(poItem.getQuantity())
+        //                                 .receivedQuantity(dto.getReceivedQuantity())
+        //                                 .acceptedQuantity(dto.getAcceptedQuantity())
+        //                                 .rejectedQuantity(dto.getRejectedQuantity())
+        //                                 .remarks(dto.getRemarks())
+        //                                 .build();
+
+        //                 receiptItems.add(receiptItem);
+
+        //                 int ordered = poItem.getQuantity();
+        //                 int received = dto.getReceivedQuantity();
+
+        //                 if (received < ordered) {
+
+        //                         createReturn(
+        //                                 order,
+        //                                 receipt,
+        //                                 "Short quantity. Ordered " + ordered + " but received " + received + " for "
+        //                                         + poItem.getProduct().getName(),
+        //                                 warehouseUser);
+
+        //                         hasIssue = true;
+        //                 }
+
+        //                 if (received > ordered) {
+
+        //                         createReturn(
+        //                                 order,
+        //                                 receipt,
+        //                                 "Overshipment. Ordered "
+        //                                         + ordered
+        //                                         + " but received "
+        //                                         + received
+        //                                         + " for "
+        //                                         + poItem.getProduct().getName(),
+        //                                 warehouseUser);
+
+        //                         hasIssue = true;
+        //                 }
+
+        //                 if (dto.getRejectedQuantity() > 0) {
+
+        //                         createReturn(
+        //                                 order,
+        //                                 receipt,
+        //                                 dto.getRejectedQuantity() + " defective units of " + poItem.getProduct().getName(),
+        //                                 warehouseUser);
+
+        //                         hasIssue = true;
+        //                 }
+
+        //                 Inventory inventory = inventoryRepo.findByProduct_Id(poItem.getProduct().getId())
+        //                         .orElseThrow(() -> new ResponseStatusException(
+        //                                         HttpStatus.NOT_FOUND,"Inventory not found"));
+
+        //                 inventory.setQuantityOnHand(inventory.getQuantityOnHand() + dto.getAcceptedQuantity());
+
+        //                 inventory.setLastPurchaseOrder(order);
+
+        //                 inventoryRepo.save(inventory);
+        //         }
+
+        //         receipt.setItems(receiptItems);
+
+        //         receipt.setQualityStatus(hasIssue ? QualityStatus.FAIL : QualityStatus.PASS);
+
+        //         receipt.setRemarks(hasIssue ? "Inspection completed with issues" : "Inspection passed");
+
+        //         goodsReceiptRepo.save(receipt);
+
+        //         if (hasIssue) {
+
+        //                 order.setStatus(PurchaseOrderStatus.RETURN_INITIATED);
+
+        //                 purchaseOrderRepo.save(order);
+
+        //                 auditService.log(
+        //                         "PurchaseOrder",
+        //                         order.getId(),
+        //                         "RETURN_INITIATED",
+        //                         warehouseUser,
+        //                         "Inspection failed");
+
+        //                 notificationService.notify(
+        //                         order.getSupplier(),
+        //                         null,
+        //                         order,
+        //                         NotificationType.RETURN,
+        //                         "Replacement/Return required for "
+        //                                 + order.getPoNumber());
+
+        //         } 
+        //         else {
+
+        //                 order.setStatus(PurchaseOrderStatus.COMPLETED);
+
+        //                 purchaseOrderRepo.save(order);
+
+        //                 auditService.log(
+        //                         "PurchaseOrder",
+        //                         order.getId(),
+        //                         "GOODS_RECEIVED",
+        //                         warehouseUser,
+        //                         "Inspection successful");
+
+        //                 notificationService.notify(
+        //                         order.getGeneratedBy(),
+        //                         null,
+        //                         order,
+        //                         NotificationType.PURCHASE_ORDER,
+        //                         "Goods received successfully for " + order.getPoNumber());
+        //         }
+
+        //         return pdfService.generateGoodsReceipt(receipt);
+        // }
 
         public List<PurchaseOrderHistoryResponseDTO> getHistory(Long poId) {
 

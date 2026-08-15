@@ -1,6 +1,8 @@
 package com.eps.enterprise_procurement_system.dto;
 
 import java.time.LocalDate;
+import java.time.LocalDateTime;
+import java.util.List;
 
 import lombok.Data;
 
@@ -15,9 +17,17 @@ public class GoodsReceiptResponseDTO {
 
     private String poNumber;
 
+    private Boolean isDelayed;
+
     private LocalDate receivedDate;
 
-    private String receivedBy;
+    private String qualityStatus;
+
+    private LocalDateTime inspectedAt;
+
+    private Boolean allItemsPerfect;
+
+    private List<GoodsReceiptItemResponseDTO> items;
 
     private String remarks;
 }

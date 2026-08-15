@@ -35,6 +35,9 @@ public class GoodsReceipt {
 
     @Column(name = "received_date")
     private LocalDate receivedDate;
+    
+    @Column(name = "po_url")
+    private String pdfURL ;
 
     @Enumerated(EnumType.STRING)
     @Column(name = "quality_status", nullable = false, length = 20)

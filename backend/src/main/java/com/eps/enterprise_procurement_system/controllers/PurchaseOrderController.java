@@ -26,11 +26,10 @@ public class PurchaseOrderController {
     private final PurchaseOrderService purchaseOrderService;
     private final CurrentUser currentUser;
 
-
-
     @PostMapping
     @PreAuthorize("hasAnyRole('PROCUREMENT','ADMIN')")
-    public ResponseEntity<ApiResponse<PurchaseOrderResponseDTO>> generatePurchaseOrder(@Valid @RequestBody PurchaseOrderRequestDTO dto) {
+    public ResponseEntity<ApiResponse<PurchaseOrderResponseDTO>> generatePurchaseOrder(
+            @Valid @RequestBody PurchaseOrderRequestDTO dto) {
 
         return ResponseEntity.ok(new ApiResponse<>(purchaseOrderService.generatePurchaseOrder(
                 dto,
@@ -45,9 +44,6 @@ public class PurchaseOrderController {
 
         return ResponseEntity.ok(new ApiResponse<>(purchaseOrderService.getAllPurchaseOrders()));
     }
-
-
-
 
     // Get Purchase Order By Id
 
@@ -64,14 +60,16 @@ public class PurchaseOrderController {
     public ResponseEntity<ApiResponse<PurchaseOrderResponseDTO>> getPurchaseOrderByRequisionId(
             @PathVariable Long requisitionId) {
 
-        return ResponseEntity.ok(new ApiResponse<>(purchaseOrderService.getPurchaseOrderByRequisitionId(requisitionId)));
+        return ResponseEntity
+                .ok(new ApiResponse<>(purchaseOrderService.getPurchaseOrderByRequisitionId(requisitionId)));
     }
 
     // Get Purchase Orders By Status
 
     @GetMapping("/status/{status}")
     @PreAuthorize("hasAnyRole('ADMIN','PROCUREMENT','FINANCE','MANAGER' , SUPPLIER)")
-    public ResponseEntity<ApiResponse<List<PurchaseOrderResponseDTO>>> getByStatus(@PathVariable PurchaseOrderStatus status) {
+    public ResponseEntity<ApiResponse<List<PurchaseOrderResponseDTO>>> getByStatus(
+            @PathVariable PurchaseOrderStatus status) {
 
         return ResponseEntity.ok(new ApiResponse<>(purchaseOrderService.getPurchaseOrdersByStatus(status)));
     }
@@ -94,12 +92,12 @@ public class PurchaseOrderController {
         return ResponseEntity.ok(new ApiResponse<>(purchaseOrderService.getGeneratedOrders(currentUser.get().getId())));
     }
 
-//    @GetMapping("{poId}/history")
-//    public ResponseEntity<ApiResponse<List<PurchaseOrderHistoryResponseDTO>>> getHistory(@PathVariable Long poId){
-//
-//        return ResponseEntity.ok(new ApiResponse<>(purchaseOrderService.getHistory(poId)));
-//    }
-//    // Update Status
+    //    @GetMapping("{poId}/history")
+    //    public ResponseEntity<ApiResponse<List<PurchaseOrderHistoryResponseDTO>>> getHistory(@PathVariable Long poId){
+    //
+    //        return ResponseEntity.ok(new ApiResponse<>(purchaseOrderService.getHistory(poId)));
+    //    }
+    //    // Update Status
 
     @PutMapping("/{id}/status")
     @PreAuthorize("hasAnyRole('PROCUREMENT','ADMIN')")
@@ -144,32 +142,31 @@ public class PurchaseOrderController {
 
         return ResponseEntity.ok()
                 .header(HttpHeaders.CONTENT_DISPOSITION,
-                    "attachment; filename=PurchaseOrder_" + id + ".pdf")
+                        "attachment; filename=PurchaseOrder_" + id + ".pdf")
                 .contentType(MediaType.APPLICATION_PDF)
                 .body(pdf);
     }
 
     // Download Invoice PDF
 
-//    @GetMapping("/{id}/invoice")
-//    @PreAuthorize("hasAnyRole('ADMIN','PROCUREMENT','FINANCE')")
-//    public ResponseEntity<byte[]> downloadInvoice(@PathVariable Long id) {
-//
-//        byte[] pdf = purchaseOrderService.generateInvoice(id);
-//
-//        return ResponseEntity.ok()
-//                .header(HttpHeaders.CONTENT_DISPOSITION,
-//                        "attachment; filename=Invoice_" + id + ".pdf")
-//                .contentType(MediaType.APPLICATION_PDF)
-//                .body(pdf);
-//    }
+    //    @GetMapping("/{id}/invoice")
+    //    @PreAuthorize("hasAnyRole('ADMIN','PROCUREMENT','FINANCE')")
+    //    public ResponseEntity<byte[]> downloadInvoice(@PathVariable Long id) {
+    //
+    //        byte[] pdf = purchaseOrderService.generateInvoice(id);
+    //
+    //        return ResponseEntity.ok()
+    //                .header(HttpHeaders.CONTENT_DISPOSITION,
+    //                        "attachment; filename=Invoice_" + id + ".pdf")
+    //                .contentType(MediaType.APPLICATION_PDF)
+    //                .body(pdf);
+    //    }
 
     @PostMapping("/{id}/invoice")
     @PreAuthorize("hasAnyRole('ADMIN','PROCUREMENT','FINANCE', 'PROCUREMENT')")
-    public ResponseEntity<ApiResponse<PurchaseOrderResponseDTO>> generateInvoice(@PathVariable Long id){
-          return ResponseEntity.ok(new ApiResponse<>(purchaseOrderService.generateInvoice(id)));
+    public ResponseEntity<ApiResponse<PurchaseOrderResponseDTO>> generateInvoice(@PathVariable Long id) {
+        return ResponseEntity.ok(new ApiResponse<>(purchaseOrderService.generateInvoice(id)));
     }
-
 
     // Download Goods Receipt PDF
 
@@ -184,6 +181,16 @@ public class PurchaseOrderController {
     //             .contentType(MediaType.APPLICATION_PDF)
     //             .body(pdf);
     // }
+
+    @PutMapping("/{id}/confirm-delivery")
+    @PreAuthorize("hasAnyRole('PROCUREMENT','EMPLOYEE')")
+    public ResponseEntity<ApiResponse<String>> confirmDelivery(@PathVariable Long id) {
+
+        String message = purchaseOrderService.confirmDelivery(id);
+
+        return ResponseEntity.ok(
+                new ApiResponse<>(message));
+    }
 
     // Export All Purchase Orders Excel
 
@@ -207,8 +214,7 @@ public class PurchaseOrderController {
     public ResponseEntity<byte[]> exportByStatus(
             @PathVariable PurchaseOrderStatus status) {
 
-        byte[] excel =
-                purchaseOrderService.exportPurchaseOrdersByStatus(status);
+        byte[] excel = purchaseOrderService.exportPurchaseOrdersByStatus(status);
 
         return ResponseEntity.ok()
                 .header(HttpHeaders.CONTENT_DISPOSITION,
@@ -234,15 +240,14 @@ public class PurchaseOrderController {
 
     @GetMapping("/{id}/history")
     @PreAuthorize("hasAnyRole('ADMIN', 'PROCUREMENT')")
-    public ResponseEntity<ApiResponse<List<PurchaseOrderHistoryResponseDTO>>>  getHistory(@PathVariable Long id){
+    public ResponseEntity<ApiResponse<List<PurchaseOrderHistoryResponseDTO>>> getHistory(@PathVariable Long id) {
 
         return ResponseEntity.ok(new ApiResponse<>(purchaseOrderService.getHistory(id)));
     }
 
-
     @PostMapping("/{poId}/send")
     @PreAuthorize("hasAnyRole('ADMIN', 'PROCUREMENT')")
-    public ResponseEntity<ApiResponse<String>> sendPOtoSupplier(@PathVariable Long poId){
+    public ResponseEntity<ApiResponse<String>> sendPOtoSupplier(@PathVariable Long poId) {
 
         purchaseOrderService.sendToSupplier(poId);
         return ResponseEntity.ok(new ApiResponse<>("Purchase Order sent successfully"));
@@ -256,12 +261,7 @@ public class PurchaseOrderController {
         return ResponseEntity.ok(
                 new ApiResponse<>(
                         purchaseOrderService.getSupplierPurchaseOrdersByStatus(
-                                status
-                        )
-                )
-        );
+                                status)));
     }
-
-
 
 }

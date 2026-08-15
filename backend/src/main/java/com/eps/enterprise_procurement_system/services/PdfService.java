@@ -141,7 +141,7 @@ public class PdfService {
 
     private void addCompanyHeader(Document document) throws Exception {
 
-        Paragraph company = new Paragraph("Enterprise Procurement System", TITLE_FONT);
+        Paragraph company = new Paragraph("Smart Procurement and Purchase Order Management System", TITLE_FONT);
 
         company.setAlignment(Element.ALIGN_CENTER);
 
@@ -250,7 +250,7 @@ public class PdfService {
     private void addFooter(Document document) throws Exception {
         Paragraph footer = new Paragraph(
                 "\n\nThis is a system generated document.\n"
-                        + "Enterprise Procurement System",
+                        + "Smart Procurement and Purchase Order Management System",
                 SMALL_FONT);
 
         footer.setAlignment(Element.ALIGN_CENTER);

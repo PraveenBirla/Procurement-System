@@ -32,7 +32,7 @@ public class SupplierPerformanceRequestDTO {
     private BigDecimal priceRating;
 
     private LocalDate reviewDate;
-
+    
     @NotNull
     private Long reviewedById;
 }

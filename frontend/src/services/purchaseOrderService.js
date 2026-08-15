@@ -49,7 +49,31 @@ const purchaseOrderService = {
   async getAll(){
        const res = await api.get(`/purchase-orders`)
        return res.data.data ;
-  }
+  },
+  
+  async createGoodsReceipt(poId, data) {
+    const res = await api.post(
+        `/goods-receipts/purchase-order/${poId}`,
+        data
+    );
+
+    return res.data.data;
+},
+
+  async getGoodsReceipt(poId) {
+    const res = await api.get(`/goods-receipts/purchase-order/${poId}`);
+    return res.data.data;
+  },
+
+  async confirmDelivery(poId) {
+    const res = await api.put(`/purchase-orders/${poId}/confirm-delivery`);
+    return res.data.data;
+  },
+
+  async createReturnReplacement(data) {
+    const res = await api.post("/return-replacements", data);
+    return res.data.data;
+  },
 
 }
 

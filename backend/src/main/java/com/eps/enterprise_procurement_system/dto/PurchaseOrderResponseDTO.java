@@ -41,4 +41,6 @@ public class PurchaseOrderResponseDTO {
     private  String pdfURL;
 
     private String invoiceURL;
+
+    private String goodsReceiptURL;
 }

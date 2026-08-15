@@ -17,9 +17,6 @@ public class GoodsReceiptRequestDTO {
     @NotNull
     private Long purchaseOrderId;
 
-    @NotBlank
-    private String receivedBy;
-
     private String remarks;
 
     @NotEmpty
