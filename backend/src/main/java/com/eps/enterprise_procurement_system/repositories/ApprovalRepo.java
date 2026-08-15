@@ -25,4 +25,17 @@ AND a.status = :status
     List<PurchaseRequisition> findRequisitionsByApprovalTypeAndStatus(
             @Param("approvalType") ApprovalType approvalType,
             @Param("status") ApprovalStatus status);
+
+    @Query("""
+    SELECT a.requisition
+    FROM Approval a
+    WHERE a.approvalType = :approvalType
+      AND a.status = :status
+      AND a.requisition.employee.department.id = :departmentId
+""")
+    List<PurchaseRequisition> findRequisitionsByApprovalTypeAndStatusAndDepartment(
+            @Param("approvalType") ApprovalType approvalType,
+            @Param("status") ApprovalStatus status,
+            @Param("departmentId") Long departmentId
+    );
 }

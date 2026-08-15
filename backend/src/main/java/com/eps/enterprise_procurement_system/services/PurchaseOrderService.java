@@ -839,12 +839,13 @@ public class PurchaseOrderService {
                     "requisition not found"));
                 ;
 
-                requisition.setStatus(RequisitionStatus.SENT_TO_SUPPLIER);
         PurchaseOrderStatus currentStatus = po.getStatus();
         po.setStatus(PurchaseOrderStatus.SENT_TO_SUPPLIER);
-        purchaseOrderRepo.save(po);
+        requisition.setStatus(RequisitionStatus.SENT_TO_SUPPLIER);
+
+
         savePurchaseOrderHistory(po ,currentStatus, PurchaseOrderStatus.SENT_TO_SUPPLIER, currentUser.get());
-        requisitionRepo.save(requisition);
+
     }
 
     public List<PurchaseOrderResponseDTO> getSupplierPurchaseOrdersByStatus(

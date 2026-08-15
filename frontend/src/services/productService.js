@@ -40,8 +40,19 @@ async updateProduct(id , product ) {
 async deleteProduct(id) {
   await api.delete(`/products/${id}`);
   return true;
-}
+},
  
+async getDepartments() {
+  const response = await api.get("/depts");
+  return  response.data.data;
+},
+ 
+async addDepartments(data) {
+ const response =  await api.post("/depts", data);
+  return  response.data.data;
+},
+
+
 };
 
 export default productService;

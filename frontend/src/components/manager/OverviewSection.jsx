@@ -106,7 +106,7 @@ export const OverviewSection = () => {
 
     try {
       const [pending, approved, rejected] = await Promise.all([
-        requisitionService.getRequisitionsByStatus(PENDING_QUERY),
+        requisitionService.getRequisitionsByStatusManager(PENDING_QUERY),
         requisitionService.getManagerRequisitionsByStatus(APPROVED_QUERY),
         requisitionService.getManagerRequisitionsByStatus(REJECTED_QUERY),
       ]);

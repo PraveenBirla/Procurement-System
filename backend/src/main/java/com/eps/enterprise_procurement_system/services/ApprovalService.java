@@ -15,6 +15,7 @@ import com.eps.enterprise_procurement_system.entities.enums.RequisitionStatus;
 import com.eps.enterprise_procurement_system.repositories.ApprovalRepo;
 import com.eps.enterprise_procurement_system.repositories.PurchaseRequisitionRepo;
 import com.eps.enterprise_procurement_system.repositories.UserRepository;
+import com.eps.enterprise_procurement_system.util.CurrentUser;
 import lombok.RequiredArgsConstructor;
 
 import org.modelmapper.ModelMapper;
@@ -34,6 +35,7 @@ public class ApprovalService {
     private final PurchaseRequisitionRepo requisitionRepo;
     private final UserRepository userRepo;
     private final ModelMapper modelMapper;
+    private final CurrentUser currentUser;
 
     private RequisitionItemResponseDTO convertItemToDTO(RequisitionItem item) {
         RequisitionItemResponseDTO dto = new RequisitionItemResponseDTO();
@@ -162,9 +164,11 @@ public class ApprovalService {
     public List<PurchaseRequisitionResponseDTO> getManagerRequisitions(
                     ApprovalStatus status) {
 
-            List<PurchaseRequisition> requisitions = approvalRepo.findRequisitionsByApprovalTypeAndStatus(
+            List<PurchaseRequisition> requisitions = approvalRepo.findRequisitionsByApprovalTypeAndStatusAndDepartment(
                             ApprovalType.MANAGER,
-                            status);
+                            status,
+                    currentUser.get().getDepartment().getId()
+                     );
 
             List<PurchaseRequisitionResponseDTO> response = requisitions.stream()
                             .map(this::mapToResponseDTO)

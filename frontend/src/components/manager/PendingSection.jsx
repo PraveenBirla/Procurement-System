@@ -81,7 +81,7 @@ export const PendingSection = () => {
 
     try {
       const res =
-        await requisitionService.getRequisitionsByStatus(
+        await requisitionService.getRequisitionsByStatusManager(
           PENDING_STATUS
         );
 

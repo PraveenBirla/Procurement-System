@@ -17,7 +17,7 @@ import { CompletedOrderSection } from "./CompletedOrderSection";
 import { SupplierSection } from "../admin/SupplierSection";
 import { OverviewSection } from "./OverviewSection";
 export const ProcurementDashboard = () => {
-  const [activeSection, setActiveSection] = useState("requition");
+  const [activeSection, setActiveSection] = useState("overview");
 
   const menuItems = [ 
      { id: "overview", label: "Overview", icon:ClipboardList },

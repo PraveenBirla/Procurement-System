@@ -1,6 +1,14 @@
 import { useState, useEffect } from "react";
 import { createPortal } from "react-dom";
-import { Search, Edit, Power, X, AlertCircle } from "lucide-react";
+import {
+  Search,
+  Power,
+  X,
+  AlertCircle,
+  RefreshCw,
+  Users,
+  Filter,
+} from "lucide-react";
 import toast from "react-hot-toast";
 import userService from "../../services/userService";
 import api from "../../services/api";
@@ -11,124 +19,290 @@ export const UserManagementSection = () => {
   const [users, setUsers] = useState([]);
   const [departments, setDepartments] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [searchTerm, setSearchTerm] = useState("");
-  
-  // Edit Modal State
-  const [showEditModal, setShowEditModal] = useState(false);
-  const [editingUser, setEditingUser] = useState(null);
-  const [savingUser, setSavingUser] = useState(false);
 
-  // Confirm Modal State
+  const [searchTerm, setSearchTerm] = useState("");
+  const [roleFilter, setRoleFilter] = useState("ALL");
+  const [departmentFilter, setDepartmentFilter] = useState("ALL");
+  const [statusFilter, setStatusFilter] = useState("ALL");
+
   const [showConfirmModal, setShowConfirmModal] = useState(false);
   const [userToToggle, setUserToToggle] = useState(null);
+  const [processingUser, setProcessingUser] = useState(false);
 
   useEffect(() => {
     loadData();
   }, []);
 
   const loadData = async () => {
-    setLoading(true);
     try {
+      setLoading(true);
+
       const [usersData, deptsData] = await Promise.all([
         userService.getUsersExceptAdmin(),
-        api.get('/depts').then(res => res.data?.data)
+        api.get("/depts").then((res) => res.data?.data),
       ]);
+
       setUsers(usersData || []);
       setDepartments(deptsData || []);
     } catch (error) {
-      toast.error("Failed to load users data");
       console.error(error);
+      toast.error("Failed to load users data");
     } finally {
       setLoading(false);
     }
   };
 
-  const handleEditClick = (user) => {
-    setEditingUser({ ...user, departmentId: user.department?.id || "" });
-    setShowEditModal(true);
-  };
-
+  // Open confirmation modal
   const handleToggleStatus = (user) => {
     setUserToToggle(user);
     setShowConfirmModal(true);
   };
 
+  // Activate / Deactivate user
   const confirmToggleStatus = async () => {
     if (!userToToggle) return;
-    const action = userToToggle.isActive ? 'deactivate' : 'activate';
-    
+
+    const action = userToToggle.isActive ? "deactivate" : "activate";
+
     try {
+      setProcessingUser(true);
+
       const payload = {
         ...userToToggle,
-        department: departments.find(d => d.id === userToToggle.department?.id),
-        isActive: !userToToggle.isActive
+        department: departments.find(
+          (d) => d.id === userToToggle.department?.id
+        ),
+        isActive: !userToToggle.isActive,
       };
+
       await userService.updateUser(userToToggle.id, payload);
+
       toast.success(`User ${action}d successfully`);
-      loadData();
+
+      await loadData();
     } catch (error) {
+      console.error(error);
       toast.error(`Failed to ${action} user`);
     } finally {
+      setProcessingUser(false);
       setShowConfirmModal(false);
       setUserToToggle(null);
     }
   };
 
-  const handleSaveUser = async (e) => {
-    e.preventDefault();
-    setSavingUser(true);
-    try {
-      // Find the selected department object
-      const selectedDept = departments.find(d => d.id === parseInt(editingUser.departmentId));
-      
-      const payload = {
-        ...editingUser,
-        department: selectedDept
-      };
-      
-      await userService.updateUser(editingUser.id, payload);
-      toast.success("User updated successfully");
-      setShowEditModal(false);
-      loadData();
-    } catch (error) {
-      toast.error("Failed to update user");
-    } finally {
-      setSavingUser(false);
-    }
+  // Filtering
+  const filteredUsers = users.filter((user) => {
+    const search = searchTerm.toLowerCase().trim();
+
+    const matchesSearch =
+      !search ||
+      user.fullName?.toLowerCase().includes(search) ||
+      user.email?.toLowerCase().includes(search);
+
+    const matchesRole =
+      roleFilter === "ALL" || user.role === roleFilter;
+
+    const matchesDepartment =
+      departmentFilter === "ALL" ||
+      user.department?.id?.toString() === departmentFilter;
+
+    const matchesStatus =
+      statusFilter === "ALL" ||
+      (statusFilter === "ACTIVE" && user.isActive) ||
+      (statusFilter === "INACTIVE" && !user.isActive);
+
+    return (
+      matchesSearch &&
+      matchesRole &&
+      matchesDepartment &&
+      matchesStatus
+    );
+  });
+
+  const activeUsers = users.filter((user) => user.isActive).length;
+  const inactiveUsers = users.filter((user) => !user.isActive).length;
+
+  const clearFilters = () => {
+    setSearchTerm("");
+    setRoleFilter("ALL");
+    setDepartmentFilter("ALL");
+    setStatusFilter("ALL");
   };
 
-  const filteredUsers = users.filter((user) => 
-    user.fullName.toLowerCase().includes(searchTerm.toLowerCase()) || 
-    user.email.toLowerCase().includes(searchTerm.toLowerCase())
-  );
-
   if (loading) {
-    return <div className="loading-state">Loading users...</div>;
+    return (
+      <div className="loading-state">
+        <RefreshCw size={20} className="loading-spinner" />
+        Loading users...
+      </div>
+    );
   }
 
   return (
     <div className="user-management-section">
+
+      {/* Header */}
       <div className="section-header">
-        <h2>User Management</h2>
-        <div className="header-actions">
-          <div className="search-box">
-            <Search className="search-icon" size={18} />
-            <input 
-              type="text" 
-              placeholder="Search users..." 
-              className="search-input"
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-            />
+        <div>
+          <h2>User Management</h2>
+          <p>View and manage user account access</p>
+        </div>
+
+        <button
+          className="refresh-btn"
+          onClick={loadData}
+          title="Refresh users"
+        >
+          <RefreshCw size={17} />
+          Refresh
+        </button>
+      </div>
+
+      {/* Statistics */}
+      <div className="user-stats">
+
+        <div className="user-stat-card">
+          <div className="stat-icon">
+            <Users size={20} />
           </div>
+
+          <div>
+            <span className="stat-label">Total Users</span>
+            <strong>{users.length}</strong>
+          </div>
+        </div>
+
+        <div className="user-stat-card">
+          <div className="stat-icon active-icon">
+            <Power size={20} />
+          </div>
+
+          <div>
+            <span className="stat-label">Active</span>
+            <strong>{activeUsers}</strong>
+          </div>
+        </div>
+
+        <div className="user-stat-card">
+          <div className="stat-icon inactive-icon">
+            <Power size={20} />
+          </div>
+
+          <div>
+            <span className="stat-label">Inactive</span>
+            <strong>{inactiveUsers}</strong>
+          </div>
+        </div>
+
+      </div>
+
+      {/* Filters */}
+      <div className="filters-container">
+
+        <div className="search-box">
+          <Search className="search-icon" size={18} />
+
+          <input
+            type="text"
+            placeholder="Search by name or email..."
+            className="search-input"
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+          />
+
+          {searchTerm && (
+            <button
+              className="clear-search"
+              onClick={() => setSearchTerm("")}
+            >
+              <X size={16} />
+            </button>
+          )}
+        </div>
+
+        <div className="filter-group">
+          <Filter size={16} />
+
+          {/* Role */}
+          <select
+            value={roleFilter}
+            onChange={(e) => setRoleFilter(e.target.value)}
+            className="filter-select"
+          >
+            <option value="ALL">All Roles</option>
+
+            {ROLES.map((role) => (
+              <option key={role.value} value={role.value}>
+                {role.label}
+              </option>
+            ))}
+          </select>
+
+          {/* Department */}
+          <select
+            value={departmentFilter}
+            onChange={(e) => setDepartmentFilter(e.target.value)}
+            className="filter-select"
+          >
+            <option value="ALL">All Departments</option>
+
+            {departments.map((dept) => (
+              <option key={dept.id} value={dept.id}>
+                {dept.departmentName}
+              </option>
+            ))}
+          </select>
+
+          {/* Status */}
+          <select
+            value={statusFilter}
+            onChange={(e) => setStatusFilter(e.target.value)}
+            className="filter-select"
+          >
+            <option value="ALL">All Status</option>
+            <option value="ACTIVE">Active</option>
+            <option value="INACTIVE">Inactive</option>
+          </select>
+
+          {(searchTerm ||
+            roleFilter !== "ALL" ||
+            departmentFilter !== "ALL" ||
+            statusFilter !== "ALL") && (
+            <button
+              className="clear-filters-btn"
+              onClick={clearFilters}
+            >
+              Clear
+            </button>
+          )}
         </div>
       </div>
 
+      {/* Result count */}
+      <div className="results-info">
+        Showing <strong>{filteredUsers.length}</strong> of{" "}
+        <strong>{users.length}</strong> users
+      </div>
+
+      {/* Table */}
       <div className="table-container">
+
         {filteredUsers.length === 0 ? (
-          <div className="empty-state">No users found.</div>
+          <div className="empty-state">
+            <Users size={35} />
+            <h3>No users found</h3>
+            <p>Try changing your search or filters.</p>
+
+            <button
+              className="clear-filters-btn"
+              onClick={clearFilters}
+            >
+              Clear Filters
+            </button>
+          </div>
         ) : (
           <table className="users-table">
+
             <thead>
               <tr>
                 <th>User Details</th>
@@ -138,163 +312,209 @@ export const UserManagementSection = () => {
                 <th>Actions</th>
               </tr>
             </thead>
+
             <tbody>
               {filteredUsers.map((user) => (
                 <tr key={user.id}>
+
+                  {/* User */}
                   <td>
                     <div className="user-info">
-                      <span className="user-name">{user.fullName}</span>
-                      <span className="user-email">{user.email}</span>
+
+                      <div className="user-avatar">
+                        {user.fullName?.charAt(0)?.toUpperCase()}
+                      </div>
+
+                      <div>
+                        <span className="user-name">
+                          {user.fullName}
+                        </span>
+
+                        <span className="user-email">
+                          {user.email}
+                        </span>
+                      </div>
+
                     </div>
                   </td>
+
+                  {/* Role */}
                   <td>
-                    <span className={`badge ${ROLE_COLORS[user.role] || 'bg-gray-100 text-gray-700'}`}>
+                    <span
+                      className={`badge ${
+                        ROLE_COLORS[user.role] ||
+                        "bg-gray-100 text-gray-700"
+                      }`}
+                    >
                       {user.role}
                     </span>
                   </td>
-                  <td>{user.department?.departmentName || "-"}</td>
+
+                  {/* Department */}
                   <td>
-                    <span className={`badge ${user.isActive ? 'status-active' : 'status-inactive'}`}>
+                    <span className="department-text">
+                      {user.department?.departmentName || "Not Assigned"}
+                    </span>
+                  </td>
+
+                  {/* Status */}
+                  <td>
+                    <span
+                      className={`badge ${
+                        user.isActive
+                          ? "status-active"
+                          : "status-inactive"
+                      }`}
+                    >
+                      <span
+                        className={`status-dot ${
+                          user.isActive
+                            ? "dot-active"
+                            : "dot-inactive"
+                        }`}
+                      />
                       {user.isActive ? "Active" : "Inactive"}
                     </span>
                   </td>
+
+                  {/* Actions */}
                   <td>
-                    <div className="action-buttons">
-                      <button className="btn-icon btn-edit" onClick={() => handleEditClick(user)} title="Edit Role/Status">
-                        <Edit size={16} />
-                      </button>
-                      <button 
-                        className={`btn-icon ${user.isActive ? 'btn-deactivate' : 'btn-activate'}`} 
-                        onClick={() => handleToggleStatus(user)} 
-                        title={user.isActive ? "Deactivate User" : "Activate User"}
-                      >
-                        <Power size={16} />
-                      </button>
-                    </div>
+                    <button
+                      className={`status-action-btn ${
+                        user.isActive
+                          ? "deactivate-btn"
+                          : "activate-btn"
+                      }`}
+                      onClick={() => handleToggleStatus(user)}
+                      title={
+                        user.isActive
+                          ? "Deactivate User"
+                          : "Activate User"
+                      }
+                    >
+                      <Power size={15} />
+
+                      {user.isActive
+                        ? "Deactivate"
+                        : "Activate"}
+                    </button>
                   </td>
+
                 </tr>
               ))}
             </tbody>
+
           </table>
         )}
+
       </div>
 
-      {/* Edit User Modal */}
-      {showEditModal && createPortal(
-        <div className="modal-overlay" onClick={() => setShowEditModal(false)}>
-          <div className="modal-content" onClick={(e) => e.stopPropagation()}>
-            <div className="modal-header">
-              <h3>Edit User</h3>
-              <button className="close-btn" onClick={() => setShowEditModal(false)}>
-                <X size={20} />
-              </button>
-            </div>
-            
-            <form onSubmit={handleSaveUser}>
-              <div className="form-group">
-                <label>Full Name</label>
-                <input 
-                  type="text" 
-                  className="form-input" 
-                  value={editingUser.fullName}
-                  disabled
-                />
-              </div>
-              
-              <div className="form-group">
-                <label>Email</label>
-                <input 
-                  type="email" 
-                  className="form-input" 
-                  value={editingUser.email}
-                  disabled
-                />
+      {/* Confirmation Modal */}
+      {showConfirmModal &&
+        createPortal(
+          <div
+            className="modal-overlay"
+            onClick={() => {
+              if (!processingUser) {
+                setShowConfirmModal(false);
+              }
+            }}
+          >
+            <div
+              className="modal-content confirmation-modal"
+              onClick={(e) => e.stopPropagation()}
+            >
+
+              <div className="modal-header">
+
+                <div>
+                  <h3>
+                    {userToToggle?.isActive
+                      ? "Deactivate User"
+                      : "Activate User"}
+                  </h3>
+                </div>
+
+                <button
+                  className="close-btn"
+                  disabled={processingUser}
+                  onClick={() => setShowConfirmModal(false)}
+                >
+                  <X size={20} />
+                </button>
+
               </div>
 
-              <div className="form-group">
-                <label>Role</label>
-                <select 
-                  className="form-select"
-                  value={editingUser.role}
-                  onChange={(e) => setEditingUser({...editingUser, role: e.target.value})}
-                  required
-                >
-                  {ROLES.map(role => (
-                    <option key={role.value} value={role.value}>{role.label}</option>
-                  ))}
-                </select>
-              </div>
+              <div className="confirmation-body">
 
-              <div className="form-group">
-                <label>Department</label>
-                <select 
-                  className="form-select"
-                  value={editingUser.departmentId}
-                  onChange={(e) => setEditingUser({...editingUser, departmentId: e.target.value})}
-                  required
-                >
-                  <option value="">Select Department</option>
-                  {departments.map(dept => (
-                    <option key={dept.id} value={dept.id}>{dept.departmentName}</option>
-                  ))}
-                </select>
-              </div>
+                <div className="confirmation-icon">
+                  <AlertCircle size={28} />
+                </div>
 
-              <div className="form-group">
-                <label>Account Status</label>
-                <select 
-                  className="form-select"
-                  value={editingUser.isActive}
-                  onChange={(e) => setEditingUser({...editingUser, isActive: e.target.value === 'true'})}
-                >
-                  <option value="true">Active</option>
-                  <option value="false">Inactive</option>
-                </select>
+                <p>
+                  Are you sure you want to{" "}
+                  <strong>
+                    {userToToggle?.isActive
+                      ? "deactivate"
+                      : "activate"}
+                  </strong>{" "}
+                  the account for{" "}
+                  <strong>
+                    {userToToggle?.fullName}
+                  </strong>
+                  ?
+                </p>
+
+                {userToToggle?.isActive && (
+                  <div className="warning-message">
+                    <AlertCircle size={15} />
+
+                    <span>
+                      The user will immediately lose
+                      access to the system.
+                    </span>
+                  </div>
+                )}
+
               </div>
 
               <div className="form-actions">
-                <button type="button" className="btn-secondary" onClick={() => setShowEditModal(false)}>Cancel</button>
-                <button type="submit" className="btn-primary" disabled={savingUser}>
-                  {savingUser ? "Saving..." : "Save Changes"}
+
+                <button
+                  type="button"
+                  className="btn-secondary"
+                  disabled={processingUser}
+                  onClick={() =>
+                    setShowConfirmModal(false)
+                  }
+                >
+                  Cancel
                 </button>
+
+                <button
+                  type="button"
+                  className={
+                    userToToggle?.isActive
+                      ? "btn-danger"
+                      : "btn-success"
+                  }
+                  disabled={processingUser}
+                  onClick={confirmToggleStatus}
+                >
+                  {processingUser
+                    ? "Processing..."
+                    : userToToggle?.isActive
+                    ? "Yes, Deactivate"
+                    : "Yes, Activate"}
+                </button>
+
               </div>
-            </form>
-          </div>
-        </div>,
-        document.body
-      )}
 
-      {/* Custom Confirmation Modal */}
-      {showConfirmModal && createPortal(
-        <div className="modal-overlay" onClick={() => setShowConfirmModal(false)}>
-          <div className="modal-content" onClick={(e) => e.stopPropagation()} style={{ maxWidth: '400px' }}>
-            <div className="modal-header">
-              <h3>Confirm Action</h3>
-              <button className="close-btn" onClick={() => setShowConfirmModal(false)}>
-                <X size={20} />
-              </button>
             </div>
-            
-            <div style={{ marginBottom: '2rem', color: '#475569', fontSize: '0.95rem', lineHeight: '1.5' }}>
-              Are you sure you want to <strong>{userToToggle?.isActive ? 'deactivate' : 'activate'}</strong> the account for <strong style={{ color: '#0f172a' }}>{userToToggle?.fullName}</strong>?
-              {userToToggle?.isActive && <p style={{ marginTop: '0.5rem', fontSize: '0.85rem', color: '#ef4444' }}><AlertCircle size={14} style={{ display: 'inline', verticalAlign: 'middle', marginRight: '4px' }}/> The user will immediately lose access to the system.</p>}
-            </div>
+          </div>,
+          document.body
+        )}
 
-            <div className="form-actions">
-              <button type="button" className="btn-secondary" onClick={() => setShowConfirmModal(false)}>Cancel</button>
-              <button 
-                type="button" 
-                className={userToToggle?.isActive ? "btn-primary" : "btn-primary"} 
-                style={userToToggle?.isActive ? { backgroundColor: '#ef4444' } : { backgroundColor: '#10b981' }}
-                onClick={confirmToggleStatus}
-              >
-                Yes, {userToToggle?.isActive ? 'Deactivate' : 'Activate'}
-              </button>
-            </div>
-          </div>
-        </div>,
-        document.body
-      )}
     </div>
   );
 };

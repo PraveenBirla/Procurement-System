@@ -30,7 +30,18 @@ const requisitionService = {
       }
       );
        return res.data.data;
-     }, 
+     },  
+     
+     async getRequisitionsByStatusManager(status){
+      const res = await api.get("/requisitions/manager",{
+        params: {
+         status,
+        }
+      }
+      );
+       return res.data.data;
+     },  
+
 
      async getManagerRequisitionsByStatus(status){
       const res = await api.get("/approvals/manager",{

@@ -5,6 +5,7 @@ import java.time.LocalDateTime;
 import java.util.List;
 import java.util.UUID;
 
+import com.eps.enterprise_procurement_system.util.CurrentUser;
 import org.modelmapper.ModelMapper;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
@@ -48,6 +49,7 @@ public class PurchaseRequisitionService {
     private final AuditService auditService;
     private final ModelMapper modelMapper;
     private final DuplicateCheckService duplicateCheckService;
+    private final CurrentUser currentUser;
 
     public PurchaseRequisitionResponseDTO mapToDto(PurchaseRequisition requisition) {
 
@@ -297,6 +299,14 @@ public class PurchaseRequisitionService {
     public List<PurchaseRequisitionResponseDTO> getByStatus(RequisitionStatus status){
 
         return reqRepo.findByStatus(status)
+                .stream()
+                .map(requisition -> mapToDto(requisition))
+                .toList();
+    }
+
+    public List<PurchaseRequisitionResponseDTO> getManagerByStatus(RequisitionStatus status){
+
+        return reqRepo.findByEmployee_Department_IdAndStatus(currentUser.get().getDepartment().getId(),status)
                 .stream()
                 .map(requisition -> mapToDto(requisition))
                 .toList();

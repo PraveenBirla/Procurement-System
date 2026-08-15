@@ -5,6 +5,7 @@ import {
   Settings,
   BarChart3,
   ClipboardList,
+  Network,
   Building2,
   Package,
   LogOut
@@ -18,7 +19,9 @@ import { SupplierManagementSection } from "./SupplierManagementSection";
 import { OverviewSection } from "./OverviewSection";
 import { ReportsSection } from "./ReportsSection";
 import { RequisitionSection } from "./RequisitionSection";
+import { DepartmentSection } from "./DepartmentSection";
 import authService from "../../services/authService";
+
 
 export const AdminDashboard = () => {
   const [activeSection, setActiveSection] = useState("overview");
@@ -29,7 +32,9 @@ export const AdminDashboard = () => {
     { id: "users", label: "Users", icon: Users },
      { id: "suppliers", label: "Suppliers", icon: Building2 },
     {id:  "products", label: "Products", icon: Package},
-    { id: "reports", label: "Reports", icon: FileText },
+     {id:  "departments", label: "Departments", icon: Network},
+    // { id: "reports", label: "Reports", icon: FileText },
+    
      
   ];
 
@@ -65,7 +70,8 @@ export const AdminDashboard = () => {
           {activeSection === "suppliers" && <SupplierSection/>}
         {activeSection === "products" &&  <ProductSection/>}
         {activeSection === "requisition" && <RequisitionSection/>}
-        {activeSection === "reports" && <ReportsSection />} 
+        {activeSection === "reports" && <ReportsSection />}
+        {activeSection === "departments" && <DepartmentSection/>}
         {activeSection === "settings" && <div>Settings Section</div>}
       </main>
     </div>
