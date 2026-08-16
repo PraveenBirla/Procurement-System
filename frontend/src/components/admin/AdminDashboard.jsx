@@ -33,7 +33,7 @@ export const AdminDashboard = () => {
      { id: "suppliers", label: "Suppliers", icon: Building2 },
     {id:  "products", label: "Products", icon: Package},
      {id:  "departments", label: "Departments", icon: Network},
-    // { id: "reports", label: "Reports", icon: FileText },
+    { id: "reports", label: "Reports", icon: FileText },
     
      
   ];
@@ -65,13 +65,13 @@ export const AdminDashboard = () => {
 
      
       <main className="main-content animate-fade-in">
-        {activeSection === "overview" && <OverviewSection />}
-        {activeSection === "users" && <UserManagementSection />}
-          {activeSection === "suppliers" && <SupplierSection/>}
-        {activeSection === "products" &&  <ProductSection/>}
-        {activeSection === "requisition" && <RequisitionSection/>}
-        {activeSection === "reports" && <ReportsSection />}
-        {activeSection === "departments" && <DepartmentSection/>}
+        {activeSection === "overview" && <OverviewSection setActiveSection={setActiveSection} />}
+        {activeSection === "users" && <UserManagementSection setActiveSection={setActiveSection} />}
+          {activeSection === "suppliers" && <SupplierSection setActiveSection={setActiveSection} />}
+        {activeSection === "products" &&  <ProductSection setActiveSection={setActiveSection} />}
+        {activeSection === "requisition" && <RequisitionSection setActiveSection={setActiveSection} />}
+        {activeSection === "reports" && <ReportsSection setActiveSection={setActiveSection} />}
+        {activeSection === "departments" && <DepartmentSection setActiveSection={setActiveSection} />}
         {activeSection === "settings" && <div>Settings Section</div>}
       </main>
     </div>

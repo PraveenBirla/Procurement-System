@@ -18,6 +18,7 @@ import {
   RefreshCw,
   Filter,
 } from "lucide-react";
+import { NotificationBell } from "../ui/NotificationBell";
 
 import requisitionService from "../../services/requisitionService";
 // import "./FinanceOverviewSection.css";
@@ -38,7 +39,7 @@ const STATUS_COLORS = {
   [BUCKET.REJECTED]: "#ef4444",
 };
 
-export const  OverviewSection = () => {
+export const OverviewSection = ({ setActiveSection: setDashboardSection }) => {
   const [requisitions, setRequisitions] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
@@ -323,21 +324,24 @@ export const  OverviewSection = () => {
           </p>
         </div>
 
-        <button
-          type="button"
-          className="overview-refresh-btn"
-          onClick={loadOverview}
-          disabled={loading}
-        >
-          <RefreshCw
-            size={17}
-            className={loading ? "spin" : ""}
-          />
+        <div className="header-actions">
+          <NotificationBell setActiveSection={setDashboardSection} />
+          <button
+            type="button"
+            className="overview-refresh-btn"
+            onClick={loadOverview}
+            disabled={loading}
+          >
+            <RefreshCw
+              size={17}
+              className={loading ? "spin" : ""}
+            />
 
-          {loading
-            ? "Refreshing..."
-            : "Refresh"}
-        </button>
+            {loading
+              ? "Refreshing..."
+              : "Refresh"}
+          </button>
+        </div>
 
       </div>
 

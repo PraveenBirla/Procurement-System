@@ -1,6 +1,7 @@
  
 import { useEffect, useMemo, useState } from "react";
 import { createPortal } from "react-dom";
+import { NotificationBell } from "../ui/NotificationBell";
 
 import {
   ResponsiveContainer,
@@ -56,7 +57,7 @@ const STATUS_COLORS = [
   "#14b8a6",
 ];
 
-export const RequisitionSection = () => {
+export const RequisitionSection = ({ setActiveSection: setDashboardSection }) => {
   const [requisitions, setRequisitions] = useState([]);
   const [categories, setCategories] = useState([]);
   const [products, setProducts] = useState([]);
@@ -666,7 +667,7 @@ export const RequisitionSection = () => {
           </h2>
 
           <div className="header-actions">
-
+            <NotificationBell setActiveSection={setDashboardSection} />
             <button
               className="refresh-btn"
               onClick={

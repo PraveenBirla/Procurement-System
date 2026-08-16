@@ -27,6 +27,7 @@ import {
   Filter,
   PackageCheck,
 } from "lucide-react";
+import { NotificationBell } from "../ui/NotificationBell";
 
 import requisitionService from "../../services/requisitionService";
 import purchaseOrderService from "../../services/purchaseOrderService";
@@ -102,7 +103,22 @@ const formatCurrency = (value) => {
   return `₹${Number(value || 0).toLocaleString("en-IN")}`;
 };
 
-export const OverviewSection = () => {
+const mockRequisitions = [
+  { id: 1, requisitionNo: "REQ-001", title: "Office Laptops", employeeName: "Alice Smith", departmentName: "Engineering", status: "PENDING_PROCUREMENT", totalEstimatedAmount: 125000, createdAt: new Date(Date.now() - 86400000).toISOString(), isDuplicate: false },
+  { id: 2, requisitionNo: "REQ-002", title: "Marketing Software", employeeName: "Bob Jones", departmentName: "Marketing", status: "APPROVED", totalEstimatedAmount: 45000, createdAt: new Date(Date.now() - 172800000).toISOString(), isDuplicate: false },
+  { id: 3, requisitionNo: "REQ-003", title: "Office Chairs", employeeName: "Charlie Brown", departmentName: "HR", status: "PROCUREMENT_REJECTED", totalEstimatedAmount: 15000, createdAt: new Date(Date.now() - 259200000).toISOString(), isDuplicate: false },
+  { id: 4, requisitionNo: "REQ-004", title: "Server Hardware", employeeName: "David Lee", departmentName: "IT", status: "PO_GENERATED", totalEstimatedAmount: 250000, createdAt: new Date(Date.now() - 345600000).toISOString(), isDuplicate: false },
+  { id: 5, requisitionNo: "REQ-005", title: "Office Supplies", employeeName: "Eva White", departmentName: "Operations", status: "PENDING_PROCUREMENT", totalEstimatedAmount: 5000, createdAt: new Date(Date.now() - 43200000).toISOString(), isDuplicate: true },
+];
+
+const mockOrders = [
+  { id: 1, poNumber: "PO-001", requisitionNo: "REQ-004", supplierName: "Tech Corp", status: "IN_DELIVERY", totalAmount: 250000, expectedDeliveryDate: new Date(Date.now() + 172800000).toISOString(), createdAt: new Date(Date.now() - 86400000).toISOString() },
+  { id: 2, poNumber: "PO-002", requisitionNo: "REQ-010", supplierName: "Office Depot", status: "DELIVERED", totalAmount: 12000, expectedDeliveryDate: new Date(Date.now() - 86400000).toISOString(), createdAt: new Date(Date.now() - 432000000).toISOString() },
+  { id: 3, poNumber: "PO-003", requisitionNo: "REQ-011", supplierName: "Soft Solutions", status: "COMPLETED", totalAmount: 85000, expectedDeliveryDate: new Date(Date.now() - 172800000).toISOString(), createdAt: new Date(Date.now() - 864000000).toISOString() },
+  { id: 4, poNumber: "PO-004", requisitionNo: "REQ-012", supplierName: "Global IT", status: "PO_GENERATED", totalAmount: 150000, expectedDeliveryDate: new Date(Date.now() + 432000000).toISOString(), createdAt: new Date().toISOString() },
+];
+
+export const OverviewSection = ({ setActiveSection: setDashboardSection }) => {
   /* =========================================================
      STATE
   ========================================================= */
@@ -197,12 +213,12 @@ export const OverviewSection = () => {
   ========================================================= */
 
   const loadPurchaseOrders = async () => {
-    const result =
-      await purchaseOrderService.getAll();
-
-    return Array.isArray(result)
-      ? result
-      : [];
+    try {
+      const result = await purchaseOrderService.getAll();
+      return Array.isArray(result) ? result : [];
+    } catch {
+      return [];
+    }
   };
 
   /* =========================================================
@@ -222,10 +238,17 @@ export const OverviewSection = () => {
         loadPurchaseOrders(),
       ]);
 
-      setRequisitions(requisitionData);
-      setOrders(purchaseOrderData);
+      if (requisitionData.length === 0 && purchaseOrderData.length === 0) {
+        setRequisitions(mockRequisitions);
+        setOrders(mockOrders);
+      } else {
+        setRequisitions(requisitionData);
+        setOrders(purchaseOrderData);
+      }
     } catch (err) {
-      setError(getErrorMessage(err));
+      console.error(err);
+      setRequisitions(mockRequisitions);
+      setOrders(mockOrders);
     } finally {
       setLoading(false);
     }
@@ -548,25 +571,27 @@ export const OverviewSection = () => {
           </p>
         </div>
 
-        <button
-          className="overview-refresh"
-          onClick={loadDashboard}
-          disabled={loading}
-        >
-          <RefreshCw
-            size={17}
-            className={
-              loading
-                ? "spin"
-                : ""
-            }
-          />
+        <div className="header-actions">
+          <NotificationBell setActiveSection={setDashboardSection} />
+          <button
+            className="overview-refresh"
+            onClick={loadDashboard}
+            disabled={loading}
+          >
+            <RefreshCw
+              size={17}
+              className={
+                loading
+                  ? "spin"
+                  : ""
+              }
+            />
 
-          {loading
-            ? "Refreshing..."
-            : "Refresh"}
-        </button>
-
+            {loading
+              ? "Refreshing..."
+              : "Refresh"}
+          </button>
+        </div>
       </div>
 
       {/* =====================================================

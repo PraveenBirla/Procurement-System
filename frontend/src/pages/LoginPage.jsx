@@ -84,6 +84,10 @@ export default function LoginPage() {
         navigate("/procurement");
         break;
 
+    case "SUPPLIER":
+        navigate("/supplier");
+        break;
+
     default:
         navigate("/login");
    }

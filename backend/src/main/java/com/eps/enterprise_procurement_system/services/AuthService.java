@@ -92,6 +92,9 @@ public class AuthService {
              );
 
             User user = (User) authentication.getPrincipal();
+            if (user.getIsActive() != null && !user.getIsActive()) {
+                throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Your account is deactivated by admin");
+            }
             LoginResponseDTO responseDTO = LoginResponseDTO.builder()
                 .accessToken(jwtService.generateAceessToken(user))
                 .refreshToken(jwtService.generateRefreshToken(user))

@@ -6,6 +6,7 @@ import {
   Truck,
   CheckCircle2,
 } from "lucide-react";
+import { NotificationBell } from "../ui/NotificationBell";
 
 import {
   ResponsiveContainer,
@@ -26,7 +27,7 @@ import {
 import purchaseOrderService from "../../services/purchaseOrderService";
 import "./OverviewSection.css";
 
-export const OverviewSection = () => {
+export const OverviewSection = ({ setActiveSection: setDashboardSection }) => {
   const [orders, setOrders] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
@@ -254,13 +255,16 @@ const statusChartData = useMemo(() => {
       <div className="section-header">
         <h2 className="section-title">Purchase Orders</h2>
 
-        <button
-          className="refresh-btn"
-          onClick={loadOrders}
-          disabled={loading}
-        >
-          {loading ? "Refreshing..." : "Refresh"}
-        </button>
+        <div className="header-actions">
+          <NotificationBell setActiveSection={setDashboardSection} />
+          <button
+            className="refresh-btn"
+            onClick={loadOrders}
+            disabled={loading}
+          >
+            {loading ? "Refreshing..." : "Refresh"}
+          </button>
+        </div>
       </div>
 
       {/* =================================================

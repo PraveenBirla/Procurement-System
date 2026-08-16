@@ -69,19 +69,19 @@ export const FinanceDashboard = () => {
      
       <main className="main-content animate-fade-in">
         {activeSection === "requition" && (
-           <RequisitionSection/>
+           <RequisitionSection setActiveSection={setActiveSection} />
         )}
         {activeSection === "rejected" && (
-           <RejectedSection/>
+           <RejectedSection setActiveSection={setActiveSection} />
         )} 
          {activeSection === "approved" && (
-           <ApprovedSection/>
+           <ApprovedSection setActiveSection={setActiveSection} />
         )} 
          {activeSection === "pending" && (
-           <PendingSection/>
+           <PendingSection setActiveSection={setActiveSection} />
         )} 
          {activeSection === "overview" && (
-           <OverviewSection/>
+           <OverviewSection setActiveSection={setActiveSection} />
         )} 
          
       </main>

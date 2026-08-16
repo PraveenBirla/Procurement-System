@@ -56,12 +56,12 @@ export const  SupplierDashboard  = () => {
 
      
       <main className="main-content animate-fade-in">
-         {activeSection === "profile" &&  <SupplierProfileSection/> }
-         {activeSection === "orders" &&  <OrderSection/> }
-         {activeSection === "acceptedorders" && <AcceptedOrderSection/>}
-         {activeSection === "indelivery" && <InDeliverySection/>}
-         {activeSection === "delivered" && <DeliveredOrderSection/>}
-         {activeSection === "completed" && <CompletedOrderSection/>}
+         {activeSection === "profile" &&  <SupplierProfileSection setActiveSection={setActiveSection} /> }
+         {activeSection === "orders" &&  <OrderSection setActiveSection={setActiveSection} /> }
+         {activeSection === "acceptedorders" && <AcceptedOrderSection setActiveSection={setActiveSection} />}
+         {activeSection === "indelivery" && <InDeliverySection setActiveSection={setActiveSection} />}
+         {activeSection === "delivered" && <DeliveredOrderSection setActiveSection={setActiveSection} />}
+         {activeSection === "completed" && <CompletedOrderSection setActiveSection={setActiveSection} />}
       </main>
     </div>
   );

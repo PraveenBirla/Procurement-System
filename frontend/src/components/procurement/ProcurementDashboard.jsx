@@ -21,8 +21,8 @@ export const ProcurementDashboard = () => {
 
   const menuItems = [ 
      { id: "overview", label: "Overview", icon:ClipboardList },
-    { id: "requition", label: "Requition", icon:ClipboardList },
-     { id: "ApprovedRequition", label: "Approved Requition", icon: BadgeCheck }, 
+    { id: "requisition", label: "Requisition", icon:ClipboardList },
+     { id: "ApprovedRequisition", label: "Approved Requisition", icon: BadgeCheck }, 
      { id: "PurchaseOrders", label: "Purchase Orders", icon: ShoppingCart },
      
      { id: "DeliveredOrders", label: "Delivered Orders", icon: Truck},
@@ -58,13 +58,13 @@ export const ProcurementDashboard = () => {
 
      
       <main className="main-content animate-fade-in">
-          {activeSection === "requition" &&  <RequisitionSection/> }
-          {activeSection === "ApprovedRequition" &&  <ApprovedRequisitionSection/> }
-          {activeSection === "PurchaseOrders" && <PurchaseOrderSection/> }
-          {activeSection === "suppliers" && <SupplierSection/> }
-          {activeSection === "DeliveredOrders" && <DeliveredSection/> }
-          {activeSection === "CompletedOrders" && <CompletedOrderSection/> }
-          {activeSection === "overview" && <OverviewSection/> }
+          {activeSection === "requisition" &&  <RequisitionSection setActiveSection={setActiveSection} /> }
+          {activeSection === "ApprovedRequisition" &&  <ApprovedRequisitionSection setActiveSection={setActiveSection} /> }
+          {activeSection === "PurchaseOrders" && <PurchaseOrderSection setActiveSection={setActiveSection} /> }
+          {activeSection === "suppliers" && <SupplierSection setActiveSection={setActiveSection} /> }
+          {activeSection === "DeliveredOrders" && <DeliveredSection setActiveSection={setActiveSection} /> }
+          {activeSection === "CompletedOrders" && <CompletedOrderSection setActiveSection={setActiveSection} /> }
+          {activeSection === "overview" && <OverviewSection setActiveSection={setActiveSection} /> }
       </main>
     </div>
   );

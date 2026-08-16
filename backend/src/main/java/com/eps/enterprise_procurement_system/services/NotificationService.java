@@ -18,6 +18,9 @@ import com.eps.enterprise_procurement_system.repositories.UserRepository;
 
 import lombok.RequiredArgsConstructor;
 
+import org.springframework.messaging.simp.SimpMessagingTemplate;
+import com.eps.enterprise_procurement_system.dto.NotificationDTO;
+
 @Service
 @RequiredArgsConstructor
 public class NotificationService {
@@ -25,11 +28,30 @@ public class NotificationService {
     private final EmailService emailService;
     private final UserRepository userRepo;
     private final NotificationRepo repo;
+    private final SimpMessagingTemplate messagingTemplate;
 
     public void notify(User user, PurchaseRequisition req, PurchaseOrder po, NotificationType type, String message) {
         Notification n = Notification.builder()
                 .user(user).requisition(req).purchaseOrder(po).type(type).message(message).isRead(false).build();
-        repo.save(n);
+        Notification saved = repo.save(n);
+        
+        // Broadcast over WebSocket
+        NotificationDTO dto = NotificationDTO.builder()
+                .id(saved.getId())
+                .userId(user.getId())
+                .requisitionId(req != null ? req.getId() : null)
+                .purchaseOrderId(po != null ? po.getId() : null)
+                .message(saved.getMessage())
+                .type(saved.getType())
+                .isRead(saved.getIsRead())
+                .createdAt(saved.getCreatedAt())
+                .build();
+                
+        messagingTemplate.convertAndSend(
+                "/topic/notifications/" + user.getId(),
+                dto
+        );
+
         if (user.getEmail() != null)
             emailService.send(user.getEmail(), "EPS: " + type, message);
     }

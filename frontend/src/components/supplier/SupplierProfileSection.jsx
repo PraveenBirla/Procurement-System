@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 import supplierService from "../../services/suppliersService";
 import productService from "../../services/productService";
+import { NotificationBell } from "../ui/NotificationBell";
 
 const emptyForm = {
   companyName: "",
@@ -17,7 +18,7 @@ const DOCUMENT_TYPES = [
   { type: "OTHER", label: "Other" },
 ];
 
-export const SupplierProfileSection = () => {
+export const SupplierProfileSection = ({ setActiveSection: setDashboardSection }) => {
   const [profile, setProfile] = useState(null);
   const [loading, setLoading] = useState(true);
   const [notFound, setNotFound] = useState(false);
@@ -206,11 +207,14 @@ export const SupplierProfileSection = () => {
     <div className="admin-requisition-section">
       <div className="section-header">
         <h2 className="section-title">Supplier Profile</h2>
-        {!notFound && !editing && (
-          <button className="btn-primary" onClick={openEditForm}>
-            Edit Profile
-          </button>
-        )}
+        <div className="header-actions">
+          <NotificationBell setActiveSection={setDashboardSection} />
+          {!notFound && !editing && (
+            <button className="btn-primary" onClick={openEditForm}>
+              Edit Profile
+            </button>
+          )}
+        </div>
       </div>
 
       {error && (

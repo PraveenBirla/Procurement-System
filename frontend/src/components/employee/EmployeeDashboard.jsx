@@ -41,7 +41,7 @@ export const EmployeeDashboard = () => {
      
       <main className="main-content animate-fade-in">
         {activeSection === "requition" && (
-           <RequisitionSection/>
+           <RequisitionSection setActiveSection={setActiveSection} />
         )}
          
       </main>

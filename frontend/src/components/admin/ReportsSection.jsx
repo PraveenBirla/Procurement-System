@@ -1,131 +1,87 @@
-import { useState, useEffect } from "react";
-import { Printer, FileText } from "lucide-react";
-import purchaseOrderService from "../../services/purchaseOrderService";
+import { useState } from "react";
 import "./ReportsSection.css";
+import { PurchaseOrderReport } from "./reports/PurchaseOrderReport";
+import { RequisitionReport } from "./reports/RequisitionReport";
+import { SupplierReport } from "./reports/SupplierReport";
+import { SpendingReport } from "./reports/SpendingReport";
+import { InventoryReport } from "./reports/InventoryReport";
+import { POStatusReport } from "./reports/POStatusReport";
+import { ApprovalReport } from "./reports/ApprovalReport";
+import { SupplierPerformanceReport } from "./reports/SupplierPerformanceReport";
+import { 
+  BarChart3, 
+  ClipboardList, 
+  Building2, 
+  Wallet, 
+  PackageSearch, 
+  ListOrdered, 
+  CheckSquare, 
+  TrendingUp 
+} from "lucide-react";
 
 export const ReportsSection = () => {
-  const [purchaseOrders, setPurchaseOrders] = useState([]);
-  const [loading, setLoading] = useState(true);
+  const [activeTab, setActiveTab] = useState("spending");
 
-  useEffect(() => {
-    loadReports();
-  }, []);
+  const tabs = [
+    { id: "spending", label: "Spending", icon: Wallet },
+    { id: "purchase-orders", label: "Purchase Orders", icon: BarChart3 },
+    { id: "requisitions", label: "Requisitions", icon: ClipboardList },
+    { id: "po-status", label: "PO Status", icon: ListOrdered },
+    { id: "suppliers", label: "Suppliers", icon: Building2 },
+    { id: "supplier-performance", label: "Supplier Perf.", icon: TrendingUp },
+    { id: "inventory", label: "Inventory", icon: PackageSearch },
+    { id: "approvals", label: "Approvals", icon: CheckSquare },
+  ];
 
-  const loadReports = async () => {
-    setLoading(true);
-    try {
-      const pos = await purchaseOrderService.getAll();
-      setPurchaseOrders(pos || []);
-    } catch (error) {
-      console.error("Failed to load reports", error);
-    } finally {
-      setLoading(false);
+  const renderActiveReport = () => {
+    switch (activeTab) {
+      case "spending":
+        return <SpendingReport />;
+      case "purchase-orders":
+        return <PurchaseOrderReport />;
+      case "requisitions":
+        return <RequisitionReport />;
+      case "po-status":
+        return <POStatusReport />;
+      case "suppliers":
+        return <SupplierReport />;
+      case "supplier-performance":
+        return <SupplierPerformanceReport />;
+      case "inventory":
+        return <InventoryReport />;
+      case "approvals":
+        return <ApprovalReport />;
+      default:
+        return <SpendingReport />;
     }
   };
 
-  const handlePrint = () => {
-    window.print();
-  };
-
-  const getStatusClass = (status) => {
-    if (!status) return 'status-default';
-    const s = status.toLowerCase();
-    if (s.includes('pending')) return 'status-pending';
-    if (s.includes('approve')) return 'status-approved';
-    if (s.includes('reject')) return 'status-rejected';
-    if (s.includes('deliver')) return 'status-delivered';
-    return 'status-default';
-  };
-
-  // Calculate summaries
-  const totalSpend = purchaseOrders.reduce((sum, po) => sum + (po.totalAmount || 0), 0);
-  const approvedSpend = purchaseOrders
-    .filter(po => po.status === 'APPROVED' || po.status === 'DELIVERED')
-    .reduce((sum, po) => sum + (po.totalAmount || 0), 0);
-  const pendingSpend = purchaseOrders
-    .filter(po => po.status === 'PENDING')
-    .reduce((sum, po) => sum + (po.totalAmount || 0), 0);
-
-  if (loading) {
-    return <div className="loading-state">Generating reports...</div>;
-  }
-
   return (
-    <div className="reports-section animate-fade-in">
-      <div className="reports-header">
+    <div className="reports-hub animate-fade-in">
+      <div className="reports-hub-header">
         <div>
-          <h2>Financial Reports</h2>
-          <p>Audit and track all system purchase orders and spending.</p>
+          <h2>Analytics & Reports</h2>
+          <p>Comprehensive insights into procurement performance and operations.</p>
         </div>
       </div>
 
-      <div className="summary-cards">
-        <div className="summary-card total">
-          <div className="summary-title">Total PO Volume</div>
-          <div className="summary-value">
-            ₹{totalSpend.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
-          </div>
-        </div>
-        <div className="summary-card approved">
-          <div className="summary-title">Approved Spend</div>
-          <div className="summary-value">
-            ₹{approvedSpend.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
-          </div>
-        </div>
-        <div className="summary-card pending">
-          <div className="summary-title">Pending Spend</div>
-          <div className="summary-value">
-            ₹{pendingSpend.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
-          </div>
+      <div className="reports-tabs-container">
+        <div className="reports-tabs">
+          {tabs.map((tab) => (
+            <button
+              key={tab.id}
+              className={`report-tab ${activeTab === tab.id ? "active" : ""}`}
+              onClick={() => setActiveTab(tab.id)}
+            >
+              <tab.icon size={16} />
+              <span>{tab.label}</span>
+            </button>
+          ))}
         </div>
       </div>
 
-      <div className="report-table-container">
-        <div className="report-toolbar">
-          <div className="report-title">
-            <FileText size={18} color="#3b82f6" />
-            Master Purchase Order Log
-          </div>
-          <button className="btn-print" onClick={handlePrint}>
-            <Printer size={16} />
-            Print / Save as PDF
-          </button>
-        </div>
-
-        {purchaseOrders.length === 0 ? (
-          <div className="empty-state">No purchase orders available for reporting.</div>
-        ) : (
-          <table className="data-table">
-            <thead>
-              <tr>
-                <th>Date</th>
-                <th>PO Number</th>
-                <th>Supplier</th>
-                <th>Generated By</th>
-                <th>Status</th>
-                <th>Amount</th>
-              </tr>
-            </thead>
-            <tbody>
-              {purchaseOrders.map((po) => (
-                <tr key={po.id}>
-                  <td>{po.createdAt ? new Date(po.createdAt).toLocaleDateString() : 'N/A'}</td>
-                  <td style={{ fontWeight: 500, color: '#3b82f6' }}>{po.poNumber}</td>
-                  <td>{po.supplierName || 'Unknown Supplier'}</td>
-                  <td>{po.generatedByName || 'System'}</td>
-                  <td>
-                    <span className={`status-badge ${getStatusClass(po.status)}`}>
-                      {po.status || 'UNKNOWN'}
-                    </span>
-                  </td>
-                  <td style={{ fontWeight: 600, color: '#0f172a' }}>
-                    ₹{(po.totalAmount || 0).toLocaleString(undefined, { minimumFractionDigits: 2 })}
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        )}
+      <div className="report-content-container">
+        {renderActiveReport()}
       </div>
     </div>
   );

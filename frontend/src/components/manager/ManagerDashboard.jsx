@@ -57,16 +57,16 @@ export const ManagerDashboard = () => {
            <RequisitionSection/>
         )} */}
         {activeSection === "overview" && (
-           <OverviewSection/>
+           <OverviewSection setActiveSection={setActiveSection} />
         )}
         {activeSection === "pending" && (
-           <PendingSection/>
+           <PendingSection setActiveSection={setActiveSection} />
         )}
         {activeSection === "approved" && (
-           <ApprovedSection/>
+           <ApprovedSection setActiveSection={setActiveSection} />
         )}
         {activeSection === "rejected" && (
-           <RejectedSection/>
+           <RejectedSection setActiveSection={setActiveSection} />
         )}
          
       </main>
