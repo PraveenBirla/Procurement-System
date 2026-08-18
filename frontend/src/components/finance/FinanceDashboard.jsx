@@ -45,7 +45,7 @@ export const FinanceDashboard = () => {
     <div className="admin-dashboard">
        
       <aside className="sidebar">
-        <div className="sidebar-header">Procurement Finance</div>
+        <div className="sidebar-header">ProCure Finance</div>
         <nav className="menu"> 
           {menuItems.map((item) => (
             <button
