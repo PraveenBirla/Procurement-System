@@ -15,7 +15,6 @@ import org.springframework.scheduling.annotation.Async;
 @RequiredArgsConstructor
 public class EmailService {
 
-    @Autowired
     private JavaMailSender mailSender;
 
     @Async
@@ -27,9 +26,9 @@ public class EmailService {
             msg.setSubject(subject);
             msg.setText(body);
             mailSender.send(msg);
-            log.warn("Email send successfullty to {}", to);
+            log.info("Email send successfullty to {}", to);
         } catch (Exception e) {
-            log.warn("Email send failed to {}: {}", to, e.getMessage());
+            log.error("Email send failed to {}: {}", to, e.getMessage());
         }
     }
 }
