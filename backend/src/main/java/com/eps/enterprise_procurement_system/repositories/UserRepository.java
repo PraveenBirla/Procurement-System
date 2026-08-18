@@ -1,7 +1,6 @@
 package com.eps.enterprise_procurement_system.repositories;
 
 import com.eps.enterprise_procurement_system.entities.Department;
-import com.eps.enterprise_procurement_system.entities.Supplier;
 import com.eps.enterprise_procurement_system.entities.User;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;

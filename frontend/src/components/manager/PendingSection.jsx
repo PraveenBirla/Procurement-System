@@ -571,7 +571,7 @@ export const PendingSection = () => {
                   "approved"
                     ? "Approve"
                     : "Reject"}{" "}
-                  —{" "}
+                  - {" "}
                   {
                     actionModal.req
                       .requisitionNo

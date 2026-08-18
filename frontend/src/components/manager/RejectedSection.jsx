@@ -550,7 +550,7 @@ export const RejectedSection = () => {
               <div className="modal-header">
 
                 <h2>
-                  Track Requisition —{" "}
+                  Track Requisition - {" "}
                   {
                     trackReq.requisitionNo
                   }

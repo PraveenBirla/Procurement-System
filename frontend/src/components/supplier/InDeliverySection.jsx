@@ -215,7 +215,7 @@ export const InDeliverySection = () => {
           <div className="modal-overlay" onClick={closeTrackModal}>
             <div className="modal-content" onClick={(e) => e.stopPropagation()}>
               <div className="modal-header">
-                <h2>Track PO — {trackPo.poNumber}</h2>
+                <h2>Track PO - {trackPo.poNumber}</h2>
                 <button className="modal-close" onClick={closeTrackModal} aria-label="Close">
                   ×
                 </button>

@@ -9,7 +9,7 @@ export default function AuthLayout({ children, title, subtitle }) {
   return (
     <div className="min-h-screen flex">
       {/* ── Left branding panel (hidden on mobile) ── */}
-      <div className="hidden lg:flex lg:w-[480px] xl:w-[520px] flex-col justify-between bg-gradient-to-br from-primary-700 via-primary-600 to-primary-800 text-white p-10 relative overflow-hidden">
+      <div className="hidden lg:flex lg:w-120 xl:w-[520px] flex-col justify-between bg-gradient-to-br from-primary-700 via-primary-600 to-primary-800 text-white p-10 relative overflow-hidden">
         {/* Decorative circles */}
         <div className="absolute -top-24 -right-24 w-64 h-64 rounded-full bg-white/5" />
         <div className="absolute -bottom-32 -left-32 w-80 h-80 rounded-full bg-white/5" />

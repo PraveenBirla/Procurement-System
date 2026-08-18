@@ -280,7 +280,7 @@ export const ProductSection = () => {
             <li key={c.id}>
               <span>
                 <strong>{c.categoryName}</strong>
-                {c.description ? ` — ${c.description}` : ""}
+                {c.description ? ` - ${c.description}` : ""}
               </span>
               
             </li>

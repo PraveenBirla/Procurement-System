@@ -126,6 +126,9 @@ public class SupplierPerformanceService {
                 .reviewedBy(reviewer)
                 .build();
 
+        supplier.setRating(overall);
+        supplierRepo.save(supplier);
+
         SupplierPerformance saved = performanceRepo.save(performance);
 
         return convertToDTO(saved);

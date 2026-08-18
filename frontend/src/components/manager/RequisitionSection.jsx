@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import requisitionService from "../../services/requisitionService";
 import { createPortal } from "react-dom";
 import "./RequisitionSection.css";
+import { Clock3 } from "lucide-react";
 
 const PENDING_STATUS = "PENDING_MANAGER";
  
@@ -240,7 +241,8 @@ export const RequisitionSection = () => {
                             className="track-btn"
                             disabled={trackingId === req.id}
                             onClick={() => handleTrack(req)}
-                          >
+                            >
+                              <Clock3 size={14} />
                             {trackingId === req.id ? "…" : "Track"}
                           </button>
                         )}
@@ -326,7 +328,7 @@ export const RequisitionSection = () => {
         <div className="modal-overlay" onClick={closeTrackModal}>
           <div className="modal-content" onClick={(e) => e.stopPropagation()}>
             <div className="modal-header">
-              <h2>Track Requisition {trackedReq ? `— ${trackedReq.requisitionNo}` : ""}</h2>
+              <h2>Track Requisition {trackedReq ? `- ${trackedReq.requisitionNo}` : ""}</h2>
               <button className="modal-close" onClick={closeTrackModal} aria-label="Close">
                 ×
               </button>
@@ -367,7 +369,7 @@ export const RequisitionSection = () => {
           <div className="modal-content action-modal" onClick={(e) => e.stopPropagation()}>
             <div className="modal-header">
               <h2>
-                {actionModal.type === "approve" ? "Approve" : "Reject"} — {actionModal.req.requisitionNo}
+                {actionModal.type === "approve" ? "Approve" : "Reject"} - {actionModal.req.requisitionNo}
               </h2>
               <button className="modal-close" onClick={closeActionModal} aria-label="Close" disabled={submittingAction}>
                 ×
@@ -375,7 +377,7 @@ export const RequisitionSection = () => {
             </div>
 
             <p className="action-summary">
-              <strong>{actionModal.req.title}</strong> — ₹
+              <strong>{actionModal.req.title}</strong> - ₹
               {Number(actionModal.req.totalEstimatedAmount).toLocaleString()}
             </p>
 

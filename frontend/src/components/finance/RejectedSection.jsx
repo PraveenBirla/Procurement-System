@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { createPortal } from "react-dom";
 
 import requisitionService from "../../services/requisitionService";
+import { Clock3, Eye } from "lucide-react";
  
 
 const STATUS = "REJECTED";
@@ -190,6 +191,7 @@ export const  RejectedSection = () => {
                           setSelectedRequisition(req)
                         }
                       >
+                        <Eye size={14} />
                         View
                       </button>
 
@@ -199,6 +201,7 @@ export const  RejectedSection = () => {
                           handleTrack(req)
                         }
                       >
+                        <Clock3 size={14} />
                         Track
                       </button>
 

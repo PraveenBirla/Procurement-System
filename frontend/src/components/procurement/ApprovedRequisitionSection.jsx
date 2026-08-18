@@ -415,7 +415,7 @@ export const ApprovedRequisitionSection = () => {
           <div className="modal-overlay" onClick={closeGenerateModal}>
             <div className="modal-content action-modal" onClick={(e) => e.stopPropagation()}>
               <div className="modal-header">
-                <h2>Generate PO — {genModalReq.requisitionNo}</h2>
+                <h2>Generate PO - {genModalReq.requisitionNo}</h2>
                 <button
                   className="modal-close"
                   onClick={closeGenerateModal}
@@ -427,7 +427,7 @@ export const ApprovedRequisitionSection = () => {
               </div>
 
               <p className="action-summary">
-                <strong>{genModalReq.title}</strong> — ₹
+                <strong>{genModalReq.title}</strong> - ₹
                 {Number(genModalReq.totalEstimatedAmount).toLocaleString()}
               </p>
 
@@ -491,7 +491,7 @@ export const ApprovedRequisitionSection = () => {
           <div className="modal-overlay" onClick={closeTrackPOModal}>
             <div className="modal-content" onClick={(e) => e.stopPropagation()}>
               <div className="modal-header">
-                <h2>Track PO — {trackPoReq.requisitionNo}</h2>
+                <h2>Track PO - {trackPoReq.requisitionNo}</h2>
                 <button className="modal-close" onClick={closeTrackPOModal} aria-label="Close">
                   ×
                 </button>

@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import requisitionService from "../../services/requisitionService";
 import { createPortal } from "react-dom";
+import { Eye } from "lucide-react";
 // import "./FinanceRequisitionSection.css";
 
 const PENDING_STATUS = "PENDING_FINANCE";
@@ -199,6 +200,7 @@ export const  PendingSection = () => {
                           setSelectedRequisition(req)
                         }
                       >
+                        <Eye size={14} />
                         View
                       </button>
 
@@ -415,7 +417,7 @@ export const  PendingSection = () => {
                   {actionModal.type === "approved"
                     ? "Approve"
                     : "Reject"}{" "}
-                  —{" "}
+                  -{" "}
                   {
                     actionModal.req
                       .requisitionNo
@@ -436,7 +438,7 @@ export const  PendingSection = () => {
                 <strong>
                   {actionModal.req.title}
                 </strong>
-                {" — "}₹
+                {" - "}₹
                 {Number(
                   actionModal.req
                     .totalEstimatedAmount ||

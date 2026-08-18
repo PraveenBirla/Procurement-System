@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from "react";
 import supplierService from "../../services/suppliersService";
 import productService from "../../services/productService";
 import { NotificationBell } from "../ui/NotificationBell";
+import { Eye } from "lucide-react";
 
 const emptyForm = {
   companyName: "",
@@ -56,6 +57,7 @@ export const SupplierProfileSection = ({ setActiveSection: setDashboardSection }
     setLoading(true);
     try {
       const res = await supplierService.getProfile();
+      console.log(res);
       setProfile(res);
       setNotFound(false);
       setError("");
@@ -356,6 +358,7 @@ export const SupplierProfileSection = ({ setActiveSection: setDashboardSection }
                             {doc ? (
                               <>
                                 <button className="view-btn" onClick={() => handleViewDocument(doc)}>
+                                  <Eye size={14} />
                                   View
                                 </button>
                                 <button

@@ -1,6 +1,5 @@
 package com.eps.enterprise_procurement_system.services;
 
-import com.eps.enterprise_procurement_system.advices.ApiResponse;
 import com.eps.enterprise_procurement_system.dto.*;
 import com.eps.enterprise_procurement_system.entities.*;
 import com.eps.enterprise_procurement_system.entities.enums.NotificationType;
@@ -25,10 +24,7 @@ import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Map;
 import java.util.UUID;
-import java.util.function.Function;
-import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
@@ -531,9 +527,13 @@ public class PurchaseOrderService {
                                         item.getRejectedQuantity() == 0
                                 );
 
-                if (!perfect) {throw new RuntimeException(
-                                "Delivery cannot be confirmed because one or more items are defective, rejected, or incomplete");
+                if (!perfect) {
+                        throw new RuntimeException(
+                                        "Delivery cannot be confirmed because one or more items are defective, rejected, or incomplete");
                 }
+
+                PurchaseRequisition requisition = po.getRequisition();
+                requisition.setStatus(RequisitionStatus.COMPLETED);
 
                 receipt.setQualityStatus(QualityStatus.PASS);
                 receipt.setInspectedAt(LocalDateTime.now());
@@ -854,7 +854,7 @@ public class PurchaseOrderService {
 
         public void savePurchaseOrderHistory(PurchaseOrder purchaseOrder, PurchaseOrderStatus oldStatus, PurchaseOrderStatus newStatus, User changedBy){
                PurchaseOrderHistory history = new PurchaseOrderHistory();
-
+               System.out.println("New Statussssssss: " + newStatus);
                history.setPurchaseOrder(purchaseOrder);
                history.setOldStatus(oldStatus);
                history.setNewStatus(newStatus);

@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { createPortal } from "react-dom";
 import procurementService from "../../services/requisitionService";
+import { Clock3, Eye } from "lucide-react";
 
  
 
@@ -73,8 +74,6 @@ export const RequisitionSection = () => {
 
       const unique = Array.from(new Map(merged.map((r) => [r.id, r])).values());
       unique.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
-
-      setRequisitions(unique);
       setRequisitions(unique);
       setError("");
     } catch (err) {
@@ -224,6 +223,7 @@ export const RequisitionSection = () => {
                     <td data-label="Action">
                       <div className="action-group">
                         <button className="view-btn" onClick={() => handleView(req)}>
+                          <Eye size={14} />
                           View
                         </button>
 
@@ -248,7 +248,8 @@ export const RequisitionSection = () => {
                             className="track-btn"
                             onClick={() => handleTrack(req)}
                             disabled={trackingId === req.id}
-                          >
+                            >
+                              <Clock3 size={14} />
                             {trackingId === req.id ? "…" : "Track"}
                           </button>
                         )}
@@ -350,7 +351,7 @@ export const RequisitionSection = () => {
           <div className="modal-overlay" onClick={closeTrackModal}>
             <div className="modal-content" onClick={(e) => e.stopPropagation()}>
               <div className="modal-header">
-                <h2>Track Requisition {trackedReq ? `— ${trackedReq.requisitionNo}` : ""}</h2>
+                <h2>Track Requisition {trackedReq ? `- ${trackedReq.requisitionNo}` : ""}</h2>
                 <button className="modal-close" onClick={closeTrackModal} aria-label="Close">
                   ×
                 </button>
@@ -399,7 +400,7 @@ export const RequisitionSection = () => {
             <div className="modal-content action-modal" onClick={(e) => e.stopPropagation()}>
               <div className="modal-header">
                 <h2>
-                  {actionModal.type === "approved" ? "Approve Procurement" : "Reject Procurement"} —{" "}
+                  {actionModal.type === "approved" ? "Approve Procurement" : "Reject Procurement"} -{" "}
                   {actionModal.req.requisitionNo}
                 </h2>
                 <button
@@ -413,7 +414,7 @@ export const RequisitionSection = () => {
               </div>
 
               <p className="action-summary">
-                <strong>{actionModal.req.title}</strong> — ₹
+                <strong>{actionModal.req.title}</strong> - ₹
                 {Number(actionModal.req.totalEstimatedAmount).toLocaleString()}
               </p>
 

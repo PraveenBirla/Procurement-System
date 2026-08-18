@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { createPortal } from "react-dom";
 import suppliersService from "../../services/suppliersService";
 import purchaseOrderService from "../../services/purchaseOrderService";
+import { Clock3 } from "lucide-react";
 
 const DELIVERED_STATUS = "DELIVERED";
 
@@ -164,6 +165,7 @@ export const DeliveredOrderSection = () => {
                         onClick={() => handleTrack(po)}
                         disabled={trackingId === po.id}
                       >
+                        <Clock3 size={14} />
                         {trackingId === po.id ? "…" : "Track"}
                       </button>
                     </div>
@@ -187,7 +189,7 @@ export const DeliveredOrderSection = () => {
           <div className="modal-overlay" onClick={closeTrackModal}>
             <div className="modal-content" onClick={(e) => e.stopPropagation()}>
               <div className="modal-header">
-                <h2>Track PO — {trackPo.poNumber}</h2>
+                <h2>Track PO - {trackPo.poNumber}</h2>
                 <button className="modal-close" onClick={closeTrackModal} aria-label="Close">
                   ×
                 </button>

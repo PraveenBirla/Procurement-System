@@ -48,6 +48,7 @@ const REQUISITION_STATUSES = [
   "PO_GENERATED",
   "CANCELLED",
   "SENT_TO_SUPPLIER",
+  "COMPLETED"
 ];
 
 /* =========================================================
@@ -167,15 +168,18 @@ export const OverviewSection = ({ setActiveSection: setDashboardSection }) => {
            * methods for pending and processed requisitions.
            */
           if (status === "PENDING_PROCUREMENT") {
-            result =
-              await requisitionService.getRequisitionsByStatus(
-                status
+            result = await requisitionService.getRequisitionsByStatus(
+                "PENDING_PROCUREMENT"
               );
-          } else {
-            result =
-              await requisitionService.getProcurementRequisitionsByStatus(
-                status
+          } else if(status === "PROCUREMENT_REJECTED"){
+            result = await requisitionService.getProcurementRequisitionsByStatus(
+                "REJECTED"
               );
+          }
+          else if (status === "APPROVED") {
+            result = await requisitionService.getProcurementRequisitionsByStatus(
+              "APPROVED"
+            );
           }
 
           return Array.isArray(result)

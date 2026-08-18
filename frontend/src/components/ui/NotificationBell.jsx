@@ -15,9 +15,11 @@ export const NotificationBell = ({ setActiveSection }) => {
         const fetchNotifications = async () => {
             try {
                 const user = authService.getUser();
+                console.log(user);
                 const role = user ? user.role : '';
                 const res = await api.get(`/notifications?role=${role}`);
                 if (res.data && res.data.data) {
+                    console.log(res);
                     setNotifications(res.data.data);
                 }
             } catch (err) {
@@ -59,7 +61,7 @@ export const NotificationBell = ({ setActiveSection }) => {
         if (!notification.isRead) markAsRead(notification.id);
         
         if (setActiveSection) {
-            const role = authService.getRole();
+            const role = authService.getUser().role;
             const type = notification.type || "";
             
             if (type.includes("NEW_REQUISITION")) {

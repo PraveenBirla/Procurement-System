@@ -1,7 +1,6 @@
 package com.eps.enterprise_procurement_system.services;
 
 import java.util.List;
-import java.util.Optional;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -47,13 +46,11 @@ public class NotificationService {
                 .createdAt(saved.getCreatedAt())
                 .build();
                 
-        messagingTemplate.convertAndSend(
-                "/topic/notifications/" + user.getId(),
-                dto
-        );
+        messagingTemplate.convertAndSend("/topic/notifications/" + user.getId(), dto);
 
-        if (user.getEmail() != null)
-            emailService.send(user.getEmail(), "EPS: " + type, message);
+        if (user.getEmail() != null){
+            emailService.send(user.getEmail(), "ProCure: " + type, message);
+        }
     }
 
     public void notify(Supplier supplier, PurchaseRequisition req, PurchaseOrder po, NotificationType type, String message) {

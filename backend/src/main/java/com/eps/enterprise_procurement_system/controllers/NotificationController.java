@@ -23,7 +23,6 @@ public class NotificationController {
 
     private final NotificationService notificationService;
     private final NotificationRepo notificationRepo;
-    private final UserRepository userRepository;
 
     @GetMapping
     public ResponseEntity<ApiResponse<List<NotificationDTO>>> getMyNotifications(@AuthenticationPrincipal User user) {

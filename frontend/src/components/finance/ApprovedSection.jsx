@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { createPortal } from "react-dom";
 
 import requisitionService from "../../services/requisitionService";
+import { Clock3, Eye } from "lucide-react";
 // import "./FinanceRequisitionSection.css";
 
 const STATUS = "APPROVED";
@@ -189,6 +190,7 @@ export const  ApprovedSection = () => {
                           setSelectedRequisition(req)
                         }
                       >
+                        <Eye size={14} />
                         View
                       </button>
 
@@ -198,6 +200,7 @@ export const  ApprovedSection = () => {
                           handleTrack(req)
                         }
                       >
+                        <Clock3 size={14} />
                         Track
                       </button>
 

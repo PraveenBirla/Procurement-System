@@ -17,6 +17,7 @@ import {
   XCircle,
   RefreshCw,
   Filter,
+  Eye,
 } from "lucide-react";
 import { NotificationBell } from "../ui/NotificationBell";
 
@@ -616,6 +617,7 @@ export const OverviewSection = ({ setActiveSection: setDashboardSection }) => {
                             className="view-btn"
                             onClick={() => setSelectedRequisition(req)}
                           >
+                            <Eye size={14} />
                             View
                           </button>
                         </td>

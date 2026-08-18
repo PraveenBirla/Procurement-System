@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { createPortal } from "react-dom";
 import supplierService from "../../services/suppliersService";
+import { Eye } from "lucide-react";
 
 export const SupplierSection = () => {
   const [suppliers, setSuppliers] = useState([]);
@@ -429,6 +430,7 @@ export const SupplierSection = () => {
                               <div className="action-group">
 
                                 <button className="view-btn" onClick={() => handleViewDocument(doc)}>
+                                  <Eye size={14} />
                                   View
                                 </button>
 

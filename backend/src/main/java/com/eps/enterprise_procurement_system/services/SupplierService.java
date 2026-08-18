@@ -45,6 +45,12 @@ public class SupplierService {
         dto.setEmail(supplier.getUser().getEmail());
 
         dto.setCompanyName(supplier.getCompanyName());
+        if (supplier.getStatus() == VerificationStatus.VERIFIED) {
+            dto.setIsVerified(true);
+        }
+        else {
+            dto.setIsVerified(false);
+        }
 
         if (supplier.getCategory() != null) {
             dto.setCategoryId(supplier.getCategory().getId());

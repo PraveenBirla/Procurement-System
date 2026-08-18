@@ -7,7 +7,6 @@ import org.springframework.stereotype.Repository;
 import java.util.Arrays;
 import java.util.List;
 
-@Repository
 public interface PurchaseOrderHistoryRepo extends JpaRepository<PurchaseOrderHistory, Long> {
     @Override
     List<PurchaseOrderHistory> findAll();

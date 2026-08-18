@@ -4,6 +4,7 @@ import { createPortal } from "react-dom";
 import goodsReceiptService from "../../services/goodsReceiptService";
 import purchaseOrderService from "../../services/purchaseOrderService";
 import supplierService from "../../services/suppliersService";
+import { Clock3 } from "lucide-react";
 
 const DELIVERED_STATUS = "DELIVERED";
 const COMPLETED_STATUS = "COMPLETED";
@@ -979,6 +980,7 @@ export const DeliveredSection = () => {
                             po.id
                           }
                         >
+                          <Clock3 size={14} />
                           {trackingId ===
                           po.id
                             ? "..."
@@ -1700,7 +1702,7 @@ export const DeliveredSection = () => {
 
               <div className="modal-header">
 
-                <h2>Track PO —{" "}
+                <h2>Track PO -{" "}
                   {trackPo.poNumber}
                 </h2>
 

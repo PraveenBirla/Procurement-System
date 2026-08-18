@@ -22,11 +22,12 @@ public class EmailService {
     public void send(String to, String subject, String body) {
         try {
             SimpleMailMessage msg = new SimpleMailMessage();
-            msg.setFrom("sathyasri@gmail.com");
+            msg.setFrom("procuresupportteam@gmail.com");
             msg.setTo(to);
             msg.setSubject(subject);
             msg.setText(body);
             mailSender.send(msg);
+            log.warn("Email send successfullty to {}", to);
         } catch (Exception e) {
             log.warn("Email send failed to {}: {}", to, e.getMessage());
         }

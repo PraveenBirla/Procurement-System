@@ -5,6 +5,7 @@ import {
   DollarSign,
   Truck,
   CheckCircle2,
+  Clock3,
 } from "lucide-react";
 import { NotificationBell } from "../ui/NotificationBell";
 
@@ -613,6 +614,7 @@ const statusChartData = useMemo(() => {
                           trackingId === po.id
                         }
                       >
+                        <Clock3 size={14} />
                         {trackingId === po.id
                           ? "…"
                           : "Track"}
@@ -660,7 +662,7 @@ const statusChartData = useMemo(() => {
               <div className="modal-header">
 
                 <h2>
-                  Track PO — {trackPo.poNumber}
+                  Track PO - {trackPo.poNumber}
                 </h2>
 
                 <button

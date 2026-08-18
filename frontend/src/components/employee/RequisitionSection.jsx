@@ -20,6 +20,7 @@ import {
 import requisitionService from "../../services/requisitionService";
 import productService from "../../services/productService";
 import "./RequisitionSection.css";
+import { Eye } from "lucide-react";
 
 const emptyItem = {
   productId: "",
@@ -40,6 +41,7 @@ const ALL_STATUSES = [
   "PO_GENERATED",
   "CANCELLED",
   "SENT_TO_SUPPLIER",
+  "COMPLETED"
 ];
 
 const STATUS_COLORS = [
@@ -1224,6 +1226,7 @@ export const RequisitionSection = ({ setActiveSection: setDashboardSection }) =>
                               )
                             }
                           >
+                            <Eye size={14} />
                             View
                           </button>
 
@@ -1521,7 +1524,7 @@ export const RequisitionSection = ({ setActiveSection: setDashboardSection }) =>
                 <h2>
                   Track Requisition{" "}
                   {trackedReq
-                    ? `— ${trackedReq.requisitionNo}`
+                    ? `- ${trackedReq.requisitionNo}`
                     : ""}
                 </h2>
 

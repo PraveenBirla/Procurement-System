@@ -2,20 +2,11 @@ package com.eps.enterprise_procurement_system.controllers;
 
 import com.eps.enterprise_procurement_system.advices.ApiResponse;
 import com.eps.enterprise_procurement_system.dto.DocumentVerificationRequestDTO;
-import com.eps.enterprise_procurement_system.dto.SupplierDocumentRequestDTO;
 import com.eps.enterprise_procurement_system.dto.SupplierDocumentResponseDTO;
-import com.eps.enterprise_procurement_system.entities.Supplier;
-import com.eps.enterprise_procurement_system.entities.SupplierDocument;
 import com.eps.enterprise_procurement_system.entities.enums.SupplierDocumentType;
-import com.eps.enterprise_procurement_system.entities.enums.VerificationStatus;
-import com.eps.enterprise_procurement_system.repositories.SupplierDocumentRepo;
-import com.eps.enterprise_procurement_system.repositories.SupplierRepo;
-import com.eps.enterprise_procurement_system.services.CloudinaryService;
 import com.eps.enterprise_procurement_system.services.SupplierDocumentService;
 import com.eps.enterprise_procurement_system.util.CurrentUser;
-import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
-import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.scheduling.annotation.Scheduled;
@@ -23,7 +14,6 @@ import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 
-import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Map;
 
@@ -34,11 +24,6 @@ public class SupplierDocumentController {
 
     private final SupplierDocumentService supplierDocumentService;
     private final CurrentUser currentUser;
-    private final SupplierRepo supplierRepo;
-    private final CloudinaryService cloudinaryService;
-    private final SupplierDocumentRepo supplierDocumentRepo;
-
-
 
     @GetMapping
     @PreAuthorize("hasAnyRole('ADMIN','PROCUREMENT','SUPPLIER')")

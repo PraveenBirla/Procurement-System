@@ -17,6 +17,7 @@ import {
 } from "recharts";
 
 import requisitionService from "../../services/requisitionService";
+import { Clock, Clock3, Eye } from "lucide-react";
  
 
 const ALL_STATUSES = [
@@ -32,6 +33,7 @@ const ALL_STATUSES = [
   "PO_GENERATED",
   "CANCELLED",
   "SENT_TO_SUPPLIER",
+  "COMPLETED"
 ];
 
 const STATUS_COLORS = [
@@ -111,7 +113,7 @@ export const RequisitionSection = () => {
         (a, b) =>
           new Date(b.createdAt) - new Date(a.createdAt)
       );
-
+      console.log(data);
       setRequisitions(data);
       setError("");
     } catch (err) {
@@ -733,6 +735,7 @@ export const RequisitionSection = () => {
                           handleView(req)
                         }
                       >
+                        <Eye size={14} />
                         View
                       </button>
 
@@ -745,6 +748,7 @@ export const RequisitionSection = () => {
                           trackingId === req.id
                         }
                       >
+                        <Clock size={14} />
                         {trackingId === req.id
                           ? "…"
                           : "Track"}
@@ -983,7 +987,7 @@ export const RequisitionSection = () => {
                 <h2>
                   Track Requisition{" "}
                   {trackedReq
-                    ? `— ${trackedReq.requisitionNo}`
+                    ? `- ${trackedReq.requisitionNo}`
                     : ""}
                 </h2>
 

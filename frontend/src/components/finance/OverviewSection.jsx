@@ -17,6 +17,7 @@ import {
   XCircle,
   RefreshCw,
   Filter,
+  Eye,
 } from "lucide-react";
 import { NotificationBell } from "../ui/NotificationBell";
 
@@ -699,6 +700,7 @@ export const OverviewSection = ({ setActiveSection: setDashboardSection }) => {
                                 handleView(req)
                               }
                             >
+                              <Eye size={14} />
                               View
                             </button>
 
@@ -922,7 +924,7 @@ export const OverviewSection = ({ setActiveSection: setDashboardSection }) => {
                 <h2>
                   Track Requisition{" "}
                   {trackedReq
-                    ? `— ${trackedReq.requisitionNo}`
+                    ? `- ${trackedReq.requisitionNo}`
                     : ""}
                 </h2>
 

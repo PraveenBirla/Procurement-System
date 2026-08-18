@@ -296,9 +296,9 @@ public class PurchaseRequisitionService {
                 .toList();
     }
 
-    public List<PurchaseRequisitionResponseDTO> getByStatus(RequisitionStatus status){
+    public List<PurchaseRequisitionResponseDTO> getByStatus(String status){
 
-        return reqRepo.findByStatus(status)
+        return reqRepo.findByStatus(RequisitionStatus.valueOf(status))
                 .stream()
                 .map(requisition -> mapToDto(requisition))
                 .toList();
