@@ -12,6 +12,7 @@ import com.eps.enterprise_procurement_system.entities.enums.VerificationStatus;
 import com.eps.enterprise_procurement_system.repositories.ProductCategoryRepo;
 import com.eps.enterprise_procurement_system.repositories.SupplierDocumentRepo;
 import com.eps.enterprise_procurement_system.repositories.SupplierRepo;
+import com.eps.enterprise_procurement_system.repositories.UserRepository;
 import com.eps.enterprise_procurement_system.util.CurrentUser;
 
 import lombok.RequiredArgsConstructor;
@@ -35,6 +36,7 @@ public class SupplierService {
     private final ModelMapper modelMapper;
     private final CurrentUser currentUser;
     private final SupplierDocumentRepo supplierDocumentRepo;
+    private final UserRepository userRepository;
 
     private SupplierResponseDTO convertToDTO(Supplier supplier) {
 
@@ -196,10 +198,10 @@ public class SupplierService {
                             HttpStatus.NOT_FOUND,
                             "Supplier not found"));
 
+        User user = supplier.getUser();
+        user.setIsActive(true);
+
         supplier.setIsActive(true);
-
-        supplierRepo.save(supplier);
-
         return "Supplier activated successfully";
     }
 
@@ -211,9 +213,9 @@ public class SupplierService {
                             HttpStatus.NOT_FOUND,
                             "Supplier not found"));
 
+        User user = supplier.getUser();
+        user.setIsActive(false);
         supplier.setIsActive(false);
-
-        supplierRepo.save(supplier);
 
         return "Supplier deactivated successfully";
     }
