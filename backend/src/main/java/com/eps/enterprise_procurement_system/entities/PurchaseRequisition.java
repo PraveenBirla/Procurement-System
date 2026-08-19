@@ -70,6 +70,10 @@ public class PurchaseRequisition {
     @Builder.Default
     private List<Approval> approvals = new ArrayList<>();
 
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "latest_approval_id")
+    private Approval latestApproval;
+
     @PrePersist
     protected void onCreate() {
         this.createdAt = LocalDateTime.now();

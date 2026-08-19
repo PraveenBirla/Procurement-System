@@ -42,5 +42,7 @@ public class PurchaseRequisitionResponseDTO {
 
     private List<RequisitionItemResponseDTO> items;
 
+    private ApprovalResponseDTO latestApproval;
+
     private String poURL;
 }

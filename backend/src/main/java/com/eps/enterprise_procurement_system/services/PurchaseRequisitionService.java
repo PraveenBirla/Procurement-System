@@ -12,6 +12,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.server.ResponseStatusException;
 
+import com.eps.enterprise_procurement_system.dto.ApprovalResponseDTO;
 import com.eps.enterprise_procurement_system.dto.DecisionRequestDTO;
 import com.eps.enterprise_procurement_system.dto.PurchaseRequisitionRequestDTO;
 import com.eps.enterprise_procurement_system.dto.RequisitionItemResponseDTO;
@@ -78,6 +79,22 @@ public class PurchaseRequisitionService {
         if (requisition.getItems() != null) {
             dto.setItems(requisition.getItems().stream().map(this::convertItemToDTO).toList());
         }
+
+        if (requisition.getLatestApproval() != null) {
+            Approval latestApproval = requisition.getLatestApproval();
+
+            ApprovalResponseDTO approvalDTO = ApprovalResponseDTO.builder()
+                    .requisitionId(requisition.getId())
+                    .requisitionNo(requisition.getRequisitionNo())
+                    .approvalType(latestApproval.getApprovalType())
+                    .approverId(latestApproval.getApprover().getId())
+                    .status(latestApproval.getStatus())
+                    .approverName(latestApproval.getApprover().getFullName())
+                    .remarks(latestApproval.getRemarks())
+                    .decidedAt(latestApproval.getDecidedAt()).build();
+
+            dto.setLatestApproval(approvalDTO);
+        }
         return dto;
     }
 
@@ -121,8 +138,10 @@ public class PurchaseRequisitionService {
 
     private void notifyNextApprover(PurchaseRequisition requisition, RequisitionStatus status){
 
-        Role role = switch (status){
+        Role role = switch (status) {
+            case PENDING_MANAGER -> Role.MANAGER;
             case PENDING_FINANCE -> Role.FINANCE;
+            case PENDING_PROCUREMENT -> Role.PROCUREMENT;
             case PENDING_ADMIN -> Role.ADMIN;
             case APPROVED -> Role.PROCUREMENT;
             default -> null;
@@ -131,16 +150,27 @@ public class PurchaseRequisitionService {
         if(role==null)
             return;
 
-        userRepo.findByRole(role)
+        if (role == Role.MANAGER) {
+            userRepo.findByRole(role)
                 .forEach(user ->
                     notificationService.notify(
                             user,
                             requisition,
                             null,
                             NotificationType.APPROVAL,
-                            requisition.getRequisitionNo()+"\nStatus: "+requisition.getStatus()+"\nApproval Type: "+requisition.getApprovals()
-                    )
-                );
+                            requisition.getRequisitionNo() + "\nStatus: " + requisition.getStatus())
+                    );
+        }
+        else {
+            userRepo.findByRole(role)
+                    .forEach(user -> notificationService.notify(
+                            user,
+                            requisition,
+                            null,
+                            NotificationType.APPROVAL,
+                            requisition.getRequisitionNo() + "\nStatus: " + requisition.getStatus()
+                                    + "\nApproval Type: " + requisition.getLatestApproval().getApprovalType()));
+        }
     }
 
 
@@ -184,7 +214,7 @@ public class PurchaseRequisitionService {
         }
 
         requisition.setTotalEstimatedAmount(total);
-
+        requisition.setLatestApproval(null);
         PurchaseRequisition saved = reqRepo.save(requisition);
 
         historyRepo.save(RequisitionStatusHistory.builder().requisition(saved)
@@ -233,10 +263,20 @@ public class PurchaseRequisitionService {
         }
 
 
-        if (approvalRepo.existsByRequisitionAndApprovalType(requisition, approvalType)) {
+        boolean alreadyDecided = approvalRepo.existsByRequisitionAndApprovalTypeAndStatusIn(
+                requisition,
+                approvalType,
+                List.of(
+                        ApprovalStatus.APPROVED,
+                        ApprovalStatus.REJECTED
+                )
+        );
 
-            throw new ResponseStatusException(HttpStatus.BAD_REQUEST,
-                    "Approval already recorded");
+        if (alreadyDecided) {
+            throw new ResponseStatusException(
+                    HttpStatus.BAD_REQUEST,
+                    "Approval already recorded"
+            );
         }
 
         RequisitionStatus oldStatus = requisition.getStatus();
@@ -248,17 +288,20 @@ public class PurchaseRequisitionService {
         requisition.setStatus(newStatus);
         requisition.setUpdatedAt(LocalDateTime.now());
 
-        PurchaseRequisition saved = reqRepo.save(requisition);
-
-        approvalRepo.save(Approval.builder()
-                    .requisition(saved)
+        Approval approval = Approval.builder()
+                    .requisition(requisition)
                     .approver(approver)
                     .approvalType(approvalType)
                     .status(approved? ApprovalStatus.APPROVED : ApprovalStatus.REJECTED)
                     .remarks(dto.getRemarks())
                     .decidedAt(LocalDateTime.now())
-                    .build()
-        );
+                    .build();
+
+        requisition.setLatestApproval(approval);
+
+        PurchaseRequisition saved = reqRepo.save(requisition);
+
+        approvalRepo.save(approval);
 
         historyRepo.save(RequisitionStatusHistory.builder()
                 .requisition(saved)
@@ -334,9 +377,8 @@ public class PurchaseRequisitionService {
 
     @Transactional
     public void deleteRequisition(Long id) {
-            PurchaseRequisition requisition = reqRepo.findById(id)
-            .orElseThrow(() ->
-                new ResponseStatusException(
+        PurchaseRequisition requisition = reqRepo.findById(id)
+                .orElseThrow(() -> new ResponseStatusException(
                         HttpStatus.NOT_FOUND,
                         "Requisition not found"));
 

@@ -1,18 +1,16 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef } from "react";
 import { createPortal } from "react-dom";
 import procurementService from "../../services/requisitionService";
 import { Clock3, Eye } from "lucide-react";
 
- 
-
 const PENDING_STATUS = "PENDING_PROCUREMENT";
-
 const PROCUREMENT_DECIDED = ["APPROVED", "REJECTED"];
+const STORAGE_KEY = "procurement_pending_timers_v1";
 
 const mockRequisitions = [
   { id: 1, requisitionNo: "REQ-001", title: "Office Laptops", employeeName: "Alice Smith", departmentName: "Engineering", status: "PENDING_PROCUREMENT", totalEstimatedAmount: 125000, createdAt: new Date(Date.now() - 86400000).toISOString(), isDuplicate: false, description: "Need 5 new laptops for the engineering team." },
   { id: 2, requisitionNo: "REQ-002", title: "Marketing Software", employeeName: "Bob Jones", departmentName: "Marketing", status: "APPROVED", totalEstimatedAmount: 45000, createdAt: new Date(Date.now() - 172800000).toISOString(), isDuplicate: false, description: "Annual subscription for Adobe Creative Cloud." },
-  { id: 3, requisitionNo: "REQ-003", title: "Office Chairs", employeeName: "Charlie Brown", departmentName: "HR", status: "PROCUREMENT_REJECTED", totalEstimatedAmount: 15000, createdAt: new Date(Date.now() - 259200000).toISOString(), isDuplicate: false, description: "Ergonomic chairs for new hires." },
+  { id: 3, requisitionNo: "REQ-003", title: "Office Chairs", employeeName: "Charlie Brown", departmentName: "HR", status: "REJECTED", totalEstimatedAmount: 15000, createdAt: new Date(Date.now() - 259200000).toISOString(), isDuplicate: false, description: "Ergonomic chairs for new hires." },
   { id: 4, requisitionNo: "REQ-005", title: "Office Supplies", employeeName: "Eva White", departmentName: "Operations", status: "PENDING_PROCUREMENT", totalEstimatedAmount: 5000, createdAt: new Date(Date.now() - 43200000).toISOString(), isDuplicate: true, description: "Pens, paper, and staplers." },
 ];
 
@@ -29,12 +27,94 @@ export const RequisitionSection = () => {
   const [trackingId, setTrackingId] = useState(null);
   const [loadingHistory, setLoadingHistory] = useState(false);
 
-  const [actionModal, setActionModal] = useState(null); // { req, type: "approved" | "rejected" }
+  const [actionModal, setActionModal] = useState(null);
   const [remarks, setRemarks] = useState("");
   const [remarkError, setRemarkError] = useState("");
   const [submittingAction, setSubmittingAction] = useState(false);
+  const [resettingId, setResettingId] = useState(null);
 
-  const [processedIds, setProcessedIds] = useState({});
+  const [tick, setTick] = useState(0);
+  const timeoutsRef = useRef({});
+
+  const getStoredTimers = () => {
+    try {
+      const data = sessionStorage.getItem(STORAGE_KEY);
+      return data ? JSON.parse(data) : {};
+    } catch {
+      return {};
+    }
+  };
+
+  const storeTimer = (id, timerData) => {
+    try {
+      const timers = getStoredTimers();
+      timers[id] = timerData; 
+      sessionStorage.setItem(STORAGE_KEY, JSON.stringify(timers));
+    } catch (e) {
+      console.error(e);
+    }
+  };
+
+  const removeStoredTimer = (id) => {
+    try {
+      const timers = getStoredTimers();
+      delete timers[id];
+      sessionStorage.setItem(STORAGE_KEY, JSON.stringify(timers));
+    } catch (e) {
+      console.error(e);
+    }
+    if (timeoutsRef.current[id]) {
+      clearTimeout(timeoutsRef.current[id]);
+      delete timeoutsRef.current[id];
+    }
+  };
+
+  const commitBackendAction = async (id, decision, remarks) => {
+    if (!decision || !remarks) {
+      console.error("Missing decision or remarks for backend submission", { decision, remarks });
+      removeStoredTimer(id);
+      return;
+    }
+
+    const payload = {
+      decision: decision,
+      remarks: remarks,
+    };
+
+    try {
+      if (procurementService.procurementUpdate) {
+        await procurementService.procurementUpdate(id, payload);
+      }
+      setRequisitions((prev) => prev.filter((r) => r.id !== id));
+      removeStoredTimer(id);
+    } catch (err) {
+      console.error("Failed to commit delayed procurement decision:", err);
+      setError(err?.response?.data?.message || err?.message || "Failed to commit decision");
+    }
+  };
+
+  const scheduleExpiration = (id, expiresAt, decision, remarks) => {
+    if (timeoutsRef.current[id]) {
+      clearTimeout(timeoutsRef.current[id]);
+    }
+
+    const delay = Math.max(0, expiresAt - Date.now());
+
+    timeoutsRef.current[id] = setTimeout(() => {
+      commitBackendAction(id, decision, remarks);
+    }, delay);
+  };
+
+  useEffect(() => {
+    const interval = setInterval(() => {
+      setTick((prev) => prev + 1);
+    }, 1000);
+
+    return () => {
+      clearInterval(interval);
+      Object.values(timeoutsRef.current).forEach(clearTimeout);
+    };
+  }, []);
 
   useEffect(() => {
     loadRequisitions();
@@ -65,21 +145,63 @@ export const RequisitionSection = () => {
       const pending = await procurementService.getRequisitionsByStatus(PENDING_STATUS);
 
       const processed = await Promise.all(
-        PROCUREMENT_DECIDED.map((status) =>
-          procurementService.getProcurementRequisitionsByStatus(status)
-        )
+        PROCUREMENT_DECIDED.map(async (status) => {
+          try {
+            if (procurementService.getProcurementRequisitionsByStatus) {
+              return await procurementService.getProcurementRequisitionsByStatus(status);
+            }
+            return [];
+          } catch {
+            return [];
+          }
+        })
       );
 
-      const merged = [...pending, ...processed.flat()];
-
+      const merged = [...(Array.isArray(pending) ? pending : []), ...processed.flat()];
       const unique = Array.from(new Map(merged.map((r) => [r.id, r])).values());
-      unique.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
-      setRequisitions(unique);
+      
+      const storedTimers = getStoredTimers();
+      const now = Date.now();
+
+      const mappedData = unique.map((req) => {
+        const timerInfo = storedTimers[req.id];
+        if (timerInfo && typeof timerInfo === "object" && timerInfo.expiresAt > now) {
+          scheduleExpiration(req.id, timerInfo.expiresAt, timerInfo.decision, timerInfo.remarks);
+          return {
+            ...req,
+            status: timerInfo.decision === "approved" ? "APPROVED" : "REJECTED",
+            pendingDecision: timerInfo.decision,
+            pendingRemarks: timerInfo.remarks,
+            localExpiresAt: timerInfo.expiresAt,
+          };
+        } else {
+          if (timerInfo) removeStoredTimer(req.id);
+          return { ...req, localExpiresAt: null, pendingDecision: null, pendingRemarks: null };
+        }
+      });
+
+      mappedData.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
+      setRequisitions(mappedData);
       setError("");
     } catch (err) {
       console.error(err);
-      setRequisitions(mockRequisitions);
-      setError(""); // clear error since we have mock data
+      const storedTimers = getStoredTimers();
+      const now = Date.now();
+      const mappedMock = mockRequisitions.map((req) => {
+        const timerInfo = storedTimers[req.id];
+        if (timerInfo && typeof timerInfo === "object" && timerInfo.expiresAt > now) {
+          scheduleExpiration(req.id, timerInfo.expiresAt, timerInfo.decision, timerInfo.remarks);
+          return {
+            ...req,
+            status: timerInfo.decision === "approved" ? "APPROVED" : "REJECTED",
+            localExpiresAt: timerInfo.expiresAt,
+          };
+        }
+        return { ...req, localExpiresAt: null };
+      });
+
+      setRequisitions(mappedMock);
+      setError(""); 
     } finally {
       setLoading(false);
     }
@@ -100,12 +222,12 @@ export const RequisitionSection = () => {
     setRemarkError("");
   };
 
-  const isActionable = (req) => {
-    if (processedIds[req.id]) return false;
-    return req.status === PENDING_STATUS;
+  const getRemainingSeconds = (localExpiresAt) => {
+    if (!localExpiresAt) return 0;
+    return Math.max(0, Math.ceil((localExpiresAt - Date.now()) / 1000));
   };
 
-  const handleSubmitAction = async (e) => {
+  const handleSubmitAction = (e) => {
     e.preventDefault();
 
     if (!remarks.trim()) {
@@ -114,23 +236,80 @@ export const RequisitionSection = () => {
     }
 
     const { req, type } = actionModal;
+    const trimmedRemarks = remarks.trim();
+    const expiresAt = Date.now() + 60 * 1000;
 
     try {
       setSubmittingAction(true);
 
-      await procurementService.procurementUpdate(req.id, {
+      storeTimer(req.id, {
+        expiresAt,
         decision: type,
-        remarks: remarks.trim(),
+        remarks: trimmedRemarks,
       });
 
-      setProcessedIds((prev) => ({ ...prev, [req.id]: type }));
+      scheduleExpiration(req.id, expiresAt, type, trimmedRemarks);
+
+      const newStatus = type === "approved" ? "APPROVED" : "REJECTED";
+
+      setRequisitions((prev) =>
+        prev.map((r) =>
+          r.id === req.id
+            ? {
+                ...r,
+                status: newStatus,
+                pendingDecision: type,
+                pendingRemarks: trimmedRemarks,
+                localExpiresAt: expiresAt,
+              }
+            : r
+        )
+      );
 
       closeActionModal();
-      await loadRequisitions();
     } catch (err) {
-      setError(err.message);
+      setError(err?.message || "Failed to update decision");
     } finally {
       setSubmittingAction(false);
+    }
+  };
+
+  const handleResetDecision = async (requisitionId) => {
+    try {
+      setResettingId(requisitionId);
+      removeStoredTimer(requisitionId);
+
+      setRequisitions((prev) =>
+        prev.map((r) =>
+          r.id === requisitionId
+            ? {
+                ...r,
+                status: PENDING_STATUS,
+                pendingDecision: null,
+                pendingRemarks: null,
+                localExpiresAt: null,
+              }
+            : r
+        )
+      );
+      setError("");
+    } catch (err) {
+      removeStoredTimer(requisitionId);
+      setRequisitions((prev) =>
+        prev.map((r) =>
+          r.id === requisitionId
+            ? {
+                ...r,
+                status: PENDING_STATUS,
+                pendingDecision: null,
+                pendingRemarks: null,
+                localExpiresAt: null,
+              }
+            : r
+        )
+      );
+    } finally {
+      setResettingId(null);
     }
   };
 
@@ -142,8 +321,12 @@ export const RequisitionSection = () => {
     setHistory([]);
 
     try {
-      const res = await procurementService.getRequisitionHistory(req.id);
-      setHistory(res);
+      if (procurementService.getRequisitionHistory) {
+        const res = await procurementService.getRequisitionHistory(req.id);
+        setHistory(res || []);
+      } else {
+        setHistory([]);
+      }
     } catch (err) {
       setError(err.message);
       setShowTrackModal(false);
@@ -197,13 +380,15 @@ export const RequisitionSection = () => {
               </tr>
             ) : requisitions.length > 0 ? (
               requisitions.map((req) => {
-                const actionable = isActionable(req);
+                const remaining = getRemainingSeconds(req.localExpiresAt);
+                const isDecidedRecently = Boolean(req.localExpiresAt && remaining > 0);
+                const isPending = req.status === PENDING_STATUS && !isDecidedRecently;
+
                 return (
                   <tr key={req.id}>
                     <td data-label="Req No">
                       <div className="req-number-cell">
                         {req.requisitionNo}
-                        {/* Duplicate Flag Badge */}
                         {req.isDuplicate && (
                           <span className="duplicate-badge" title="Potential duplicate requisition detected">
                             Duplicate
@@ -214,12 +399,12 @@ export const RequisitionSection = () => {
                     <td data-label="Title">{req.title}</td>
                     <td data-label="Department">{req.departmentName}</td>
                     <td data-label="Status">
-                      <span className={`status-badge ${req.status.toLowerCase()}`}>
-                        {req.status.replaceAll("_", " ")}
+                      <span className={`status-badge ${req.status ? req.status.toLowerCase() : ""}`}>
+                        {req.status ? req.status.replaceAll("_", " ") : "-"}
                       </span>
                     </td>
-                    <td data-label="Amount">₹{Number(req.totalEstimatedAmount).toLocaleString()}</td>
-                    <td data-label="Created">{new Date(req.createdAt).toLocaleDateString()}</td>
+                    <td data-label="Amount">₹{Number(req.totalEstimatedAmount || 0).toLocaleString()}</td>
+                    <td data-label="Created">{req.createdAt ? new Date(req.createdAt).toLocaleDateString() : "-"}</td>
                     <td data-label="Action">
                       <div className="action-group">
                         <button className="view-btn" onClick={() => handleView(req)}>
@@ -227,7 +412,33 @@ export const RequisitionSection = () => {
                           View
                         </button>
 
-                        {actionable ? (
+                        {isDecidedRecently ? (
+                          <div
+                            className="inline-reset-container"
+                            style={{
+                              display: "flex",
+                              alignItems: "center",
+                              gap: "8px",
+                            }}
+                          >
+                            <span
+                              style={{
+                                fontSize: "13px",
+                                color: "#b58100",
+                                fontWeight: "bold",
+                              }}
+                            >
+                              Reset in {remaining}s
+                            </span>
+                            <button
+                              className="reset-btn"
+                              onClick={() => handleResetDecision(req.id)}
+                              disabled={resettingId === req.id}
+                            >
+                              {resettingId === req.id ? "Resetting…" : "Reset Decision"}
+                            </button>
+                          </div>
+                        ) : isPending ? (
                           <>
                             <button className="approve-btn" onClick={() => openActionModal(req, "approved")}>
                               Approve
@@ -235,21 +446,22 @@ export const RequisitionSection = () => {
                             <button className="reject-btn" onClick={() => openActionModal(req, "rejected")}>
                               Reject
                             </button>
-                             <button
-                      className="track-btn"
-                     onClick={() => handleTrack(req)}
-                      disabled={trackingId === req.id}
-                    >
-                     {trackingId === req.id ? "…" : "Track"}
-                     </button>
+                            <button
+                              className="track-btn"
+                              onClick={() => handleTrack(req)}
+                              disabled={trackingId === req.id}
+                            >
+                              <Clock3 size={14} />
+                              {trackingId === req.id ? "…" : "Track"}
+                            </button>
                           </>
                         ) : (
                           <button
                             className="track-btn"
                             onClick={() => handleTrack(req)}
                             disabled={trackingId === req.id}
-                            >
-                              <Clock3 size={14} />
+                          >
+                            <Clock3 size={14} />
                             {trackingId === req.id ? "…" : "Track"}
                           </button>
                         )}
@@ -292,16 +504,16 @@ export const RequisitionSection = () => {
                 <strong>Description:</strong> {selectedRequisition.description}
               </p> 
               <p>
-              <strong>Employee:</strong>{" "}
-               {selectedRequisition.employeeName || "-"}
+                <strong>Employee:</strong>{" "}
+                {selectedRequisition.employeeName || "-"}
               </p> 
               <p>
                 <strong>Department:</strong> {selectedRequisition.departmentName}
               </p>
               <p>
                 <strong>Status:</strong>{" "}
-                <span className={`status-badge ${selectedRequisition.status.toLowerCase()}`}>
-                  {selectedRequisition.status.replaceAll("_", " ")}
+                <span className={`status-badge ${selectedRequisition.status ? selectedRequisition.status.toLowerCase() : ""}`}>
+                  {selectedRequisition.status ? selectedRequisition.status.replaceAll("_", " ") : "-"}
                 </span>
               </p>
 
@@ -365,7 +577,7 @@ export const RequisitionSection = () => {
                     <div className="timeline-item" key={index}>
                       <div className="timeline-dot"></div>
                       <div className="timeline-content">
-                        <h4>{item.newStatus.replaceAll("_", " ")}</h4>
+                        <h4>{item.newStatus ? item.newStatus.replaceAll("_", " ") : "-"}</h4>
                         <p>
                           <b>Previous:</b> {item.oldStatus ? item.oldStatus.replaceAll("_", " ") : "-"}
                         </p>
@@ -373,7 +585,7 @@ export const RequisitionSection = () => {
                           <b>Remarks:</b> {item.remarks || "-"}
                         </p>
                         <p>
-                          <b>Date:</b> {new Date(item.changedAt).toLocaleString()}
+                          <b>Date:</b> {item.changedAt ? new Date(item.changedAt).toLocaleString() : "-"}
                         </p>
                       </div>
                     </div>
@@ -415,7 +627,7 @@ export const RequisitionSection = () => {
 
               <p className="action-summary">
                 <strong>{actionModal.req.title}</strong> - ₹
-                {Number(actionModal.req.totalEstimatedAmount).toLocaleString()}
+                {Number(actionModal.req.totalEstimatedAmount || 0).toLocaleString()}
               </p>
 
               <form onSubmit={handleSubmitAction} noValidate>

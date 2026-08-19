@@ -85,10 +85,10 @@ const requisitionService = {
        return res.data.data;
      } ,
 
-       async procurementUpdate(id, data){
+    async procurementUpdate(id, data){
       const res = await api.post(`/requisitions/${id}/procurement-decision`, data);
        return res.data.data;
-     } 
+    },
 
 } 
 
