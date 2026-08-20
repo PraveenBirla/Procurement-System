@@ -47,7 +47,6 @@ export const CompletedOrderSection = () => {
     setLoading(true);
     try {
       const res = await purchaseOrderService.getPurchaseOrderByStatus(COMPLETED_STATUS);
-      console.log(res);
       setOrders(res);
       setError("");
     } catch (err) {

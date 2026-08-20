@@ -47,14 +47,14 @@ public class SupplierPerformanceController {
                 supplierPerformanceService.getSupplierPerformances(supplierId)));
     }
     
-    @GetMapping("/supplier/{supplierId}/average")
-    public ResponseEntity<ApiResponse<SupplierAverageRatingDTO>> averageRating(
-            @PathVariable Long supplierId) {
+//     @GetMapping("/supplier/{supplierId}/average")
+//     public ResponseEntity<ApiResponse<SupplierAverageRatingDTO>> averageRating(
+//             @PathVariable Long supplierId) {
 
-        return ResponseEntity.ok(
-                new ApiResponse<>(
-                        supplierPerformanceService.getSupplierAverageRating(supplierId)));
-    }
+//         return ResponseEntity.ok(
+//                 new ApiResponse<>(
+//                         supplierPerformanceService.getSupplierAverageRating(supplierId)));
+//     }
     
     @PostMapping
     @PreAuthorize("hasAnyRole('PROCUREMENT')")

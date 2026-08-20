@@ -487,7 +487,6 @@ export const DeliveredSection = () => {
   };
 
   const openRatingModal = (po) => {
-    console.log(po);
     setRatingPO(po);
 
     setQualityRating(0);
@@ -688,10 +687,7 @@ export const DeliveredSection = () => {
     setPoHistory([]);
   };
 
-  const RatingInput = ({
-    value,
-    onChange,
-  }) => {
+  const RatingInput = ({value, onChange}) => {
     return (
       <div
         style={{
@@ -701,27 +697,30 @@ export const DeliveredSection = () => {
         }}
       >
         {[1, 2, 3, 4, 5].map(
-          (star) => (
-            <button
-              key={star}
-              type="button"
-              onClick={() =>
-                onChange(star)
-              }
-              style={{
-                border: "none",
-                background: "transparent",
-                cursor: "pointer",
-                fontSize: "28px",
-                opacity:
-                  star <= value
-                    ? 1
-                    : 0.3,
-              }}
-            >
-              ★
-            </button>
-          )
+          (star) => {
+            const starValue = star;
+            return (
+              <button
+                key={star}
+                type="button"
+                onClick={() =>
+                  onChange(starValue)
+                }
+                style={{
+                  border: "none",
+                  background: "transparent",
+                  cursor: "pointer",
+                  fontSize: "28px",
+                  opacity:
+                    starValue <= value
+                      ? 1
+                      : 0.3,
+                }}
+              >
+                ★
+              </button>
+            );
+          }
         )}
       </div>
     );

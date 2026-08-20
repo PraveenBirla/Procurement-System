@@ -13,4 +13,6 @@ public interface SupplierPerformanceRepo extends JpaRepository<SupplierPerforman
     Optional<SupplierPerformance> findBySupplier_IdAndPurchaseOrder_IdAndReviewedBy_Id(
             Long supplierId, Long purchaseOrderId, Long reviewedById
     );
+
+    Long countBySupplier_Id(Long sup_id);
 }

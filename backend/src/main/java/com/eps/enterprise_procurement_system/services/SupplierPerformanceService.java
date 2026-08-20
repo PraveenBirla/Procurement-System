@@ -49,38 +49,38 @@ public class SupplierPerformanceService {
         return dto;
     }
     
-    public SupplierAverageRatingDTO getSupplierAverageRating(Long supplierId){
+    // public SupplierAverageRatingDTO getSupplierAverageRating(Long supplierId){
 
-        Supplier supplier = supplierRepo.findById(supplierId)
-                        .orElseThrow(() -> new ResponseStatusException(
-                                        HttpStatus.NOT_FOUND, "Supplier not found"));
+    //     Supplier supplier = supplierRepo.findById(supplierId)
+    //                     .orElseThrow(() -> new ResponseStatusException(
+    //                                     HttpStatus.NOT_FOUND, "Supplier not found"));
 
-        List<SupplierPerformance> reviews = performanceRepo.findBySupplier_Id(supplierId);
+    //     List<SupplierPerformance> reviews = performanceRepo.findBySupplier_Id(supplierId);
 
-        SupplierAverageRatingDTO dto = new SupplierAverageRatingDTO();
+    //     SupplierAverageRatingDTO dto = new SupplierAverageRatingDTO();
 
-        dto.setSupplierId(supplier.getId());
-        dto.setSupplierName(supplier.getUser().getFullName());
+    //     dto.setSupplierId(supplier.getId());
+    //     dto.setSupplierName(supplier.getUser().getFullName());
 
-        dto.setTotalReviews(reviews.size());
+    //     dto.setTotalReviews(reviews.size());
 
-        if(reviews.isEmpty()){
-            dto.setAverageRating(BigDecimal.ZERO);
-            return dto;
-        }
+    //     if(reviews.isEmpty()){
+    //         dto.setAverageRating(BigDecimal.ZERO);
+    //         return dto;
+    //     }
 
-        BigDecimal total = BigDecimal.ZERO;
+    //     BigDecimal total = BigDecimal.ZERO;
 
-        for(SupplierPerformance review : reviews){
-            total = total.add(review.getOverallRating());
-        }
+    //     for(SupplierPerformance review : reviews){
+    //         total = total.add(review.getOverallRating());
+    //     }
 
-        dto.setAverageRating(
-                total.divide(
-                        BigDecimal.valueOf(reviews.size()), 2, RoundingMode.HALF_UP));
+    //     dto.setAverageRating(
+    //             total.divide(
+    //                     BigDecimal.valueOf(reviews.size()), 2, RoundingMode.HALF_UP));
 
-        return dto;
-    }
+    //     return dto;
+    // }
 
     public SupplierPerformanceResponseDTO createPerformance(SupplierPerformanceRequestDTO dto, User reviewer) {
 
@@ -110,7 +110,7 @@ public class SupplierPerformanceService {
                     });
         }
 
-        BigDecimal overall = dto.getQualityRating()
+        BigDecimal currentReviewOverall = dto.getQualityRating()
                 .add(dto.getDeliveryRating())
                 .add(dto.getPriceRating())
                 .divide(BigDecimal.valueOf(3), 2, RoundingMode.HALF_UP);
@@ -121,12 +121,29 @@ public class SupplierPerformanceService {
                 .qualityRating(dto.getQualityRating())
                 .deliveryRating(dto.getDeliveryRating())
                 .priceRating(dto.getPriceRating())
-                .overallRating(overall)
+                .overallRating(currentReviewOverall)
                 .reviewDate(dto.getReviewDate() == null ? LocalDate.now() : dto.getReviewDate())
                 .reviewedBy(reviewer)
                 .build();
+        long existingReviewCount = performanceRepo.countBySupplier_Id(supplier.getId());
 
-        supplier.setRating(overall);
+        BigDecimal updatedSupplierRating;
+
+        if (existingReviewCount == 0 || supplier.getRating() == null) {
+            updatedSupplierRating = currentReviewOverall;
+        } else {
+            BigDecimal totalExistingPoints = supplier.getRating()
+                    .multiply(BigDecimal.valueOf(existingReviewCount));
+                    
+            BigDecimal newTotalPoints = totalExistingPoints.add(currentReviewOverall);
+            
+            long newReviewCount = existingReviewCount + 1;
+
+            updatedSupplierRating = newTotalPoints.divide(
+                    BigDecimal.valueOf(newReviewCount), 2, RoundingMode.HALF_UP);
+        }
+
+        supplier.setRating(updatedSupplierRating);
         supplierRepo.save(supplier);
 
         SupplierPerformance saved = performanceRepo.save(performance);

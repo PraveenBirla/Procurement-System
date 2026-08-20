@@ -157,13 +157,13 @@ export const ApprovedRequisitionSection = () => {
   };
    
   const handleOpenPdf = (req) => {
-  const po = getPo(req);
-  if (po?.pdfURL) {
-    window.open(po.pdfURL, "_blank");
-  } else {
-    setError("PDF not available");
-  }
-};
+      const po = getPo(req);
+      if (po?.pdfURL) {
+        window.open(po.pdfURL, "_blank");
+      } else {
+        setError("PDF not available");
+      }
+  };
   const closeGenerateModal = () => {
     if (submittingGenerate) return;
     setGenModalReq(null);
@@ -374,7 +374,7 @@ export const ApprovedRequisitionSection = () => {
                           </>
                         ) : req.status === "SENT_TO_SUPPLIER" ? (
                           <>
-                            <button className="view-btn" onClick={() => openViewPoModal(req)} disabled={!po}>
+                            <button className="view-btn" onClick={() => handleOpenPdf(req)} disabled={!po}>
                               View PO
                             </button>
 
@@ -384,7 +384,7 @@ export const ApprovedRequisitionSection = () => {
                           </>
                         ) : req.status === "DELIVERED" ? (
                           <>
-                            <button className="view-btn" onClick={() => openViewPoModal(req)} disabled={!po}>
+                            <button className="view-btn" onClick={() => handleOpenPdf(req)} disabled={!po}>
                               View PO
                             </button>
 

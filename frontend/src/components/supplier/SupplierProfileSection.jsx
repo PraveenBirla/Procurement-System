@@ -57,7 +57,6 @@ export const SupplierProfileSection = ({ setActiveSection: setDashboardSection }
     setLoading(true);
     try {
       const res = await supplierService.getProfile();
-      console.log(res);
       setProfile(res);
       setNotFound(false);
       setError("");

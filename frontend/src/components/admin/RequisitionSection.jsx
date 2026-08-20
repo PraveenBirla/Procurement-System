@@ -113,7 +113,6 @@ export const RequisitionSection = () => {
         (a, b) =>
           new Date(b.createdAt) - new Date(a.createdAt)
       );
-      console.log(data);
       setRequisitions(data);
       setError("");
     } catch (err) {
