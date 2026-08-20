@@ -35,4 +35,10 @@ public class AuthController {
 
         return ResponseEntity.ok(new ApiResponse<>(s));
     }
+
+    @PostMapping("/refresh")
+    public ResponseEntity<ApiResponse<LoginResponseDTO>> refreshToken(@Valid @RequestBody com.eps.enterprise_procurement_system.dto.RefreshTokenRequestDTO dto) {
+        LoginResponseDTO response = authService.refreshToken(dto);
+        return ResponseEntity.ok(new ApiResponse<>(response));
+    }
 }

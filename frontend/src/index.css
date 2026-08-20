@@ -1,4 +1,5 @@
 @import "tailwindcss";
+@custom-variant dark (&:where(.dark, .dark *));
 
 /* ─── Enterprise Design Tokens ─── */
 @theme {
@@ -40,6 +41,22 @@
   --color-info-50: #F0F9FF;
   --color-info-500: #0EA5E9;
   --color-info-600: #0284C7;
+}
+
+/* ─── Dark Mode Overrides ─── */
+.dark {
+  --color-surface: #1E293B;
+  --color-page: #0F172A;
+  --color-border-light: #334155;
+  --color-text-primary: #F8FAFC;
+  --color-text-secondary: #CBD5E1;
+  --color-text-muted: #94A3B8;
+  --color-text-subtle: #64748B;
+  
+  --color-primary-50: #1E3A8A; /* Mapped for hover backgrounds */
+  --color-primary-100: #1D4ED8; /* Mapped for active backgrounds */
+  --color-primary-600: #60A5FA; /* Mapped for lighter primary text */
+  --color-primary-700: #93C5FD;
 }
 
 /* ─── Global Base Styles ─── */

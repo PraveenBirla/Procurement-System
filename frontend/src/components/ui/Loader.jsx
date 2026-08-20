@@ -21,7 +21,7 @@ export default function Loader({
   const colors = {
     primary: 'border-primary-200 border-t-primary-600',
     white: 'border-white/30 border-t-white',
-    slate: 'border-slate-200 border-t-slate-600',
+    slate: 'border-borderLight border-t-slate-600',
   };
 
   return (

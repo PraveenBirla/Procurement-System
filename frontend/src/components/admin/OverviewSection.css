@@ -14,7 +14,7 @@
   padding: 9px 16px;
   border-radius: 8px;
   background: #6366f1;
-  color: white;
+  color: var(--color-surface);
   cursor: pointer;
   font-weight: 600;
   transition: 0.2s ease;
@@ -42,8 +42,8 @@
 }
 
 .chart-card {
-  background: #ffffff;
-  border: 1px solid #e5e7eb;
+  background: var(--color-surface);
+  border: 1px solid var(--color-border-light);
   border-radius: 14px;
   padding: 20px;
   box-shadow: 0 4px 16px rgba(0, 0, 0, 0.05);
@@ -64,13 +64,13 @@
   margin: 0;
   font-size: 17px;
   font-weight: 700;
-  color: #111827;
+  color: var(--color-text-primary);
 }
 
 .chart-header p {
   margin: 5px 0 0;
   font-size: 13px;
-  color: #6b7280;
+  color: var(--color-text-muted);
 }
 
 .chart-container {
@@ -90,9 +90,9 @@
 }
 
 .status-filter {
-  border: 1px solid #d1d5db;
-  background: white;
-  color: #374151;
+  border: 1px solid var(--color-border-light);
+  background: var(--color-surface);
+  color: var(--color-text-secondary);
   padding: 8px 15px;
   border-radius: 999px;
   cursor: pointer;
@@ -109,7 +109,7 @@
 .status-filter.active {
   background: #6366f1;
   border-color: #6366f1;
-  color: white;
+  color: var(--color-surface);
 }
 
 /* ================================
@@ -156,12 +156,12 @@
 .overview-header h2 {
     font-size: 1.5rem;
     font-weight: 600;
-    color: #1e293b;
+    color: var(--color-text-primary);
     margin-bottom: 0.5rem;
 }
 
 .overview-header p {
-    color: #64748b;
+    color: var(--color-text-muted);
     font-size: 0.875rem;
 }
 
@@ -173,7 +173,7 @@
 }
 
 .metric-card {
-    background: white;
+    background: var(--color-surface);
     border-radius: 0.75rem;
     padding: 1.5rem;
     box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
@@ -197,9 +197,9 @@
     margin-right: 1.25rem;
 }
 
-.metric-icon.blue { background-color: #eff6ff; color: #3b82f6; }
+.metric-icon.blue { background-color: var(--color-primary-50); color: #3b82f6; }
 .metric-icon.green { background-color: #f0fdf4; color: #22c55e; }
-.metric-icon.amber { background-color: #fffbeb; color: #f59e0b; }
+.metric-icon.amber { background-color: var(--color-surface)beb; color: #f59e0b; }
 .metric-icon.purple { background-color: #faf5ff; color: #a855f7; }
 
 .metric-content {
@@ -208,7 +208,7 @@
 
 .metric-label {
     font-size: 0.875rem;
-    color: #64748b;
+    color: var(--color-text-muted);
     font-weight: 500;
     margin-bottom: 0.25rem;
 }
@@ -216,11 +216,11 @@
 .metric-value {
     font-size: 1.5rem;
     font-weight: 700;
-    color: #0f172a;
+    color: var(--color-text-primary);
 }
 
 .recent-activity-panel {
-    background: white;
+    background: var(--color-surface);
     border-radius: 0.75rem;
     padding: 1.5rem;
     box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
@@ -232,13 +232,13 @@
     align-items: center;
     margin-bottom: 1.5rem;
     padding-bottom: 1rem;
-    border-bottom: 1px solid #e2e8f0;
+    border-bottom: 1px solid var(--color-border-light);
 }
 
 .panel-header h3 {
     font-size: 1.125rem;
     font-weight: 600;
-    color: #1e293b;
+    color: var(--color-text-primary);
 }
 
 .recent-list {
@@ -257,7 +257,7 @@
 }
 
 .recent-item:hover {
-    background-color: #f8fafc;
+    background-color: var(--color-page);
 }
 
 .recent-info {
@@ -267,12 +267,12 @@
 
 .recent-po {
     font-weight: 600;
-    color: #0f172a;
+    color: var(--color-text-primary);
     font-size: 0.95rem;
 }
 
 .recent-supplier {
-    color: #64748b;
+    color: var(--color-text-muted);
     font-size: 0.875rem;
     margin-top: 0.25rem;
 }
@@ -290,7 +290,7 @@
 
 .recent-date {
     font-size: 0.8125rem;
-    color: #94a3b8;
+    color: var(--color-text-subtle);
     margin-top: 0.25rem;
 }
 
@@ -306,13 +306,13 @@
 .status-approved { background-color: #dcfce3; color: #15803d; }
 .status-rejected { background-color: #fee2e2; color: #dc2626; }
 .status-delivered { background-color: #e0e7ff; color: #4338ca; }
-.status-default { background-color: #f1f5f9; color: #475569; }
+.status-default { background-color: var(--color-primary-50); color: var(--color-text-secondary); }
 
 .loading-state {
     display: flex;
     justify-content: center;
     align-items: center;
     height: 300px;
-    color: #64748b;
+    color: var(--color-text-muted);
     font-size: 1.125rem;
 }

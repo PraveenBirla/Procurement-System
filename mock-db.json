@@ -1,0 +1,187 @@
+{
+  "users": [
+    {
+      "id": 1,
+      "email": "admin@example.com",
+      "password": "password123",
+      "role": "ADMIN",
+      "fullName": "Admin",
+      "department": {
+        "id": 6,
+        "departmentName": "IT"
+      },
+      "isActive": true
+    },
+    {
+      "id": 2,
+      "email": "manager@example.com",
+      "password": "password123",
+      "role": "MANAGER",
+      "fullName": "Manager",
+      "department": {
+        "id": 1,
+        "departmentName": "Engineering"
+      },
+      "isActive": true
+    },
+    {
+      "id": 3,
+      "email": "finance@example.com",
+      "password": "password123",
+      "role": "FINANCE",
+      "fullName": "Finance",
+      "department": {
+        "id": 2,
+        "departmentName": "Finance"
+      },
+      "isActive": true
+    },
+    {
+      "id": 4,
+      "email": "po@example.com",
+      "password": "password123",
+      "role": "PROCUREMENT",
+      "fullName": "Procurement",
+      "department": {
+        "id": 4,
+        "departmentName": "Procurement"
+      },
+      "isActive": true
+    },
+    {
+      "id": 5,
+      "email": "employee@example.com",
+      "password": "password123",
+      "role": "EMPLOYEE",
+      "fullName": "Employee User",
+      "department": {
+        "id": 1,
+        "departmentName": "Engineering"
+      },
+      "isActive": true
+    },
+    {
+      "id": 6,
+      "email": "supplier@example.com",
+      "password": "password123",
+      "role": "SUPPLIER",
+      "fullName": "Supplier User",
+      "department": {
+        "id": null,
+        "departmentName": "External"
+      },
+      "isActive": true
+    },
+    {
+      "id": 7,
+      "email": "qwe@gmail.com",
+      "password": "qaz123QAZ@",
+      "role": "EMPLOYEE",
+      "fullName": "qwe",
+      "department": {
+        "id": 3,
+        "departmentName": "Operations"
+      },
+      "isActive": false
+    }
+  ],
+  "departments": [
+    {
+      "id": 1,
+      "departmentName": "Engineering"
+    },
+    {
+      "id": 2,
+      "departmentName": "Finance"
+    },
+    {
+      "id": 3,
+      "departmentName": "Operations"
+    },
+    {
+      "id": 4,
+      "departmentName": "Procurement"
+    },
+    {
+      "id": 5,
+      "departmentName": "Human Resources"
+    },
+    {
+      "id": 6,
+      "departmentName": "IT"
+    },
+    {
+      "id": 7,
+      "departmentName": "Sales"
+    }
+  ],
+  "suppliers": [
+    {
+      "id": 1,
+      "name": "Tech Corp",
+      "contactPerson": "John Doe",
+      "email": "john@techcorp.com",
+      "phone": "1234567890",
+      "categories": [
+        {
+          "categoryName": "Hardware"
+        }
+      ],
+      "status": "ACTIVE"
+    }
+  ],
+  "products": [
+    {
+      "id": 1,
+      "name": "MacBook Pro",
+      "description": "M3 Max 64GB",
+      "basePrice": 250000,
+      "category": {
+        "categoryName": "Electronics"
+      },
+      "currentStock": 50,
+      "minimumStock": 10,
+      "isActive": true
+    }
+  ],
+  "requisitions": [
+    {
+      "id": 1,
+      "requisitionNo": "REQ-001",
+      "title": "Office Laptops",
+      "employeeName": "Employee User",
+      "employeeEmail": "employee@example.com",
+      "departmentName": "Engineering",
+      "status": "PENDING_MANAGER_APPROVAL",
+      "totalEstimatedAmount": 125000,
+      "createdAt": "2026-08-15T10:52:04.921Z",
+      "isDuplicate": false,
+      "description": "Laptops for eng"
+    }
+  ],
+  "purchaseOrders": [
+    {
+      "id": 1,
+      "poNumber": "PO-001",
+      "requisitionNo": "REQ-004",
+      "supplierName": "Tech Corp",
+      "status": "IN_DELIVERY",
+      "totalAmount": 250000,
+      "expectedDeliveryDate": "2026-08-18T10:52:04.923Z",
+      "createdAt": "2026-08-15T10:52:04.923Z"
+    }
+  ],
+  "notifications": [
+    {
+      "id": 1,
+      "type": "NEW_REQUISITION",
+      "message": "New requisition REQ-001 requires your approval",
+      "isRead": false,
+      "createdAt": "2026-08-16T09:52:04.923Z",
+      "readAt": null,
+      "roles": [
+        "MANAGER"
+      ]
+    }
+  ]
+}

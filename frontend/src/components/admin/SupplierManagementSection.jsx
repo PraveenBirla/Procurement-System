@@ -209,8 +209,8 @@ export const SupplierManagementSection = () => {
               </button>
             </div>
             
-            <div style={{ marginBottom: '2rem', color: '#475569', fontSize: '0.95rem', lineHeight: '1.5' }}>
-              Are you sure you want to <strong>{supplierToToggle?.isActive ? 'deactivate' : 'activate'}</strong> the supplier account for <strong style={{ color: '#0f172a' }}>{supplierToToggle?.companyName}</strong>?
+            <div style={{ marginBottom: '2rem', color: 'var(--color-text-secondary)', fontSize: '0.95rem', lineHeight: '1.5' }}>
+              Are you sure you want to <strong>{supplierToToggle?.isActive ? 'deactivate' : 'activate'}</strong> the supplier account for <strong style={{ color: 'var(--color-text-primary)' }}>{supplierToToggle?.companyName}</strong>?
               {supplierToToggle?.isActive && <p style={{ marginTop: '0.5rem', fontSize: '0.85rem', color: '#ef4444' }}><AlertCircle size={14} style={{ display: 'inline', verticalAlign: 'middle', marginRight: '4px' }}/> This supplier will no longer be able to submit bids or access the portal.</p>}
             </div>
 

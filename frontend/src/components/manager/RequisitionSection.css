@@ -14,7 +14,7 @@
 
 .duplicate-badge {
   display: inline-block;
-  background-color: #fff3cd;
+  background-color: var(--color-surface)3cd;
   color: #856404;
   border: 1px solid #ffeeba;
   font-size: 0.7rem;
@@ -58,7 +58,7 @@
 .table-wrapper {
   width: 100%;
   overflow-x: auto;
-  background: #fff;
+  background: var(--color-surface);
   border-radius: 12px;
   box-shadow: 0 2px 10px rgba(0, 0, 0, 0.08);
 }
@@ -70,7 +70,7 @@
 }
 
 .table th {
-  background: #f5f7fb;
+  background: var(--color-page);
   padding: 15px;
   font-weight: 600;
   text-align: left;
@@ -79,19 +79,19 @@
 
 .table td {
   padding: 14px;
-  border-bottom: 1px solid #eee;
+  border-bottom: 1px solid var(--color-border-light);
   vertical-align: middle;
 }
 
 .table tbody tr:hover {
-  background: #fafafa;
+  background: var(--color-page);
 }
 
 .no-data {
   text-align: center;
   padding: 30px;
   font-weight: 600;
-  color: #666;
+  color: var(--color-text-secondary);
 }
 
 /* ─── Action buttons ─── */
@@ -140,19 +140,19 @@
 }
 
 .view-btn {
-  background: #2563eb;
-  color: white;
+  background: var(--color-primary-600);
+  color: var(--color-surface);
 }
 .view-btn:hover {
   background: #1d4ed8;
 }
 
 .track-btn {
-  background: #6b7280;
-  color: white;
+  background: var(--color-text-muted);
+  color: var(--color-surface);
 }
 .track-btn:hover:not(:disabled) {
-  background: #4b5563;
+  background: var(--color-text-secondary);
 }
 .track-btn:disabled {
   opacity: 0.6;
@@ -161,7 +161,7 @@
 
 .approve-btn {
   background: #16a34a;
-  color: white;
+  color: var(--color-surface);
 }
 .approve-btn:hover {
   background: #15803d;
@@ -169,7 +169,7 @@
 
 .reject-btn {
   background: #dc2626;
-  color: white;
+  color: var(--color-surface);
 }
 .reject-btn:hover {
   background: #b91c1c;
@@ -213,7 +213,7 @@
 }
 
 .status-badge.draft {
-  background: #fff3cd;
+  background: var(--color-surface)3cd;
   color: #856404;
 }
 
@@ -260,7 +260,7 @@
 }
 
 .modal-content {
- background: #fff;
+ background: var(--color-surface);
   border-radius: 8px;
   width: 100%;
   max-width: 600px;
@@ -298,7 +298,7 @@
   font-size: 1.5rem;
   line-height: 1;
   cursor: pointer;
-  color: #555;
+  color: var(--color-text-primary);
   padding: 0.2rem 0.5rem;
   border-radius: 4px;
   transition: background 0.15s ease;
@@ -320,8 +320,8 @@
   border: none;
   border-radius: 8px;
   cursor: pointer;
-  background: #2563eb;
-  color: white;
+  background: var(--color-primary-600);
+  color: var(--color-surface);
   transition: background 0.2s ease;
 }
 .close-btn:hover {
@@ -330,16 +330,16 @@
 
 .btn-secondary {
   background: transparent;
-  color: #555;
+  color: var(--color-text-primary);
   padding: 10px 20px;
   border-radius: 8px;
   font-weight: 500;
-  border: 1px solid #ddd;
+  border: 1px solid var(--color-border-light);
   cursor: pointer;
   transition: background 0.2s ease;
 }
 .btn-secondary:hover:not(:disabled) {
-  background: #f5f5f5;
+  background: var(--color-page);
 }
 .btn-secondary:disabled {
   opacity: 0.6;
@@ -350,7 +350,7 @@
 .approve-btn-lg,
 .reject-btn-lg {
   border: none;
-  color: white;
+  color: var(--color-surface);
   padding: 10px 20px;
   border-radius: 8px;
   cursor: pointer;
@@ -379,7 +379,7 @@
 }
 
 .action-summary {
-  background: #f5f7fb;
+  background: var(--color-page);
   padding: 0.65rem 0.9rem;
   border-radius: 8px;
   margin-bottom: 1rem;
@@ -397,12 +397,12 @@
 .field label {
   font-size: 0.85rem;
   font-weight: 600;
-  color: #444;
+  color: var(--color-text-primary);
 }
 
 .field textarea {
   padding: 0.65rem 0.75rem;
-  border: 1px solid #ddd;
+  border: 1px solid var(--color-border-light);
   border-radius: 6px;
   font-size: 0.9rem;
   width: 100%;
@@ -412,7 +412,7 @@
 
 .field textarea:focus {
   outline: none;
-  border-color: #2563eb;
+  border-color: var(--color-primary-600);
 }
 
 .input-error {
@@ -442,13 +442,13 @@
   width: 16px;
   height: 16px;
   border-radius: 50%;
-  background: #2563eb;
+  background: var(--color-primary-600);
   margin-top: 6px;
   flex-shrink: 0;
 }
 
 .timeline-content {
-  border-left: 2px solid #d1d5db;
+  border-left: 2px solid var(--color-border-light);
   padding-left: 20px;
   padding-bottom: 20px;
 }

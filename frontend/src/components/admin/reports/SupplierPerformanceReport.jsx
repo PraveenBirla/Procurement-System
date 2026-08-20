@@ -76,16 +76,16 @@ export const SupplierPerformanceReport = () => {
           <tbody>
             {data.map((item) => (
               <tr key={item.id}>
-                <td style={{fontWeight: 600, color: "#0f172a"}}>{item.supplier}</td>
+                <td style={{fontWeight: 600, color: "var(--color-text-primary)"}}>{item.supplier}</td>
                 <td>
                   <span style={{ color: item.rating >= 4 ? '#16a34a' : '#ea580c', fontWeight: 600 }}>
                     ★ {item.rating}
                   </span>
                 </td>
                 <td>{item.totalPos}</td>
-                <td style={{color: '#10b981', fontWeight: 500}}>{item.deliveredPos}</td>
+                <td style={{color: 'var(--color-success-500)', fontWeight: 500}}>{item.deliveredPos}</td>
                 <td style={{color: item.lateDeliveries > 5 ? '#ef4444' : '#f59e0b', fontWeight: 500}}>{item.lateDeliveries}</td>
-                <td style={{color: '#ef4444'}}>{item.cancelledPos}</td>
+                <td style={{color: 'var(--color-danger-500)'}}>{item.cancelledPos}</td>
                 <td>{item.completedPos}</td>
               </tr>
             ))}

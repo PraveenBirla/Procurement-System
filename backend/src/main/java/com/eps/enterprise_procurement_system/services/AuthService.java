@@ -107,4 +107,25 @@ public class AuthService {
             throw new BadCredentialsException("Invalid Email or password");
         }
     }
+
+    public LoginResponseDTO refreshToken(com.eps.enterprise_procurement_system.dto.RefreshTokenRequestDTO dto) {
+        try {
+            Long userId = jwtService.getUserIdFromToken(dto.getRefreshToken());
+            User user = userRepository.findById(userId)
+                    .orElseThrow(() -> new ResponseStatusException(HttpStatus.UNAUTHORIZED, "User not found"));
+            
+            if (user.getIsActive() != null && !user.getIsActive()) {
+                throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Your account is deactivated by admin");
+            }
+
+            return LoginResponseDTO.builder()
+                    .accessToken(jwtService.generateAceessToken(user))
+                    .refreshToken(jwtService.generateRefreshToken(user))
+                    .message("Token refreshed successfully")
+                    .role(user.getRole())
+                    .build();
+        } catch (Exception e) {
+            throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Invalid refresh token");
+        }
+    }
 }

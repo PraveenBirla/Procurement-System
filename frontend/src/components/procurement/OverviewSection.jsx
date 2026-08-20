@@ -80,7 +80,7 @@ const REQUISITION_COLORS = [
   "#991b1b",
   "#22c55e",
   "#3b82f6",
-  "#64748b",
+  "var(--color-text-muted)",
   "#14b8a6",
 ];
 

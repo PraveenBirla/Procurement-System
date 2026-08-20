@@ -70,7 +70,7 @@ export const InventoryReport = () => {
           <tbody>
             {data.map((item) => (
               <tr key={item.id} style={{ backgroundColor: item.qtyOnHand < 10 ? '#fef2f2' : 'transparent' }}>
-                <td style={{fontWeight: 600, color: "#0f172a"}}>{item.product}</td>
+                <td style={{fontWeight: 600, color: "var(--color-text-primary)"}}>{item.product}</td>
                 <td>{item.category}</td>
                 <td>
                   <span style={{ fontWeight: 600, color: item.qtyOnHand < 10 ? '#dc2626' : '#16a34a'}}>

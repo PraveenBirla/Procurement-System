@@ -11,9 +11,9 @@ import { FinanceDashboardPage } from './pages/FinanceDashboardPage';
 import { SupplierDashboardPage } from './pages/SupplierDashboardPage';
 import { ProcurementDashboardPage } from './pages/ProcurementDashboardPage';
 function App() {
-  const { user, loading } = useAuth();
+  const { user, isLoading } = useAuth();
 
-  if (loading) {
+  if (isLoading) {
     return (
       <div className="flex h-screen w-full items-center justify-center bg-gray-50">
         <div className="text-gray-500">Loading...</div>

@@ -95,7 +95,7 @@ export const ApprovalReport = () => {
                 </td>
                 <td style={{fontWeight: 500}}>{item.currentApprover}</td>
                 <td>{item.date}</td>
-                <td style={{fontSize: "13px", color: "#64748b"}}>{item.remarks}</td>
+                <td style={{fontSize: "13px", color: "var(--color-text-muted)"}}>{item.remarks}</td>
               </tr>
             ))}
           </tbody>

@@ -14,12 +14,12 @@
 .overview-header h2 {
   margin: 0;
   font-size: 25px;
-  color: #111827;
+  color: var(--color-text-primary);
 }
 
 .overview-header p {
   margin: 6px 0 0;
-  color: #6b7280;
+  color: var(--color-text-muted);
   font-size: 14px;
 }
 
@@ -27,9 +27,9 @@
   display: flex;
   align-items: center;
   gap: 8px;
-  border: 1px solid #d1d5db;
-  background: #fff;
-  color: #374151;
+  border: 1px solid var(--color-border-light);
+  background: var(--color-surface);
+  color: var(--color-text-secondary);
   padding: 9px 15px;
   border-radius: 9px;
   font-weight: 600;
@@ -96,8 +96,8 @@
   align-items: center;
   gap: 13px;
   padding: 17px;
-  background: #fff;
-  border: 1px solid #e5e7eb;
+  background: var(--color-surface);
+  border: 1px solid var(--color-border-light);
   border-radius: 13px;
   box-shadow: 0 3px 12px rgba(0, 0, 0, 0.04);
 }
@@ -105,14 +105,14 @@
 .overview-metric-card span {
   display: block;
   font-size: 12px;
-  color: #6b7280;
+  color: var(--color-text-muted);
   margin-bottom: 5px;
 }
 
 .overview-metric-card strong {
   display: block;
   font-size: 22px;
-  color: #111827;
+  color: var(--color-text-primary);
 }
 
 .overview-metric-icon {
@@ -146,7 +146,7 @@
 
 .overview-metric-icon.blue {
   background: #dbeafe;
-  color: #2563eb;
+  color: var(--color-primary-600);
 }
 
 .overview-metric-icon.cyan {
@@ -182,8 +182,8 @@
   gap: 15px;
   padding: 19px;
   border-radius: 13px;
-  background: #111827;
-  color: #fff;
+  background: var(--color-text-primary);
+  color: var(--color-surface);
 }
 
 .amount-summary-card span {
@@ -210,8 +210,8 @@
 }
 
 .overview-card {
-  background: #fff;
-  border: 1px solid #e5e7eb;
+  background: var(--color-surface);
+  border: 1px solid var(--color-border-light);
   border-radius: 14px;
   padding: 20px;
   box-shadow: 0 4px 15px rgba(0, 0, 0, 0.04);
@@ -228,12 +228,12 @@
 .overview-card-header h3 {
   margin: 0;
   font-size: 17px;
-  color: #111827;
+  color: var(--color-text-primary);
 }
 
 .overview-card-header p {
   margin: 5px 0 0;
-  color: #6b7280;
+  color: var(--color-text-muted);
   font-size: 12px;
 }
 
@@ -247,7 +247,7 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  color: #9ca3af;
+  color: var(--color-text-subtle);
 }
 
 /* =========================================================
@@ -255,8 +255,8 @@
 ========================================================= */
 
 .overview-filter-card {
-  background: #fff;
-  border: 1px solid #e5e7eb;
+  background: var(--color-surface);
+  border: 1px solid var(--color-border-light);
   border-radius: 14px;
   padding: 18px;
   margin-bottom: 20px;
@@ -266,7 +266,7 @@
   display: flex;
   align-items: center;
   gap: 8px;
-  color: #111827;
+  color: var(--color-text-primary);
   margin-bottom: 14px;
 }
 
@@ -277,9 +277,9 @@
 }
 
 .filter-tab {
-  border: 1px solid #d1d5db;
-  background: #fff;
-  color: #374151;
+  border: 1px solid var(--color-border-light);
+  background: var(--color-surface);
+  color: var(--color-text-secondary);
   padding: 8px 16px;
   border-radius: 8px;
   font-weight: 600;
@@ -289,7 +289,7 @@
 .filter-tab.active {
   background: #6366f1;
   border-color: #6366f1;
-  color: #fff;
+  color: var(--color-surface);
 }
 
 .status-pills {
@@ -299,9 +299,9 @@
 }
 
 .status-pill {
-  border: 1px solid #d1d5db;
-  background: #fff;
-  color: #374151;
+  border: 1px solid var(--color-border-light);
+  background: var(--color-surface);
+  color: var(--color-text-secondary);
   padding: 7px 12px;
   border-radius: 999px;
   font-size: 11px;
@@ -318,7 +318,7 @@
 .status-pill.active {
   background: #6366f1;
   border-color: #6366f1;
-  color: #fff;
+  color: var(--color-surface);
 }
 
 .status-pill.duplicate {
@@ -328,7 +328,7 @@
 
 .status-pill.duplicate.active {
   background: #ef4444;
-  color: #fff;
+  color: var(--color-surface);
 }
 
 /* =========================================================
@@ -349,20 +349,20 @@
 .overview-table td {
   padding: 12px 10px;
   text-align: left;
-  border-bottom: 1px solid #f1f5f9;
+  border-bottom: 1px solid var(--color-primary-50);
   white-space: nowrap;
 }
 
 .overview-table th {
   font-size: 11px;
-  color: #6b7280;
+  color: var(--color-text-muted);
   text-transform: uppercase;
   letter-spacing: 0.02em;
 }
 
 .overview-table td {
   font-size: 13px;
-  color: #374151;
+  color: var(--color-text-secondary);
 }
 
 .overview-status {
@@ -431,13 +431,13 @@
 .table-footer {
   margin-top: 12px;
   font-size: 12px;
-  color: #6b7280;
+  color: var(--color-text-muted);
 }
 
 .overview-no-data {
   text-align: center !important;
   padding: 35px !important;
-  color: #9ca3af !important;
+  color: var(--color-text-subtle) !important;
 }
 
 /* =========================================================
@@ -452,7 +452,7 @@
   display: block;
   width: 100%;
   border: 1px solid #ef4444;
-  background: #fff;
+  background: var(--color-surface);
   color: #dc2626;
   padding: 9px 14px;
   border-radius: 8px;
@@ -462,7 +462,7 @@
 
 .duplicate-view-button:hover {
   background: #ef4444;
-  color: #fff;
+  color: var(--color-surface);
 }
 
 /* =========================================================

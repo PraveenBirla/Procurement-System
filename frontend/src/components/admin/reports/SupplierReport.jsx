@@ -86,7 +86,7 @@ export const SupplierReport = () => {
           <tbody>
             {data.map((sup) => (
               <tr key={sup.id}>
-                <td style={{fontWeight: 600, color: "#0f172a"}}>{sup.name || sup.supplierName}</td>
+                <td style={{fontWeight: 600, color: "var(--color-text-primary)"}}>{sup.name || sup.supplierName}</td>
                 <td>{sup.category || "General"}</td>
                 <td>{sup.contact || sup.email || "N/A"}</td>
                 <td>

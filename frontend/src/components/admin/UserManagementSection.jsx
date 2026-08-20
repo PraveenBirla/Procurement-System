@@ -343,7 +343,7 @@ export const UserManagementSection = () => {
                     <span
                       className={`badge ${
                         ROLE_COLORS[user.role] ||
-                        "bg-gray-100 text-gray-700"
+                        "bg-primary-50 text-textSecondary"
                       }`}
                     >
                       {user.role}

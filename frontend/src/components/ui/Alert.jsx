@@ -79,7 +79,7 @@ export default function Alert({
           className={clsx(
             'flex-shrink-0 p-0.5 rounded-md transition-colors cursor-pointer',
             c.iconColor,
-            'hover:bg-black/5'
+            'hover:bg-var(--color-text-primary)/5'
           )}
           aria-label="Dismiss alert"
         >

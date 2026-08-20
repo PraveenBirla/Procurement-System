@@ -70,7 +70,7 @@ export const POStatusReport = () => {
               const percentage = ((item.count / total) * 100).toFixed(1);
               return (
                 <tr key={item.name}>
-                  <td style={{fontWeight: 600, color: "#0f172a"}}>{item.name}</td>
+                  <td style={{fontWeight: 600, color: "var(--color-text-primary)"}}>{item.name}</td>
                   <td>{item.count}</td>
                   <td>{percentage}%</td>
                 </tr>

@@ -43,19 +43,19 @@ export const SpendingReport = () => {
 
       <div className="summary-cards" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '16px', marginBottom: '24px' }}>
         <div className="report-chart-card">
-          <div style={{fontSize: '13px', color: '#64748b', marginBottom: '4px'}}>Total Procurement</div>
-          <div style={{fontSize: '24px', fontWeight: 'bold', color: '#0f172a'}}>₹{data.summary.total.toLocaleString()}</div>
+          <div style={{fontSize: '13px', color: 'var(--color-text-muted)', marginBottom: '4px'}}>Total Procurement</div>
+          <div style={{fontSize: '24px', fontWeight: 'bold', color: 'var(--color-text-primary)'}}>₹{data.summary.total.toLocaleString()}</div>
         </div>
         <div className="report-chart-card">
-          <div style={{fontSize: '13px', color: '#64748b', marginBottom: '4px'}}>Approved Amount</div>
+          <div style={{fontSize: '13px', color: 'var(--color-text-muted)', marginBottom: '4px'}}>Approved Amount</div>
           <div style={{fontSize: '24px', fontWeight: 'bold', color: '#16a34a'}}>₹{data.summary.approved.toLocaleString()}</div>
         </div>
         <div className="report-chart-card">
-          <div style={{fontSize: '13px', color: '#64748b', marginBottom: '4px'}}>Pending Amount</div>
+          <div style={{fontSize: '13px', color: 'var(--color-text-muted)', marginBottom: '4px'}}>Pending Amount</div>
           <div style={{fontSize: '24px', fontWeight: 'bold', color: '#d97706'}}>₹{data.summary.pending.toLocaleString()}</div>
         </div>
         <div className="report-chart-card">
-          <div style={{fontSize: '13px', color: '#64748b', marginBottom: '4px'}}>Rejected Amount</div>
+          <div style={{fontSize: '13px', color: 'var(--color-text-muted)', marginBottom: '4px'}}>Rejected Amount</div>
           <div style={{fontSize: '24px', fontWeight: 'bold', color: '#dc2626'}}>₹{data.summary.rejected.toLocaleString()}</div>
         </div>
       </div>

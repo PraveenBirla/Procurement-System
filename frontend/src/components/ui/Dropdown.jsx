@@ -27,7 +27,7 @@ const Dropdown = forwardRef(function Dropdown(
       {label && (
         <label
           htmlFor={selectId}
-          className="text-sm font-medium text-slate-700"
+          className="text-sm font-medium text-textSecondary"
         >
           {label}
           {required && <span className="text-danger-500 ml-0.5">*</span>}
@@ -35,7 +35,7 @@ const Dropdown = forwardRef(function Dropdown(
       )}
       <div className="relative">
         {Icon && (
-          <span className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none">
+          <span className="absolute left-3 top-1/2 -translate-y-1/2 text-textMuted pointer-events-none">
             <Icon className="h-[18px] w-[18px]" />
           </span>
         )}
@@ -43,7 +43,7 @@ const Dropdown = forwardRef(function Dropdown(
           ref={ref}
           id={selectId}
           className={clsx(
-            'w-full rounded-lg border bg-white px-3.5 py-2.5 pr-10 text-sm text-slate-900 appearance-none',
+            'w-full rounded-lg border bg-surface px-3.5 py-2.5 pr-10 text-sm text-textPrimary appearance-none',
             'transition-all duration-200 cursor-pointer',
             'focus:outline-none focus:ring-2 focus:ring-primary-500/20 focus:border-primary-500',
             Icon && 'pl-10',
@@ -65,7 +65,7 @@ const Dropdown = forwardRef(function Dropdown(
             </option>
           ))}
         </select>
-        <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400 pointer-events-none" />
+        <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 h-4 w-4 text-textMuted pointer-events-none" />
       </div>
       {error && (
         <p

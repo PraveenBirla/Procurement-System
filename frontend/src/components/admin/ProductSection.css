@@ -196,7 +196,7 @@
 
 /* ─── Modal Box ─── */
 .modal {
-  background: #fff;
+  background: var(--color-surface);
   width: 520px;
   max-width: 100%;
   max-height:  fit-content;

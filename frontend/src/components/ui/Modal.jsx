@@ -58,7 +58,7 @@ export default function Modal({
       {/* Content */}
       <div
         className={clsx(
-          'relative w-full bg-white rounded-xl shadow-xl animate-fade-in-scale',
+          'relative w-full bg-surface rounded-xl shadow-xl animate-fade-in-scale',
           sizes[size],
           className
         )}
@@ -66,12 +66,12 @@ export default function Modal({
         {/* Header */}
         {title && (
           <div className="flex items-center justify-between px-6 py-4 border-b border-slate-100">
-            <h2 id="modal-title" className="text-lg font-semibold text-slate-900">
+            <h2 id="modal-title" className="text-lg font-semibold text-textPrimary">
               {title}
             </h2>
             <button
               onClick={onClose}
-              className="p-1 rounded-md text-slate-400 hover:text-slate-600 hover:bg-slate-100 transition-colors cursor-pointer"
+              className="p-1 rounded-md text-textMuted hover:text-textSecondary hover:bg-primary-50 transition-colors cursor-pointer"
               aria-label="Close modal"
             >
               <X className="h-5 w-5" />

@@ -22,7 +22,7 @@ export default function Card({
   return (
     <div
       className={clsx(
-        'bg-white rounded-xl border border-slate-200/80 shadow-sm',
+        'bg-surface rounded-xl border border-borderLight/80 shadow-sm',
         paddings[padding],
         hover && 'transition-all duration-300 hover:shadow-md hover:-translate-y-0.5',
         className

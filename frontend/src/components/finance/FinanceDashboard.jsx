@@ -13,6 +13,7 @@ import { RejectedSection } from "./RejectedSection";
 import { ApprovedSection } from "./ApprovedSection";
 import { PendingSection } from "./PendingSection";
 import { OverviewSection } from "./OverviewSection";
+import { ThemeToggle } from "../ui/ThemeToggle";
 
 export const FinanceDashboard = () => {
   const [activeSection, setActiveSection] = useState("overview");
@@ -60,10 +61,13 @@ export const FinanceDashboard = () => {
             </button>
           ))}
         </nav>
+        <div className="mt-auto pb-4 flex flex-col gap-2 px-2">
+          <ThemeToggle />
           <button className="logout-btn" onClick={() => {authService.clearAuth();  window.location.reload();} }>
-        <LogOut size={18} />
-         <span>Logout</span>
-         </button>
+            <LogOut size={18} />
+            <span>Logout</span>
+          </button>
+        </div>
       </aside>
 
      

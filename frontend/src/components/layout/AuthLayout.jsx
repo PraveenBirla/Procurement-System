@@ -9,16 +9,16 @@ export default function AuthLayout({ children, title, subtitle }) {
   return (
     <div className="min-h-screen flex">
       {/* ── Left branding panel (hidden on mobile) ── */}
-      <div className="hidden lg:flex lg:w-120 xl:w-[520px] flex-col justify-between bg-gradient-to-br from-primary-700 via-primary-600 to-primary-800 text-white p-10 relative overflow-hidden">
+      <div className="hidden lg:flex lg:w-120 xl:w-[520px] flex-col justify-between bg-gradient-to-br from-primary-700 via-primary-600 to-primary-800 dark:from-slate-800 dark:via-slate-900 dark:to-slate-950 text-white p-10 relative overflow-hidden">
         {/* Decorative circles */}
-        <div className="absolute -top-24 -right-24 w-64 h-64 rounded-full bg-white/5" />
-        <div className="absolute -bottom-32 -left-32 w-80 h-80 rounded-full bg-white/5" />
-        <div className="absolute top-1/2 right-10 w-40 h-40 rounded-full bg-white/5" />
+        <div className="absolute -top-24 -right-24 w-64 h-64 rounded-full bg-white/5 dark:bg-primary-500/10 dark:blur-3xl" />
+        <div className="absolute -bottom-32 -left-32 w-80 h-80 rounded-full bg-white/5 dark:bg-primary-600/10 dark:blur-3xl" />
+        <div className="absolute top-1/2 right-10 w-40 h-40 rounded-full bg-white/5 dark:bg-primary-400/5 dark:blur-2xl" />
 
         {/* Logo */}
         <div className="relative z-10">
           <div className="flex items-center gap-3 mb-2">
-            <div className="w-10 h-10 bg-white/15 backdrop-blur-sm rounded-xl flex items-center justify-center">
+            <div className="w-10 h-10 bg-white/15 backdrop-blur-md border border-white/20 dark:border-white/10 rounded-xl flex items-center justify-center shadow-sm">
               <Package className="h-5 w-5 text-white" />
             </div>
             <span className="text-lg font-semibold tracking-tight">
@@ -66,11 +66,11 @@ export default function AuthLayout({ children, title, subtitle }) {
       {/* ── Right form panel ── */}
       <div className="flex-1 flex flex-col min-h-screen bg-page">
         {/* Mobile header */}
-        <div className="lg:hidden flex items-center gap-2.5 px-6 py-4 border-b border-slate-200 bg-white">
+        <div className="lg:hidden flex items-center gap-2.5 px-6 py-4 border-b border-borderLight bg-surface">
           <div className="w-8 h-8 bg-primary-600 rounded-lg flex items-center justify-center">
             <Package className="h-4 w-4 text-white" />
           </div>
-          <span className="text-base font-semibold text-slate-900 tracking-tight">
+          <span className="text-base font-semibold text-textPrimary tracking-tight">
             ProCure
           </span>
         </div>
@@ -82,12 +82,12 @@ export default function AuthLayout({ children, title, subtitle }) {
             {(title || subtitle) && (
               <div className="mb-8">
                 {title && (
-                  <h1 className="text-2xl font-bold text-slate-900 tracking-tight">
+                  <h1 className="text-2xl font-bold text-textPrimary tracking-tight">
                     {title}
                   </h1>
                 )}
                 {subtitle && (
-                  <p className="mt-2 text-sm text-slate-500">{subtitle}</p>
+                  <p className="mt-2 text-sm text-textMuted">{subtitle}</p>
                 )}
               </div>
             )}

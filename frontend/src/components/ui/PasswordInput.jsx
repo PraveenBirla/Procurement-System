@@ -38,7 +38,7 @@ const PasswordInput = forwardRef(function PasswordInput(
       {label && (
         <label
           htmlFor={inputId}
-          className="text-sm font-medium text-slate-700"
+          className="text-sm font-medium text-textSecondary"
         >
           {label}
           {required && <span className="text-danger-500 ml-0.5">*</span>}
@@ -48,7 +48,7 @@ const PasswordInput = forwardRef(function PasswordInput(
       {/* Input field */}
       <div className="relative">
         {Icon && (
-          <span className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none">
+          <span className="absolute left-3 top-1/2 -translate-y-1/2 text-textMuted pointer-events-none">
             <Icon className="h-[18px] w-[18px]" />
           </span>
         )}
@@ -57,7 +57,7 @@ const PasswordInput = forwardRef(function PasswordInput(
           id={inputId}
           type={visible ? 'text' : 'password'}
           className={clsx(
-            'w-full rounded-lg border bg-white px-3.5 py-2.5 pr-10 text-sm text-slate-900 placeholder:text-slate-400',
+            'w-full rounded-lg border bg-surface px-3.5 py-2.5 pr-10 text-sm text-textPrimary placeholder:text-textMuted',
             'transition-all duration-200',
             'focus:outline-none focus:ring-2 focus:ring-primary-500/20 focus:border-primary-500',
             Icon && 'pl-10',
@@ -78,7 +78,7 @@ const PasswordInput = forwardRef(function PasswordInput(
           type="button"
           tabIndex={-1}
           onClick={() => setVisible((v) => !v)}
-          className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 transition-colors cursor-pointer"
+          className="absolute right-3 top-1/2 -translate-y-1/2 text-textMuted hover:text-textSecondary transition-colors cursor-pointer"
           aria-label={visible ? 'Hide password' : 'Show password'}
         >
           {visible ? (
@@ -105,7 +105,7 @@ const PasswordInput = forwardRef(function PasswordInput(
         <div id={`${inputId}-strength`} className="space-y-2 animate-fade-in">
           {/* Strength bar */}
           <div className="flex items-center gap-2">
-            <div className="flex-1 h-1.5 bg-slate-100 rounded-full overflow-hidden">
+            <div className="flex-1 h-1.5 bg-primary-50 rounded-full overflow-hidden">
               <div
                 className={clsx(
                   'h-full rounded-full transition-all duration-500',
@@ -133,7 +133,7 @@ const PasswordInput = forwardRef(function PasswordInput(
                   key={req.key}
                   className={clsx(
                     'flex items-center gap-2 text-xs transition-colors duration-200',
-                    passed ? 'text-success-600' : 'text-slate-400'
+                    passed ? 'text-success-600' : 'text-textMuted'
                   )}
                 >
                   {passed ? (

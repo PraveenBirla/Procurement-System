@@ -35,11 +35,11 @@ const Button = forwardRef(function Button(
     primary:
       'bg-primary-600 text-white hover:bg-primary-700 shadow-sm hover:shadow-md',
     secondary:
-      'bg-slate-100 text-slate-700 hover:bg-slate-200 border border-slate-200',
+      'bg-primary-50 text-textSecondary hover:bg-slate-200 border border-borderLight',
     outline:
-      'bg-transparent text-slate-700 border border-slate-300 hover:bg-slate-50 hover:border-slate-400',
+      'bg-transparent text-textSecondary border border-slate-300 hover:bg-page hover:border-slate-400',
     ghost:
-      'bg-transparent text-slate-600 hover:bg-slate-100 hover:text-slate-800',
+      'bg-transparent text-textSecondary hover:bg-primary-50 hover:text-textPrimary',
     danger:
       'bg-danger-600 text-white hover:bg-danger-700 shadow-sm',
   };

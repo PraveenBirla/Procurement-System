@@ -16,6 +16,7 @@ import { InDeliverySection } from "./IndeliverySection";
 import { CompletedOrderSection } from "./CompletedOrderSection";
 import { DeliveredOrderSection } from "./DeliveredOrderSection";
 import authService from "../../services/authService";
+import { ThemeToggle } from "../ui/ThemeToggle";
 
 export const  SupplierDashboard  = () => {
   const [activeSection, setActiveSection] = useState("profile");
@@ -48,10 +49,13 @@ export const  SupplierDashboard  = () => {
             </button>
           ))}
         </nav>
+        <div className="mt-auto pb-4 flex flex-col gap-2 px-2">
+          <ThemeToggle />
           <button className="logout-btn" onClick={() => {authService.clearAuth();  window.location.reload();} }>
-        <LogOut size={18} />
-         <span>Logout</span>
-         </button>
+            <LogOut size={18} />
+            <span>Logout</span>
+          </button>
+        </div>
       </aside>
 
      

@@ -124,7 +124,7 @@ export const RequisitionReport = () => {
                     {req.status}
                   </span>
                 </td>
-                <td style={{fontSize: "13px", color: "#64748b"}}>{req.approvalStatus}</td>
+                <td style={{fontSize: "13px", color: "var(--color-text-muted)"}}>{req.approvalStatus}</td>
               </tr>
             ))}
           </tbody>

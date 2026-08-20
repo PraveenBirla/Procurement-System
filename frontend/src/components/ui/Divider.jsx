@@ -8,7 +8,7 @@ export default function Divider({ text, className }) {
     return (
       <div className={clsx('flex items-center gap-4', className)}>
         <div className="flex-1 h-px bg-slate-200" />
-        <span className="text-xs text-slate-400 font-medium uppercase tracking-wider">
+        <span className="text-xs text-textMuted font-medium uppercase tracking-wider">
           {text}
         </span>
         <div className="flex-1 h-px bg-slate-200" />
