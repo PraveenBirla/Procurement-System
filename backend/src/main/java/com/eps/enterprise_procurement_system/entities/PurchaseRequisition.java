@@ -1,6 +1,7 @@
 package com.eps.enterprise_procurement_system.entities;
 
 import com.eps.enterprise_procurement_system.entities.enums.RequisitionStatus;
+import com.eps.enterprise_procurement_system.entities.enums.RequisitionPriority;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import jakarta.persistence.*;
 import lombok.*;
@@ -45,6 +46,11 @@ public class PurchaseRequisition {
     @Column(name = "status", nullable = false, length = 40)
 
     private RequisitionStatus status;
+
+    @Enumerated(EnumType.STRING)
+    @Column(name = "priority", nullable = false, length = 20)
+    @Builder.Default
+    private RequisitionPriority priority = RequisitionPriority.NORMAL;
 
     @Column(name = "is_duplicate", nullable = false)
     @Builder.Default

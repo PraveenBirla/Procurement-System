@@ -12,7 +12,7 @@ import requisitionService from "../../services/requisitionService";
 
 const PENDING_STATUS = "PENDING_MANAGER";
 
-export const PendingSection = () => {
+export const PendingSection = ({ urgentOnly = false }) => {
   const [requisitions, setRequisitions] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
@@ -41,7 +41,7 @@ export const PendingSection = () => {
 
   useEffect(() => {
     loadRequisitions();
-  }, []);
+  }, [urgentOnly]);
 
   useEffect(() => {
     const modalOpen =
@@ -80,10 +80,9 @@ export const PendingSection = () => {
     setLoading(true);
 
     try {
-      const res =
-        await requisitionService.getRequisitionsByStatusManager(
-          PENDING_STATUS
-        );
+      const res = urgentOnly
+        ? await requisitionService.getManagerUrgentRequisitions()
+        : await requisitionService.getRequisitionsByStatusManager(PENDING_STATUS);
 
       const data = Array.isArray(res)
         ? [...res]

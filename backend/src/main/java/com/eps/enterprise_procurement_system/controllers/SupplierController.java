@@ -4,6 +4,7 @@ import com.eps.enterprise_procurement_system.advices.ApiResponse;
 import com.eps.enterprise_procurement_system.dto.AllSupplierResponseDTO;
 import com.eps.enterprise_procurement_system.dto.SupplierRequestDTO;
 import com.eps.enterprise_procurement_system.dto.SupplierResponseDTO;
+import com.eps.enterprise_procurement_system.dto.VendorRecommendationResponseDTO;
 import com.eps.enterprise_procurement_system.entities.enums.VerificationStatus;
 import com.eps.enterprise_procurement_system.services.SupplierService;
 import jakarta.validation.Valid;
@@ -37,6 +38,12 @@ public class SupplierController {
     @PreAuthorize("hasAnyRole('ADMIN',  'PROCUREMENT_OFFICER')")
     public ResponseEntity<ApiResponse<List<SupplierResponseDTO>>> getVerifiedSuppliersByCategoryId(@Valid  @PathVariable Long categoryId) {
         return ResponseEntity.ok(new ApiResponse<>( supplierService.getVerifiedSuppliersByCategoryId(categoryId, VerificationStatus.VERIFIED)));
+    }
+
+    @GetMapping("/recommendations")
+    @PreAuthorize("hasAnyRole('ADMIN', 'PROCUREMENT')")
+    public ResponseEntity<ApiResponse<VendorRecommendationResponseDTO>> getRecommendations(@RequestParam Long categoryId) {
+        return ResponseEntity.ok(new ApiResponse<>(supplierService.getRecommendations(categoryId)));
     }
 
 

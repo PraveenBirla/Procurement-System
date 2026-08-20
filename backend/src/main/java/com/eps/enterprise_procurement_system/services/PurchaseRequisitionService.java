@@ -26,6 +26,7 @@ import com.eps.enterprise_procurement_system.entities.enums.ApprovalStatus;
 import com.eps.enterprise_procurement_system.entities.enums.ApprovalType;
 import com.eps.enterprise_procurement_system.entities.enums.NotificationType;
 import com.eps.enterprise_procurement_system.entities.enums.RequisitionStatus;
+import com.eps.enterprise_procurement_system.entities.enums.RequisitionPriority;
 import com.eps.enterprise_procurement_system.entities.enums.Role;
 import com.eps.enterprise_procurement_system.repositories.ApprovalRepo;
 import com.eps.enterprise_procurement_system.repositories.ProductRepo;
@@ -60,6 +61,7 @@ public class PurchaseRequisitionService {
                 .employeeName(requisition.getEmployee().getFullName())
                 .departmentName(requisition.getEmployee().getDepartment().getDepartmentName())
                 .status(requisition.getStatus())
+                .priority(requisition.getPriority())
                 .totalEstimatedAmount(requisition.getTotalEstimatedAmount())
                 .isDuplicate(requisition.getIsDuplicate())
                 .createdAt(requisition.getCreatedAt())
@@ -155,6 +157,7 @@ public class PurchaseRequisitionService {
                 .title(dto.getTitle())
                 .description(dto.getDescription())
                 .status(RequisitionStatus.PENDING_MANAGER)
+                .priority(dto.getPriority() == null ? RequisitionPriority.NORMAL : dto.getPriority())
                 .isDuplicate(dup.isDuplicate())
                 .build();
 
@@ -310,6 +313,17 @@ public class PurchaseRequisitionService {
                 .stream()
                 .map(requisition -> mapToDto(requisition))
                 .toList();
+    }
+
+    public long getManagerUrgentCount() {
+        return reqRepo.countByEmployee_Department_IdAndStatusAndPriority(
+                currentUser.get().getDepartment().getId(), RequisitionStatus.PENDING_MANAGER, RequisitionPriority.HIGH);
+    }
+
+    public List<PurchaseRequisitionResponseDTO> getManagerUrgentRequisitions() {
+        return reqRepo.findByEmployee_Department_IdAndStatusAndPriorityOrderByCreatedAtDesc(
+                        currentUser.get().getDepartment().getId(), RequisitionStatus.PENDING_MANAGER, RequisitionPriority.HIGH)
+                .stream().map(this::mapToDto).toList();
     }
 
     public List<PurchaseRequisitionResponseDTO> getEmployeeRequisitions(Long employeeId) {

@@ -9,6 +9,7 @@ import lombok.Data;
 import lombok.NoArgsConstructor;
 
 import java.util.List;
+import com.eps.enterprise_procurement_system.entities.enums.RequisitionPriority;
 
 @Data
 @Builder
@@ -23,6 +24,9 @@ public class PurchaseRequisitionRequestDTO {
 
     @NotBlank(message = "enter a description")
     private String description;
+
+    @Builder.Default
+    private RequisitionPriority priority = RequisitionPriority.NORMAL;
 
     @Valid
     @NotEmpty(message = "At least one item is required")
