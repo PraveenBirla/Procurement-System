@@ -34,6 +34,7 @@ export const ApprovedRequisitionSection = () => {
   // Generate PO modal (supplier + date selected here now)
   const [genModalReq, setGenModalReq] = useState(null);
   const [suppliers, setSuppliers] = useState([]);
+  const [recommendation, setRecommendation] = useState(null);
   const [loadingSuppliers, setLoadingSuppliers] = useState(false);
   const [selectedSupplierId, setSelectedSupplierId] = useState("");
   const [expectedDeliveryDate, setExpectedDeliveryDate] = useState("");
@@ -138,6 +139,7 @@ export const ApprovedRequisitionSection = () => {
     setSelectedSupplierId("");
     setExpectedDeliveryDate("");
     setGenError("");
+    setRecommendation(null);
 
     if (!categoryId) {
       setGenError("categories not found");
@@ -147,8 +149,13 @@ export const ApprovedRequisitionSection = () => {
     setLoadingSuppliers(true);
     
     try {
-      const list = await suppliersService.getAllVerifiedSuppliersByCategoryId(categoryId);
+      const [list, ranking] = await Promise.all([
+        suppliersService.getAllVerifiedSuppliersByCategoryId(categoryId),
+        suppliersService.getRecommendations(categoryId),
+      ]);
       setSuppliers(list);
+      setRecommendation(ranking);
+      if (ranking?.recommendedVendor) setSelectedSupplierId(String(ranking.recommendedVendor.supplierId));
     } catch (err) {
       setGenError(getErrorMessage(err));
     } finally {
@@ -168,6 +175,7 @@ export const ApprovedRequisitionSection = () => {
     if (submittingGenerate) return;
     setGenModalReq(null);
     setSuppliers([]);
+    setRecommendation(null);
     setSelectedSupplierId("");
     setExpectedDeliveryDate("");
     setGenError("");
@@ -438,6 +446,15 @@ export const ApprovedRequisitionSection = () => {
               )}
 
               <form onSubmit={handleGenerateSubmit} noValidate>
+                {recommendation?.recommendedVendor ? (
+                  <div className="field">
+                    <label>AI Vendor Recommendation</label>
+                    <p><strong>{recommendation.recommendedVendor.supplierName}</strong> — {recommendation.recommendedVendor.recommendationScore}%</p>
+                    <p className="action-summary">{recommendation.recommendedVendor.recommendationReason}</p>
+                  </div>
+                ) : !loadingSuppliers && (
+                  <p className="no-data">No verified active vendors are available for this category.</p>
+                )}
                 <div className="field">
                   <label>Supplier</label>
                   {loadingSuppliers ? (

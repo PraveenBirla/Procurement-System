@@ -3,6 +3,8 @@ package com.eps.enterprise_procurement_system.services;
 import com.eps.enterprise_procurement_system.dto.AllSupplierResponseDTO;
 import com.eps.enterprise_procurement_system.dto.SupplierRequestDTO;
 import com.eps.enterprise_procurement_system.dto.SupplierResponseDTO;
+import com.eps.enterprise_procurement_system.dto.VendorRecommendationDTO;
+import com.eps.enterprise_procurement_system.dto.VendorRecommendationResponseDTO;
 import com.eps.enterprise_procurement_system.entities.ProductCategory;
 import com.eps.enterprise_procurement_system.entities.Supplier;
 import com.eps.enterprise_procurement_system.entities.SupplierDocument;
@@ -12,6 +14,7 @@ import com.eps.enterprise_procurement_system.entities.enums.VerificationStatus;
 import com.eps.enterprise_procurement_system.repositories.ProductCategoryRepo;
 import com.eps.enterprise_procurement_system.repositories.SupplierDocumentRepo;
 import com.eps.enterprise_procurement_system.repositories.SupplierRepo;
+import com.eps.enterprise_procurement_system.repositories.SupplierPerformanceRepo;
 import com.eps.enterprise_procurement_system.repositories.UserRepository;
 import com.eps.enterprise_procurement_system.util.CurrentUser;
 
@@ -27,6 +30,8 @@ import org.springframework.web.server.ResponseStatusException;
 import java.math.BigDecimal;
 import java.util.List;
 import java.util.Optional;
+import java.math.RoundingMode;
+import java.util.Comparator;
 
 @Service
 @RequiredArgsConstructor
@@ -37,6 +42,7 @@ public class SupplierService {
     private final CurrentUser currentUser;
     private final SupplierDocumentRepo supplierDocumentRepo;
     private final UserRepository userRepository;
+    private final SupplierPerformanceRepo supplierPerformanceRepo;
 
     private SupplierResponseDTO convertToDTO(Supplier supplier) {
 
@@ -227,6 +233,65 @@ public class SupplierService {
                     .map(this::convertToDTO)
                     .toList();
     }
+
+    /** Ranks only the existing active, verified suppliers for one category. */
+    public VendorRecommendationResponseDTO getRecommendations(Long categoryId) {
+        List<Supplier> eligible = supplierRepo.findByCategoryIdAndIsActiveTrueAndStatus(categoryId, VerificationStatus.VERIFIED);
+        if (eligible.isEmpty()) {
+            return VendorRecommendationResponseDTO.builder().vendors(List.of()).build();
+        }
+
+        List<Candidate> candidates = eligible.stream().map(this::toCandidate).toList();
+        BigDecimal highestPriceRating = candidates.stream().map(Candidate::priceRating).max(Comparator.naturalOrder()).orElse(BigDecimal.ZERO);
+
+        List<VendorRecommendationDTO> vendors = candidates.stream()
+                .map(candidate -> toRecommendation(candidate, highestPriceRating))
+                .sorted(Comparator.comparing(VendorRecommendationDTO::getRecommendationScore).reversed()
+                        .thenComparing(VendorRecommendationDTO::getSupplierName, String.CASE_INSENSITIVE_ORDER))
+                .toList();
+
+        for (int index = 0; index < vendors.size(); index++) {
+            VendorRecommendationDTO vendor = vendors.get(index);
+            vendor.setRecommendationRank(index + 1);
+            vendor.setRecommended(index == 0);
+            vendor.setRecommendationReason(index == 0
+                    ? "Highest weighted score from supplier rating, price competitiveness, delivery performance and verified active eligibility."
+                    : "Ranked using supplier rating, price competitiveness, delivery performance and verified active eligibility.");
+        }
+        return VendorRecommendationResponseDTO.builder().recommendedVendor(vendors.get(0)).vendors(vendors).build();
+    }
+
+    private Candidate toCandidate(Supplier supplier) {
+        var reviews = supplierPerformanceRepo.findBySupplier_Id(supplier.getId());
+        BigDecimal delivery = average(reviews.stream().map(review -> review.getDeliveryRating()).toList());
+        BigDecimal price = average(reviews.stream().map(review -> review.getPriceRating()).toList());
+        BigDecimal rating = supplier.getRating() == null ? BigDecimal.ZERO : supplier.getRating();
+        return new Candidate(supplier, rating, delivery, price);
+    }
+
+    private BigDecimal average(List<BigDecimal> values) {
+        List<BigDecimal> present = values.stream().filter(java.util.Objects::nonNull).toList();
+        if (present.isEmpty()) return BigDecimal.ZERO;
+        return present.stream().reduce(BigDecimal.ZERO, BigDecimal::add)
+                .divide(BigDecimal.valueOf(present.size()), 2, RoundingMode.HALF_UP);
+    }
+
+    private VendorRecommendationDTO toRecommendation(Candidate candidate, BigDecimal highestPriceRating) {
+        // Ratings are stored on a 0-5 scale. Missing optional reviews contribute zero, never an API failure.
+        BigDecimal ratingScore = candidate.rating().min(BigDecimal.valueOf(5)).multiply(BigDecimal.valueOf(8));
+        BigDecimal deliveryScore = candidate.deliveryRating().min(BigDecimal.valueOf(5)).multiply(BigDecimal.valueOf(4));
+        BigDecimal priceScore = highestPriceRating.signum() == 0 ? BigDecimal.ZERO
+                : candidate.priceRating().divide(highestPriceRating, 4, RoundingMode.HALF_UP).multiply(BigDecimal.valueOf(30));
+        BigDecimal score = ratingScore.add(deliveryScore).add(priceScore).add(BigDecimal.TEN)
+                .setScale(2, RoundingMode.HALF_UP);
+        return VendorRecommendationDTO.builder().supplierId(candidate.supplier().getId())
+                .supplierName(candidate.supplier().getCompanyName())
+                .categoryName(candidate.supplier().getCategory().getCategoryName())
+                .rating(candidate.rating()).deliveryRating(candidate.deliveryRating()).priceRating(candidate.priceRating())
+                .recommendationScore(score).build();
+    }
+
+    private record Candidate(Supplier supplier, BigDecimal rating, BigDecimal deliveryRating, BigDecimal priceRating) { }
 
     public String updateSupplierVerification(Long id, String status) {
         Supplier supplier = supplierRepo.findById(id)

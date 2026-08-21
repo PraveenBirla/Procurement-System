@@ -42,6 +42,16 @@ const requisitionService = {
        return res.data.data;
      },  
 
+     async getManagerUrgentCount(){
+      const res = await api.get("/requisitions/manager/urgent/count");
+      return res.data.data;
+     },
+
+     async getManagerUrgentRequisitions(){
+      const res = await api.get("/requisitions/manager/urgent");
+      return res.data.data;
+     },
+
 
      async getManagerRequisitionsByStatus(status){
       const res = await api.get("/approvals/manager",{

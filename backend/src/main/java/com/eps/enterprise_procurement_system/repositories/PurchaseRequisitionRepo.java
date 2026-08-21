@@ -4,6 +4,7 @@ import com.eps.enterprise_procurement_system.entities.Department;
 import com.eps.enterprise_procurement_system.entities.PurchaseRequisition;
 import com.eps.enterprise_procurement_system.entities.User;
 import com.eps.enterprise_procurement_system.entities.enums.RequisitionStatus;
+import com.eps.enterprise_procurement_system.entities.enums.RequisitionPriority;
 
 import java.time.LocalDateTime;
 import java.util.List;
@@ -25,6 +26,10 @@ public interface PurchaseRequisitionRepo extends JpaRepository<PurchaseRequisiti
             Long departmentId,
             RequisitionStatus status
     );
+
+    long countByEmployee_Department_IdAndStatusAndPriority(Long departmentId, RequisitionStatus status, RequisitionPriority priority);
+
+    List<PurchaseRequisition> findByEmployee_Department_IdAndStatusAndPriorityOrderByCreatedAtDesc(Long departmentId, RequisitionStatus status, RequisitionPriority priority);
 
     List<PurchaseRequisition> findByStatusOrderByCreatedAtDesc(
             RequisitionStatus status
