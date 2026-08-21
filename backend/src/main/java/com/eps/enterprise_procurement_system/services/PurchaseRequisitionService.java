@@ -230,6 +230,16 @@ public class PurchaseRequisitionService {
                             "New Requisition Waiting"
                         )
                 );
+
+        userRepo.findByRole(Role.ADMIN)
+            .forEach(admin -> notificationService.notify(
+                            admin,
+                            saved,
+                            null,
+                            NotificationType.APPROVAL,
+                            "New Requisition Waiting"
+                        )
+                );
         
         
 
