@@ -58,6 +58,18 @@ public class PurchaseRequisitionController {
         return ResponseEntity.ok(new ApiResponse<>( service.getManagerByStatus(status)));
     }
 
+    @GetMapping("/manager/urgent/count")
+    @PreAuthorize("hasRole('MANAGER')")
+    public ResponseEntity<ApiResponse<Long>> getManagerUrgentCount() {
+        return ResponseEntity.ok(new ApiResponse<>(service.getManagerUrgentCount()));
+    }
+
+    @GetMapping("/manager/urgent")
+    @PreAuthorize("hasRole('MANAGER')")
+    public ResponseEntity<ApiResponse<List<PurchaseRequisitionResponseDTO>>> getManagerUrgentRequisitions() {
+        return ResponseEntity.ok(new ApiResponse<>(service.getManagerUrgentRequisitions()));
+    }
+
 
 
     @GetMapping("/mine")
