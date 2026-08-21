@@ -90,6 +90,7 @@ export const RequisitionSection = ({ setActiveSection: setDashboardSection }) =>
   const [reqForm, setReqForm] = useState({
     title: "",
     description: "",
+    priority: "NORMAL",
     categoryId: "",
     items: [{ ...emptyItem }],
   });
@@ -247,6 +248,7 @@ export const RequisitionSection = ({ setActiveSection: setDashboardSection }) =>
     setReqForm({
       title: "",
       description: "",
+      priority: "NORMAL",
       categoryId: "",
       items: [{ ...emptyItem }],
     });
@@ -452,6 +454,8 @@ export const RequisitionSection = ({ setActiveSection: setDashboardSection }) =>
 
       categoryId:
         Number(reqForm.categoryId),
+
+      priority: reqForm.priority,
 
       items: reqForm.items.map(
         (item) => ({
@@ -1722,6 +1726,14 @@ export const RequisitionSection = ({ setActiveSection: setDashboardSection }) =>
                     </span>
                   )}
 
+                </div>
+
+                <div className="field">
+                  <label>Priority</label>
+                  <select name="priority" value={reqForm.priority} onChange={handleReqFieldChange}>
+                    <option value="NORMAL">Normal</option>
+                    <option value="HIGH">High</option>
+                  </select>
                 </div>
 
                 <div className="field">

@@ -43,6 +43,11 @@ const suppliersService = {
     return res.data.data;
   },
 
+  async getRecommendations(categoryId) {
+    const res = await api.get("/suppliers/recommendations", { params: { categoryId } });
+    return res.data?.data;
+  },
+
   async getAllDocumments() {
     const res = await api.get("/supplier-documents/my-documents");
     return res.data.data;
