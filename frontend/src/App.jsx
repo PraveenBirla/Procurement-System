@@ -10,6 +10,8 @@ import { ManagerDashboardPage } from './pages/ManagerDashboardPage';
 import { FinanceDashboardPage } from './pages/FinanceDashboardPage';
 import { SupplierDashboardPage } from './pages/SupplierDashboardPage';
 import { ProcurementDashboardPage } from './pages/ProcurementDashboardPage';
+import AIChatbot from './components/ui/AIChatbot';
+
 function App() {
   const { user, isLoading } = useAuth();
 
@@ -49,20 +51,23 @@ function App() {
   };
 
   return (
-    <Routes>
-     
-      <Route path="/login" element={ !user ? (<LoginPage /> ) : (<Navigate to={getDashboardPath()} replace /> )}/>
-      <Route path="/register" element={!user ? <RegisterPage /> : <Navigate to="/dashboard" replace />} />
- 
-      <Route path="/admin" element={user?.role === "ADMIN" ? <AdminDashboardPage/>: <Navigate to="/login" replace />}/>
-      <Route path="/employee" element={user?.role === "EMPLOYEE" ? <EmployeeDashboardPage/>: <Navigate to="/login" replace />}/>
-      <Route path="/manager" element={user?.role === "MANAGER" ? <ManagerDashboardPage/>: <Navigate to="/login" replace />}/>
-      <Route path="/finance" element={user?.role === "FINANCE" ? <FinanceDashboardPage/>: <Navigate to="/login" replace />}/>
-      <Route path="/procurement" element={user?.role === "PROCUREMENT" ? <ProcurementDashboardPage/>: <Navigate to="/login" replace />}/>
-      <Route path="/supplier" element={user?.role === "SUPPLIER" ? <SupplierDashboardPage/>: <Navigate to="/login" replace />}/>
-      
-      <Route path="/" element={<Navigate to={getDashboardPath()} replace/>}/>
-    </Routes>
+    <>
+      <Routes>
+       
+        <Route path="/login" element={ !user ? (<LoginPage /> ) : (<Navigate to={getDashboardPath()} replace /> )}/>
+        <Route path="/register" element={!user ? <RegisterPage /> : <Navigate to="/dashboard" replace />} />
+   
+        <Route path="/admin" element={user?.role === "ADMIN" ? <AdminDashboardPage/>: <Navigate to="/login" replace />}/>
+        <Route path="/employee" element={user?.role === "EMPLOYEE" ? <EmployeeDashboardPage/>: <Navigate to="/login" replace />}/>
+        <Route path="/manager" element={user?.role === "MANAGER" ? <ManagerDashboardPage/>: <Navigate to="/login" replace />}/>
+        <Route path="/finance" element={user?.role === "FINANCE" ? <FinanceDashboardPage/>: <Navigate to="/login" replace />}/>
+        <Route path="/procurement" element={user?.role === "PROCUREMENT" ? <ProcurementDashboardPage/>: <Navigate to="/login" replace />}/>
+        <Route path="/supplier" element={user?.role === "SUPPLIER" ? <SupplierDashboardPage/>: <Navigate to="/login" replace />}/>
+        
+        <Route path="/" element={<Navigate to={getDashboardPath()} replace/>}/>
+      </Routes>
+      <AIChatbot />
+    </>
   );
 }
 
