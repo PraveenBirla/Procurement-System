@@ -20,7 +20,7 @@ import {
 import requisitionService from "../../services/requisitionService";
 import productService from "../../services/productService";
 import "./RequisitionSection.css";
-import { Eye } from "lucide-react";
+import { Clock3, Eye } from "lucide-react";
 
 const emptyItem = {
   productId: "",
@@ -1246,6 +1246,7 @@ export const RequisitionSection = ({ setActiveSection: setDashboardSection }) =>
                               )
                             }
                           >
+                            <Clock3 size={14} />
                             {trackingId ===
                             req.id
                               ? "…"

@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import requisitionService from "../../services/requisitionService";
 import { createPortal } from "react-dom";
-import { Eye } from "lucide-react";
+import { Clock3, Eye } from "lucide-react";
 // import "./FinanceRequisitionSection.css";
 
 const PENDING_STATUS = "PENDING_FINANCE";
@@ -237,7 +237,8 @@ export const  RequisitionSection = () => {
                             className="track-btn"
                             disabled={trackingId === req.id}
                             onClick={() => handleTrack(req)}
-                          >
+                            >
+                            <Clock3 size={14} />
                             {trackingId === req.id ? "…" : "Track"}
                           </button>
                         )}

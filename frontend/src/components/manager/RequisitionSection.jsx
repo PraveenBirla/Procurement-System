@@ -242,7 +242,7 @@ export const RequisitionSection = () => {
                             disabled={trackingId === req.id}
                             onClick={() => handleTrack(req)}
                             >
-                              <Clock3 size={14} />
+                            <Clock3 size={14} />
                             {trackingId === req.id ? "…" : "Track"}
                           </button>
                         )}

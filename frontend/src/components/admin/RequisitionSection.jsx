@@ -17,7 +17,7 @@ import {
 } from "recharts";
 
 import requisitionService from "../../services/requisitionService";
-import { Clock, Clock3, Eye } from "lucide-react";
+import { Clock3, Eye } from "lucide-react";
  
 
 const ALL_STATUSES = [
@@ -747,7 +747,7 @@ export const RequisitionSection = () => {
                           trackingId === req.id
                         }
                       >
-                        <Clock size={14} />
+                        <Clock3 size={14} />
                         {trackingId === req.id
                           ? "…"
                           : "Track"}

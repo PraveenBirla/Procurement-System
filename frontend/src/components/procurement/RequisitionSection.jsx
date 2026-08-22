@@ -1,7 +1,7 @@
 import { useEffect, useState, useRef } from "react";
 import { createPortal } from "react-dom";
 import procurementService from "../../services/requisitionService";
-import { Clock3, Eye } from "lucide-react";
+import { Clock3, Eye, RotateCcw } from "lucide-react";
 
 const PENDING_STATUS = "PENDING_PROCUREMENT";
 const PROCUREMENT_DECIDED = ["APPROVED", "REJECTED"];
@@ -435,6 +435,7 @@ export const RequisitionSection = () => {
                               onClick={() => handleResetDecision(req.id)}
                               disabled={resettingId === req.id}
                             >
+                              <RotateCcw size={14} />
                               {resettingId === req.id ? "Resetting…" : "Reset Decision"}
                             </button>
                           </div>

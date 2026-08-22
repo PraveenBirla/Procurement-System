@@ -714,6 +714,7 @@ export const OverviewSection = ({ setActiveSection: setDashboardSection }) => {
                                 handleTrack(req)
                               }
                             >
+                              <Clock3 size={14} />
                               {trackingId === req.id
                                 ? "..."
                                 : "Track"}

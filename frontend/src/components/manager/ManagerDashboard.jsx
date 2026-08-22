@@ -1,10 +1,11 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import {
   LayoutDashboard,
   Clock3,
   CheckCircle2,
   XCircle,
   Package,
+  AlertTriangle,
   LogOut
 } from "lucide-react";  
 import authService from "../../services/authService";
@@ -13,9 +14,22 @@ import { OverviewSection } from "./OverviewSection";
 import { PendingSection } from "./PendingSection";
 import { ApprovedSection } from "./ApprovedSection";
 import { RejectedSection } from "./RejectedSection";
+import requisitionService from "../../services/requisitionService";
 
 export const ManagerDashboard = () => {
   const [activeSection, setActiveSection] = useState("overview");
+  
+  const [urgentCount, setUrgentCount] = useState(0);
+  const [urgentOnly, setUrgentOnly] = useState(false);
+
+  useEffect(() => {
+    requisitionService.getManagerUrgentCount().then(setUrgentCount).catch(() => setUrgentCount(0));
+  }, [activeSection]);
+
+  const openUrgentRequests = () => {
+    setUrgentOnly(true);
+    setActiveSection("pending");
+  };
 
   const menuItems = [
     
@@ -38,7 +52,7 @@ export const ManagerDashboard = () => {
               className={`menu-item ${
                 activeSection === item.id ? "active" : ""
               }`}
-              onClick={() => setActiveSection(item.id)}
+              onClick={() => { setUrgentOnly(false); setActiveSection(item.id); }}
             >
               <item.icon size={18} />
               <span>{item.label}</span>
@@ -53,6 +67,11 @@ export const ManagerDashboard = () => {
 
      
       <main className="main-content animate-fade-in">
+        {activeSection === "overview" && urgentCount > 0 && (
+          <button type="button" className="error-box" onClick={openUrgentRequests}>
+            <AlertTriangle size={18} /> <span><strong>High Priority Requests</strong><br />{urgentCount} request{urgentCount === 1 ? "" : "s"} require your immediate attention - View Requests</span>
+          </button>
+        )}
         {/* {activeSection === "requition" && (
            <RequisitionSection/>
         )} */}
@@ -60,7 +79,7 @@ export const ManagerDashboard = () => {
            <OverviewSection setActiveSection={setActiveSection} />
         )}
         {activeSection === "pending" && (
-           <PendingSection setActiveSection={setActiveSection} />
+           <PendingSection setActiveSection={setActiveSection} urgentOnly={urgentOnly}/>
         )}
         {activeSection === "approved" && (
            <ApprovedSection setActiveSection={setActiveSection} />
