@@ -2,12 +2,7 @@ import { useState, useEffect } from "react";
 import { PieChart, Pie, Cell, Tooltip, ResponsiveContainer, Legend } from "recharts";
 import requisitionService from "../../../services/requisitionService";
 
-const mockFallbackData = [
-  { id: 1, reqNumber: "REQ-2023-001", employeeName: "John Doe", department: "Engineering", category: "Hardware", totalAmount: 12500, createdAt: "2023-09-28", status: "APPROVED", approvalStatus: "Approved by Manager & Finance" },
-  { id: 2, reqNumber: "REQ-2023-002", employeeName: "Jane Smith", department: "Marketing", category: "Software", totalAmount: 800, createdAt: "2023-10-02", status: "PENDING", approvalStatus: "Waiting on Finance" },
-  { id: 3, reqNumber: "REQ-2023-003", employeeName: "Mike Johnson", department: "Operations", category: "Supplies", totalAmount: 450, createdAt: "2023-10-05", status: "REJECTED", approvalStatus: "Rejected by Manager (Budget exceeded)" },
-  { id: 4, reqNumber: "REQ-2023-004", employeeName: "Sarah Connor", department: "Engineering", category: "Hardware", totalAmount: 25000, createdAt: "2023-10-10", status: "PO GENERATED", approvalStatus: "Fully Approved" },
-];
+
 
 const COLORS = ['#f59e0b', '#10b981', '#ef4444', '#3b82f6'];
 
@@ -24,14 +19,15 @@ export const RequisitionReport = () => {
     try {
       // Assuming requisitionService has getAll or similar
       // Since it's not checked deeply, we rely on mock data fallback
-      const reqs = await requisitionService.getAllRequisitions?.() || [];
+      const reqs = await requisitionService.getAllRequisitions();
       if (reqs && reqs.length > 0) {
         setData(reqs);
       } else {
-        setData(mockFallbackData);
+        setData([]);
       }
     } catch (err) {
-      setData(mockFallbackData);
+      console.error("Failed to load requisitions", err);
+      setData([]);
     } finally {
       setLoading(false);
     }
@@ -68,30 +64,36 @@ export const RequisitionReport = () => {
       </div>
 
       <div className="report-charts-grid">
-        <div className="report-chart-card">
+        <div className="report-chart-card" style={{ gridColumn: '1 / -1' }}>
           <div className="report-chart-title">Requisitions by Status</div>
-          <div className="report-chart-wrapper">
-            <ResponsiveContainer width="100%" height="100%">
-              <PieChart>
-                <Pie
-                  data={chartData}
-                  cx="50%"
-                  cy="50%"
-                  innerRadius={60}
-                  outerRadius={100}
-                  fill="#8884d8"
-                  paddingAngle={5}
-                  dataKey="value"
-                  label
-                >
-                  {chartData.map((entry, index) => (
-                    <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
-                  ))}
-                </Pie>
-                <Tooltip />
-                <Legend />
-              </PieChart>
-            </ResponsiveContainer>
+          <div className="report-chart-wrapper" style={{ height: '400px' }}>
+            {chartData.length === 0 ? (
+              <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100%', color: 'var(--color-text-muted)' }}>
+                No requisition data available.
+              </div>
+            ) : (
+              <ResponsiveContainer width="100%" height="100%">
+                <PieChart>
+                  <Pie
+                    data={chartData}
+                    cx="50%"
+                    cy="50%"
+                    innerRadius={60}
+                    outerRadius={100}
+                    fill="#8884d8"
+                    paddingAngle={5}
+                    dataKey="value"
+                    label
+                  >
+                    {chartData.map((entry, index) => (
+                      <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
+                    ))}
+                  </Pie>
+                  <Tooltip />
+                  <Legend />
+                </PieChart>
+              </ResponsiveContainer>
+            )}
           </div>
         </div>
       </div>

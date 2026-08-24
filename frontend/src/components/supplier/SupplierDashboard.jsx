@@ -6,7 +6,6 @@ import {
   Truck,
   PackageCheck,
   LogOut,
-  Replace,
   Package
 } from "lucide-react";  
 import { RequisitionSection } from "./RequisitionSection";
@@ -16,7 +15,6 @@ import { AcceptedOrderSection } from "./AcceptedOrderSection";
 import { InDeliverySection } from "./IndeliverySection";
 import { CompletedOrderSection } from "./CompletedOrderSection";
 import { DeliveredOrderSection } from "./DeliveredOrderSection";
-import ReturnReplacementSection from "./ReturnReplacementSection";
 import authService from "../../services/authService";
 import { ThemeToggle } from "../ui/ThemeToggle";
 
@@ -28,10 +26,8 @@ export const  SupplierDashboard  = () => {
     { id: "orders", label: "Orders", icon: Package},
      { id: "acceptedorders", label: "Accepted Orders", icon: CheckCircle},
       {id: "indelivery", label: "Indelivery Orders", icon: Truck},
-    { id: "delivered", label: "Delivered Orders", icon: PackageCheck },
-       {id: "issues in delivery", label: "Delivered Issues", icon: Replace },
-        {id: "completed", label: "Completed Orders", icon: CheckCircle},
-        
+       {id: "delivered", label: "Delivered Orders", icon: PackageCheck},
+        {id: "completed", label: "Completed Orders", icon: CheckCircle}
   ];
 
   return (
@@ -64,12 +60,11 @@ export const  SupplierDashboard  = () => {
 
      
       <main className="main-content animate-fade-in">
-         {activeSection === "profile" && <SupplierProfileSection setActiveSection={setActiveSection} />}
-         {activeSection === "orders" && <OrderSection setActiveSection={setActiveSection} />}
+         {activeSection === "profile" &&  <SupplierProfileSection setActiveSection={setActiveSection} /> }
+         {activeSection === "orders" &&  <OrderSection setActiveSection={setActiveSection} /> }
          {activeSection === "acceptedorders" && <AcceptedOrderSection setActiveSection={setActiveSection} />}
          {activeSection === "indelivery" && <InDeliverySection setActiveSection={setActiveSection} />}
          {activeSection === "delivered" && <DeliveredOrderSection setActiveSection={setActiveSection} />}
-         {activeSection === "issues in delivery" && <ReturnReplacementSection setActiveSection={setActiveSection} />}
          {activeSection === "completed" && <CompletedOrderSection setActiveSection={setActiveSection} />}
       </main>
     </div>

@@ -11,8 +11,4 @@ public interface ReturnReplacementRepo extends JpaRepository<ReturnReplacement, 
     List<ReturnReplacement> findByPurchaseOrderId(Long purchaseOrderId);
 
     List<ReturnReplacement> findByStatus(ReturnStatus status);
-
-    List<ReturnReplacement> findByPurchaseOrderSupplierId(Long sup_id);
-
-    List<ReturnReplacement> findByPurchaseOrderSupplierIdAndStatusIn(Long sup_id, List<ReturnStatus> returnstatus);
 }

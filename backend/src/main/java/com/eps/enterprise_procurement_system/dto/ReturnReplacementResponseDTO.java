@@ -3,7 +3,6 @@ package com.eps.enterprise_procurement_system.dto;
 import lombok.Data;
 
 import java.time.LocalDateTime;
-import java.util.List;
 
 @Data
 public class ReturnReplacementResponseDTO {
@@ -23,6 +22,4 @@ public class ReturnReplacementResponseDTO {
     private LocalDateTime raisedAt;
 
     private LocalDateTime resolvedAt;
-
-    private List<ReturnReplacementItemResponseDTO> items;
 }

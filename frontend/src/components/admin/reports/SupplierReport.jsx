@@ -2,12 +2,7 @@ import { useState, useEffect } from "react";
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from "recharts";
 import suppliersService from "../../../services/suppliersService";
 
-const mockFallbackData = [
-  { id: 1, name: "TechCorp", category: "Hardware", contact: "tech@corp.com", rating: 4.8, status: "Active", poCount: 15, totalAmount: 450000 },
-  { id: 2, name: "OfficeSupplies Inc", category: "Office", contact: "sales@officesupplies.com", rating: 4.2, status: "Active", poCount: 8, totalAmount: 25000 },
-  { id: 3, name: "Global IT Services", category: "Software", contact: "support@globalit.com", rating: 4.9, status: "Active", poCount: 5, totalAmount: 120000 },
-  { id: 4, name: "FastPrint", category: "Printing", contact: "hello@fastprint.com", rating: 3.5, status: "Inactive", poCount: 2, totalAmount: 5000 },
-];
+
 
 export const SupplierReport = () => {
   const [data, setData] = useState([]);
@@ -21,19 +16,20 @@ export const SupplierReport = () => {
     setLoading(true);
     try {
       const sups = await suppliersService.getAllSuppliers();
-      // If we get real suppliers, we need to map them to include mock poCount/totalAmount if backend doesn't provide it
       if (sups && sups.length > 0) {
+        // Compute real poCount and totalAmount if they exist, or default to 0 if not supported by backend
         const enriched = sups.map(s => ({
           ...s,
-          poCount: s.poCount || Math.floor(Math.random() * 20),
-          totalAmount: s.totalAmount || Math.floor(Math.random() * 100000)
+          poCount: s.poCount || 0,
+          totalAmount: s.totalAmount || 0
         }));
         setData(enriched);
       } else {
-        setData(mockFallbackData);
+        setData([]);
       }
     } catch (err) {
-      setData(mockFallbackData);
+      console.error("Failed to load suppliers", err);
+      setData([]);
     } finally {
       setLoading(false);
     }
@@ -54,18 +50,24 @@ export const SupplierReport = () => {
       </div>
 
       <div className="report-charts-grid">
-        <div className="report-chart-card">
+        <div className="report-chart-card" style={{ gridColumn: '1 / -1' }}>
           <div className="report-chart-title">Top Suppliers by Purchase Amount</div>
-          <div className="report-chart-wrapper">
-            <ResponsiveContainer width="100%" height="100%">
-              <BarChart data={chartData} layout="vertical" margin={{ left: 20 }}>
-                <CartesianGrid strokeDasharray="3 3" horizontal={false} />
-                <XAxis type="number" />
-                <YAxis dataKey="name" type="category" width={100} />
-                <Tooltip formatter={(value) => `₹${value.toLocaleString()}`} />
-                <Bar dataKey="totalAmount" fill="#8b5cf6" radius={[0, 4, 4, 0]} />
-              </BarChart>
-            </ResponsiveContainer>
+          <div className="report-chart-wrapper" style={{ height: '400px' }}>
+            {chartData.length === 0 ? (
+              <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100%', color: 'var(--color-text-muted)' }}>
+                No supplier data available.
+              </div>
+            ) : (
+              <ResponsiveContainer width="100%" height="100%">
+                <BarChart data={chartData} margin={{ top: 20, right: 30, left: 20, bottom: 5 }}>
+                  <CartesianGrid strokeDasharray="3 3" vertical={false} />
+                  <XAxis dataKey="supplierName" />
+                  <YAxis />
+                  <Tooltip formatter={(value) => `₹${value.toLocaleString()}`} />
+                  <Bar dataKey="totalAmount" fill="#10b981" name="Total Purchase Amount" />
+                </BarChart>
+              </ResponsiveContainer>
+            )}
           </div>
         </div>
       </div>

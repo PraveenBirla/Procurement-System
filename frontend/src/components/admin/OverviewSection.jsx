@@ -256,7 +256,7 @@ const statusChartData = useMemo(() => {
       <div className="section-header">
         <h2 className="section-title">Purchase Orders</h2>
 
-        <div className="header-actions">
+        <div className="header-actions" style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
           <NotificationBell setActiveSection={setDashboardSection} />
           <button
             className="refresh-btn"

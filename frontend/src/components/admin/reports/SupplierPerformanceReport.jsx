@@ -1,13 +1,7 @@
 import { useState, useEffect } from "react";
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend } from "recharts";
 import suppliersService from "../../../services/suppliersService";
-
-const mockPerformanceData = [
-  { id: 1, supplier: "TechCorp", rating: 4.8, totalPos: 45, deliveredPos: 40, lateDeliveries: 2, cancelledPos: 1, completedPos: 37 },
-  { id: 2, supplier: "OfficeSupplies Inc", rating: 4.2, totalPos: 120, deliveredPos: 110, lateDeliveries: 15, cancelledPos: 5, completedPos: 100 },
-  { id: 3, supplier: "Global IT", rating: 4.9, totalPos: 30, deliveredPos: 30, lateDeliveries: 0, cancelledPos: 0, completedPos: 30 },
-  { id: 4, supplier: "FastPrint", rating: 3.5, totalPos: 25, deliveredPos: 18, lateDeliveries: 8, cancelledPos: 3, completedPos: 14 },
-];
+import purchaseOrderService from "../../../services/purchaseOrderService";
 
 export const SupplierPerformanceReport = () => {
   const [data, setData] = useState([]);
@@ -20,10 +14,50 @@ export const SupplierPerformanceReport = () => {
   const loadData = async () => {
     setLoading(true);
     try {
-      // Typically would come from a dedicated performance endpoint
-      setData(mockPerformanceData);
+      const [pos, suppliers] = await Promise.all([
+        purchaseOrderService.getAll(),
+        suppliersService.getAllSuppliers()
+      ]);
+
+      if (!pos || !suppliers) {
+        setData([]);
+        return;
+      }
+
+      const supplierMap = {};
+      suppliers.forEach(s => {
+        supplierMap[s.id] = {
+          id: s.id,
+          supplier: s.name,
+          rating: s.rating || 0,
+          totalPos: 0,
+          deliveredPos: 0,
+          lateDeliveries: 0, // Mocked as 0 for now since we don't have actual delivery dates
+          cancelledPos: 0,
+          completedPos: 0
+        };
+      });
+
+      pos.forEach(po => {
+        const sid = po.supplierId;
+        if (supplierMap[sid]) {
+          supplierMap[sid].totalPos++;
+          if (po.status === 'COMPLETED' || po.status === 'DELIVERED') {
+            supplierMap[sid].deliveredPos++;
+            supplierMap[sid].completedPos++;
+          }
+          if (po.status === 'CANCELLED') {
+            supplierMap[sid].cancelledPos++;
+          }
+        }
+      });
+
+      // Filter out suppliers with no POs for the chart
+      const performanceData = Object.values(supplierMap).filter(s => s.totalPos > 0);
+      setData(performanceData);
     } catch (err) {
-      setData(mockPerformanceData);
+      console.error("Failed to load supplier performance data", err);
+      setData([]);
     } finally {
       setLoading(false);
     }
@@ -43,19 +77,25 @@ export const SupplierPerformanceReport = () => {
       <div className="report-charts-grid">
         <div className="report-chart-card" style={{ gridColumn: '1 / -1' }}>
           <div className="report-chart-title">Delivery Performance vs Total POs</div>
-          <div className="report-chart-wrapper">
-            <ResponsiveContainer width="100%" height="100%">
-              <BarChart data={data} margin={{ top: 20, right: 30, left: 20, bottom: 5 }}>
-                <CartesianGrid strokeDasharray="3 3" vertical={false} />
-                <XAxis dataKey="supplier" />
-                <YAxis />
-                <Tooltip />
-                <Legend />
-                <Bar dataKey="deliveredPos" name="Delivered On-Time" fill="#10b981" />
-                <Bar dataKey="lateDeliveries" name="Late Deliveries" fill="#f59e0b" />
-                <Bar dataKey="cancelledPos" name="Cancelled POs" fill="#ef4444" />
-              </BarChart>
-            </ResponsiveContainer>
+          <div className="report-chart-wrapper" style={{ height: '400px' }}>
+            {data.length === 0 ? (
+              <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100%', color: 'var(--color-text-muted)' }}>
+                No supplier performance data available.
+              </div>
+            ) : (
+              <ResponsiveContainer width="100%" height="100%">
+                <BarChart data={data} margin={{ top: 20, right: 30, left: 20, bottom: 5 }}>
+                  <CartesianGrid strokeDasharray="3 3" vertical={false} />
+                  <XAxis dataKey="supplier" />
+                  <YAxis />
+                  <Tooltip />
+                  <Legend />
+                  <Bar dataKey="deliveredPos" name="Delivered On-Time" fill="#10b981" />
+                  <Bar dataKey="lateDeliveries" name="Late Deliveries" fill="#f59e0b" />
+                  <Bar dataKey="cancelledPos" name="Cancelled POs" fill="#ef4444" />
+                </BarChart>
+              </ResponsiveContainer>
+            )}
           </div>
         </div>
       </div>

@@ -208,7 +208,7 @@ export const SupplierProfileSection = ({ setActiveSection: setDashboardSection }
     <div className="admin-requisition-section">
       <div className="section-header">
         <h2 className="section-title">Supplier Profile</h2>
-        <div className="header-actions">
+        <div className="header-actions" style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
           <NotificationBell setActiveSection={setDashboardSection} />
           {!notFound && !editing && (
             <button className="btn-primary" onClick={openEditForm}>

@@ -330,8 +330,8 @@ export const OverviewSection = ({
           <p>Review and action requisitions assigned to your department.</p>
         </div>
 
-        <div className="header-actions">
-          <NotificationBell setActiveSection={setDashboardSection} />
+        <div className="header-actions" style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
+          <NotificationBell setActiveSection={setActiveSection} />
           <button
             type="button"
             className="overview-refresh-btn"
