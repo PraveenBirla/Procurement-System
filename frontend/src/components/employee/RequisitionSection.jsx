@@ -367,6 +367,8 @@ export const RequisitionSection = ({ setActiveSection: setDashboardSection }) =>
   const addItemRow = () => {
     if (!reqForm.categoryId) return;
 
+    if (reqForm.items.length >= products.length) return;
+
     setReqForm({
       ...reqForm,
       items: [
@@ -654,17 +656,9 @@ export const RequisitionSection = ({ setActiveSection: setDashboardSection }) =>
       0
     );
 
-  /* =====================================================
-     RETURN
-  ===================================================== */
-
   return (
     <>
       <div className="requisition-section">
-
-        {/* =================================================
-            HEADER
-        ================================================= */}
 
         <div className="section-header">
 
@@ -699,10 +693,6 @@ export const RequisitionSection = ({ setActiveSection: setDashboardSection }) =>
 
         </div>
 
-        {/* =================================================
-            ERROR
-        ================================================= */}
-
         {error && (
           <div className="error-box">
 
@@ -720,10 +710,6 @@ export const RequisitionSection = ({ setActiveSection: setDashboardSection }) =>
 
           </div>
         )}
-
-        {/* =================================================
-            METRICS
-        ================================================= */}
 
         {!loading && (
           <div className="metrics-grid">
@@ -860,15 +846,9 @@ export const RequisitionSection = ({ setActiveSection: setDashboardSection }) =>
           </div>
         )}
 
-        {/* =================================================
-            CHARTS
-        ================================================= */}
-
         {!loading &&
           requisitions.length > 0 && (
             <div className="charts-grid">
-
-              {/* STATUS DISTRIBUTION */}
 
               <div className="chart-card">
 
@@ -944,10 +924,6 @@ export const RequisitionSection = ({ setActiveSection: setDashboardSection }) =>
                 </div>
 
               </div>
-
-            
-              
-              {/* DUPLICATE CHART */}
 
               <div className="chart-card duplicate-chart">
 
@@ -1026,10 +1002,6 @@ export const RequisitionSection = ({ setActiveSection: setDashboardSection }) =>
             </div>
           )}
 
-        {/* =================================================
-            STATUS FILTERS
-        ================================================= */}
-
         {!loading &&
           requisitions.length > 0 && (
             <div className="status-filter-wrapper">
@@ -1096,10 +1068,6 @@ export const RequisitionSection = ({ setActiveSection: setDashboardSection }) =>
 
             </div>
           )}
-
-        {/* =================================================
-            TABLE
-        ================================================= */}
 
         <div className="table-wrapper">
 
@@ -1284,10 +1252,6 @@ export const RequisitionSection = ({ setActiveSection: setDashboardSection }) =>
         </div>
 
       </div>
-
-      {/* =================================================
-          VIEW MODAL
-      ================================================= */}
 
       {selectedRequisition &&
         createPortal(
@@ -1503,10 +1467,6 @@ export const RequisitionSection = ({ setActiveSection: setDashboardSection }) =>
           document.body
         )}
 
-      {/* =================================================
-          TRACK MODAL
-      ================================================= */}
-
       {showTrackModal &&
         createPortal(
 
@@ -1646,10 +1606,6 @@ export const RequisitionSection = ({ setActiveSection: setDashboardSection }) =>
 
           document.body
         )}
-
-      {/* =================================================
-          CREATE REQUISITION MODAL
-      ================================================= */}
 
       {showCreateModal &&
         createPortal(
@@ -1873,21 +1829,23 @@ export const RequisitionSection = ({ setActiveSection: setDashboardSection }) =>
                             </option>
 
                             {products.map(
-                              (p) => (
+                              (p) => {
 
-                                <option
-                                  key={p.id}
-                                  value={p.id}
-                                >
-                                  {
-                                    p.name
-                                  }{" "}
-                                  {p.sku
-                                    ? `(${p.sku})`
-                                    : ""}
-                                </option>
+                                const isSelectedElsewhere = reqForm.items.some(
+                                  (item, itemIndex) => 
+                                    itemIndex !== index && String(item.productId) === String(p.id)
+                                );
 
-                              )
+                                return (
+                                  <option 
+                                    key={p.id} 
+                                    value={p.id} 
+                                    disabled={isSelectedElsewhere}
+                                  >
+                                    {p.name} {isSelectedElsewhere ? "(Already Selected)" : ""}
+                                  </option>
+                                );
+                              }
                             )}
 
                           </select>

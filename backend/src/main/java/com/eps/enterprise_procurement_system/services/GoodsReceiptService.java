@@ -83,11 +83,6 @@ public class GoodsReceiptService {
                         "Received quantity must equal accepted + rejected quantity");
             }
 
-            if (received > ordered) {
-                throw new RuntimeException(
-                        "Received quantity cannot exceed ordered quantity");
-            }
-
             GoodsReceiptItem item = GoodsReceiptItem.builder()
                     .goodsReceipt(receipt)
                     .product(poItem.getProduct())

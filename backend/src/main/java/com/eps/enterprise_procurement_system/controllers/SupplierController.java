@@ -2,11 +2,14 @@ package com.eps.enterprise_procurement_system.controllers;
 
 import com.eps.enterprise_procurement_system.advices.ApiResponse;
 import com.eps.enterprise_procurement_system.dto.AllSupplierResponseDTO;
+import com.eps.enterprise_procurement_system.dto.ReturnReplacementResponseDTO;
 import com.eps.enterprise_procurement_system.dto.SupplierRequestDTO;
 import com.eps.enterprise_procurement_system.dto.SupplierResponseDTO;
 import com.eps.enterprise_procurement_system.dto.VendorRecommendationResponseDTO;
 import com.eps.enterprise_procurement_system.entities.enums.VerificationStatus;
+import com.eps.enterprise_procurement_system.services.ReturnReplacementService;
 import com.eps.enterprise_procurement_system.services.SupplierService;
+import com.eps.enterprise_procurement_system.util.CurrentUser;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
@@ -22,7 +25,9 @@ import java.util.Map;
 @RequiredArgsConstructor
 public class SupplierController {
 
-    private final SupplierService supplierService;
+        private final CurrentUser currentUser;
+        private final SupplierService supplierService;
+        private final ReturnReplacementService returnReplacementService;
 
     @GetMapping
 
@@ -118,19 +123,17 @@ public class SupplierController {
     }
 
     @PutMapping("/{id}/verify")
-    @PreAuthorize("hasRole('ADMIN', 'PROCUREMENT')")
+    @PreAuthorize("hasAnyRole('ADMIN', 'PROCUREMENT')")
     public ResponseEntity<ApiResponse<Map<String,String>>> updateSupplierVerification(
-            @PathVariable Long id, @RequestBody Map<String, String> request){
+                    @PathVariable Long id, @RequestBody Map<String, String> request) {
 
-        String status = request.get("status");
+            String status = request.get("status");
 
-        String message = supplierService.updateSupplierVerification(id, status);
+            String message = supplierService.updateSupplierVerification(id, status);
 
-        return ResponseEntity.ok(
-                new ApiResponse<>(
-                        Map.of("message", message)
-                )
-        );
+            return ResponseEntity.ok(
+                            new ApiResponse<>(
+                                            Map.of("message", message)));
     }
 
 //     @PutMapping("/{id}/unverify")

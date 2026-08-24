@@ -1,10 +1,13 @@
 package com.eps.enterprise_procurement_system.entities;
 
+import com.eps.enterprise_procurement_system.entities.enums.ResolutionType;
 import com.eps.enterprise_procurement_system.entities.enums.ReturnStatus;
 import jakarta.persistence.*;
 import lombok.*;
 
 import java.time.LocalDateTime;
+import java.util.ArrayList;
+import java.util.List;
 
 @Entity
 @Table(name = "return_replacement")
@@ -36,6 +39,10 @@ public class ReturnReplacement {
     @Builder.Default
     private ReturnStatus status = ReturnStatus.RAISED;
 
+    @Enumerated(EnumType.STRING)
+    @Column(name = "resolution_type")
+    private ResolutionType resolutionType;
+
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "raised_by", foreignKey = @ForeignKey(name = "fk_return_raised_by"))
     private User raisedBy;
@@ -45,6 +52,14 @@ public class ReturnReplacement {
 
     @Column(name = "resolved_at")
     private LocalDateTime resolvedAt;
+
+    @OneToMany(
+            mappedBy = "returnReplacement",
+            cascade = CascadeType.ALL,
+            orphanRemoval = true
+    )
+    @Builder.Default
+    private List<ReturnReplacementItem> items = new ArrayList<>();
 
     @PrePersist
     protected void onCreate() {
