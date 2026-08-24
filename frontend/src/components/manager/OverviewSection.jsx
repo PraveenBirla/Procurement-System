@@ -8,6 +8,11 @@ import {
   Cell,
   Tooltip,
   Legend,
+  BarChart,
+  Bar,
+  XAxis,
+  YAxis,
+  CartesianGrid,
 } from "recharts";
 
 import {
@@ -18,10 +23,12 @@ import {
   RefreshCw,
   Filter,
   Eye,
+  AlertTriangle,
 } from "lucide-react";
 import { NotificationBell } from "../ui/NotificationBell";
 
 import requisitionService from "../../services/requisitionService";
+import authService from "../../services/authService";
 import "./OverviewSection.css";
 
 /* =====================================================
@@ -75,7 +82,12 @@ const STATUS_CLASSNAMES = {
   [BUCKET.REJECTED]: "rejected",
 };
 
-export const OverviewSection = ({ setActiveSection: setDashboardSection }) => {
+export const OverviewSection = ({
+  setActiveSection: setDashboardSection,
+  urgentCount,
+  onViewUrgentRequests,
+}) => {
+  const currentUser = authService.getUser();
   const [requisitions, setRequisitions] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
@@ -207,6 +219,31 @@ export const OverviewSection = ({ setActiveSection: setDashboardSection }) => {
     ].filter((item) => Number(item.value) > 0);
   }, [pendingCount, approvedCount, rejectedCount]);
 
+  const priorityData = useMemo(() => {
+    const counts = requisitions.reduce(
+      (totals, req) => {
+        // `priority` is the PurchaseRequisitionResponseDTO field. The fallbacks
+        // tolerate older response names without changing the API contract.
+        const priority = String(
+          req.priority ?? req.priorityLevel ?? req.requisitionPriority ?? ""
+        ).trim().toUpperCase();
+
+        if (priority === "HIGH") totals.high += 1;
+        if (priority === "NORMAL" || priority === "LOW") totals.normal += 1;
+        return totals;
+      },
+      { high: 0, normal: 0 }
+    );
+
+    const hasPriorityData = counts.high + counts.normal > 0;
+    return hasPriorityData
+      ? [
+          { name: "HIGH", value: counts.high },
+          { name: "NORMAL", value: counts.normal },
+        ]
+      : [];
+  }, [requisitions]);
+
   /* =====================================================
      FILTERED REQUISITIONS (bucket-based)
   ===================================================== */
@@ -289,8 +326,8 @@ export const OverviewSection = ({ setActiveSection: setDashboardSection }) => {
 
       <div className="overview-header">
         <div>
-          <h2>Manager Overview</h2>
-          <p>Overview of all employee requisitions.</p>
+          <h2>{currentUser?.fullName ? `Welcome, ${currentUser.fullName}` : "Manager Overview"}</h2>
+          <p>Review and action requisitions assigned to your department.</p>
         </div>
 
         <div className="header-actions">
@@ -409,10 +446,23 @@ export const OverviewSection = ({ setActiveSection: setDashboardSection }) => {
             </button>
           </div>
 
+          {urgentCount > 0 && (
+            <button type="button" className="high-priority-alert" onClick={onViewUrgentRequests}>
+              <span className="manager-alert-content">
+                <strong>High Priority Requests</strong>
+                <span className="manager-alert-message">
+                  <AlertTriangle size={18} />
+                  {urgentCount} request{urgentCount === 1 ? "" : "s"} require your immediate attention - View Requests
+                </span>
+              </span>
+            </button>
+          )}
+
         {/* =================================================
     CHART
 ================================================= */}
 
+<div className="dashboard-chart-grid">
 <div className="overview-chart-card">
 
   <div className="chart-header">
@@ -487,6 +537,32 @@ export const OverviewSection = ({ setActiveSection: setDashboardSection }) => {
     )}
   </div>
 
+</div>
+<div className="overview-chart-card">
+  <div className="chart-header">
+    <div><h3>Priority Distribution</h3><p>Priority levels across your requisitions.</p></div>
+    <Filter size={18} />
+  </div>
+  <div className="overview-chart" style={{ width: "100%", height: "400px", minHeight: "400px" }}>
+    {priorityData.length > 0 ? (
+      <ResponsiveContainer width="100%" height="100%" minWidth={0} minHeight={0}>
+        <BarChart data={priorityData} margin={{ top: 20, right: 10, left: -20, bottom: 0 }}>
+          <CartesianGrid strokeDasharray="3 3" vertical={false} />
+          <XAxis dataKey="name" />
+          <YAxis allowDecimals={false} label={{ value: "Requests", angle: -90, position: "insideLeft" }} />
+          <Tooltip />
+          <Bar dataKey="value" name="Requisitions" radius={[6, 6, 0, 0]}>
+            {priorityData.map((entry) => (
+              <Cell key={entry.name} fill={entry.name === "HIGH" ? "#EF4444" : "#6366F1"} />
+            ))}
+          </Bar>
+        </BarChart>
+      </ResponsiveContainer>
+    ) : (
+      <div className="no-chart-data">No priority data available.</div>
+    )}
+  </div>
+</div>
 </div>
           {/* =================================================
               FILTERS
@@ -582,6 +658,7 @@ export const OverviewSection = ({ setActiveSection: setDashboardSection }) => {
                     <th>Title</th>
                     <th>Employee</th>
                     <th>Department</th>
+                    <th>Priority</th>
                     <th>Status</th>
                     <th>Amount</th>
                     <th>Created</th>
@@ -597,6 +674,7 @@ export const OverviewSection = ({ setActiveSection: setDashboardSection }) => {
                         <td>{req.title || "-"}</td>
                         <td>{req.employeeName || "-"}</td>
                         <td>{req.departmentName || "-"}</td>
+                        <td><span className={`priority-badge ${req.priority === "HIGH" ? "high" : "normal"}`}>{req.priority || "NORMAL"}</span></td>
 
                         <td>
                           <span
@@ -625,7 +703,7 @@ export const OverviewSection = ({ setActiveSection: setDashboardSection }) => {
                     ))
                   ) : (
                     <tr>
-                      <td colSpan="8" className="no-data">
+                      <td colSpan="9" className="no-data">
                         No requisitions found.
                       </td>
                     </tr>

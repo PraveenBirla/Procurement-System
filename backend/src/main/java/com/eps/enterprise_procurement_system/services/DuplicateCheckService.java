@@ -50,12 +50,18 @@ public class DuplicateCheckService {
      * (different-employee duplicate) if no self-match is found.
      */
     public Result check(User employee, List<RequisitionItemRequestDTO> requestedItems) {
+        return check(employee, requestedItems, null);
+    }
+
+    /** Allows an existing requisition to be re-evaluated without matching itself. */
+    public Result check(User employee, List<RequisitionItemRequestDTO> requestedItems, Long excludedRequisitionId) {
         Set<Long> requestedProductIds = toProductIdSet(requestedItems);
         LocalDateTime since = LocalDateTime.now().minusDays(LOOKBACK_DAYS);
 
         // 1) SAME EMPLOYEE check
         List<PurchaseRequisition> ownRecent = reqRepo
                 .findByEmployeeAndCreatedAtAfterAndStatusNotIn(employee, since, INACTIVE_STATUSES);
+        ownRecent.removeIf(r -> r.getId().equals(excludedRequisitionId));
 
         PurchaseRequisition ownMatch = findOverlap(requestedProductIds, ownRecent);
         if (ownMatch != null) {
@@ -69,6 +75,7 @@ public class DuplicateCheckService {
 
         // exclude the employee's own requisitions — already checked above
         deptRecent.removeIf(r -> r.getEmployee().getId().equals(employee.getId()));
+        deptRecent.removeIf(r -> r.getId().equals(excludedRequisitionId));
 
         PurchaseRequisition otherMatch = findOverlap(requestedProductIds, deptRecent);
         if (otherMatch != null) {

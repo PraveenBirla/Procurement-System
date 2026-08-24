@@ -32,6 +32,59 @@
   color: var(--color-primary-700);
 }
 
+.section-subtitle {
+  margin: 0.3rem 0 0;
+  color: var(--color-text-muted);
+  font-size: 0.9rem;
+}
+
+.metrics-grid {
+  display: grid;
+  grid-template-columns: repeat(6, minmax(0, 1fr));
+  gap: 1rem;
+}
+
+.metric-card {
+  border: 1px solid transparent;
+  border-radius: 14px;
+  padding: 1.1rem;
+  display: flex;
+  align-items: center;
+  gap: 0.9rem;
+  box-shadow: 0 3px 10px rgba(15, 23, 42, 0.05);
+}
+
+.metric-card:hover { transform: translateY(-2px); }
+.metric-total { background: #eff6ff; border-color: #bfdbfe; }
+.metric-pending { background: #fffbeb; border-color: #fde68a; }
+.metric-approved { background: #f0fdf4; border-color: #bbf7d0; }
+.metric-rejected { background: #fef2f2; border-color: #fecaca; }
+.metric-amount { background: #f5f3ff; border-color: #ddd6fe; }
+.metric-duplicates { background: #fff7ed; border-color: #fed7aa; }
+
+.metric-icon { width: 2.8rem; height: 2.8rem; margin-right: 0; flex: 0 0 auto; }
+.metric-total .metric-icon { background: #dbeafe; color: #2563eb; }
+.metric-pending .metric-icon { background: #fef3c7; color: #b45309; }
+.metric-approved .metric-icon { background: #dcfce7; color: #15803d; }
+.metric-rejected .metric-icon { background: #fee2e2; color: #b91c1c; }
+.metric-amount .metric-icon { background: #ede9fe; color: #6d28d9; }
+.metric-duplicates .metric-icon { background: #ffedd5; color: #c2410c; }
+
+.charts-grid { grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 1rem; margin: 0; }
+.chart-card { min-width: 0; }
+.chart-container { min-height: 300px; }
+
+.priority-badge {
+  display: inline-block;
+  padding: 0.3rem 0.55rem;
+  border-radius: 999px;
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 0.025em;
+}
+.priority-badge.high { background: #fee2e2; color: #b91c1c; }
+.priority-badge.normal { background: #fef3c7; color: #92400e; }
+
 /* ─── Error box ─── */
 .error-box {
   background: var(--color-danger-50);
@@ -146,7 +199,8 @@
 }
 
 .view-btn,
-.track-btn {
+.track-btn,
+.edit-btn {
   border: none;
   border-radius: 5px;
   cursor: pointer;
@@ -186,6 +240,9 @@
   opacity: 0.6;
   cursor: not-allowed;
 }
+
+.edit-btn { background: #f59e0b; color: #fff; }
+.edit-btn:hover { background: #d97706; }
 
 /* ─── Status badges ─── */
 .status-badge {
@@ -492,6 +549,8 @@
 
 /* ─── Responsive ─── */
 @media (max-width: 768px) {
+  .metrics-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .charts-grid { grid-template-columns: 1fr; }
   .section-title {
     font-size: 22px;
   }
@@ -524,6 +583,7 @@
 }
 
 @media (max-width: 480px) {
+  .metrics-grid { grid-template-columns: 1fr; }
   .modal-overlay {
     padding: 16px 8px;
   }

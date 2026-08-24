@@ -164,6 +164,27 @@
   color: #047857;
 }
 
+/* Give each procurement KPI a matching soft surface in light mode. */
+.procurement-overview .overview-metric-card:nth-child(5) {
+  background: #eff6ff;
+  border-color: #bfdbfe;
+}
+
+.procurement-overview .overview-metric-card:nth-child(6) {
+  background: #ecfeff;
+  border-color: #a5f3fc;
+}
+
+.procurement-overview .overview-metric-card:nth-child(7) {
+  background: #ecfdf5;
+  border-color: #a7f3d0;
+}
+
+.procurement-overview .overview-metric-card:nth-child(8) {
+  background: #f0fdf4;
+  border-color: #bbf7d0;
+}
+
 /* =========================================================
    AMOUNT SUMMARY
 ========================================================= */
@@ -182,20 +203,51 @@
   gap: 15px;
   padding: 19px;
   border-radius: 13px;
-  background: var(--color-text-primary);
-  color: var(--color-surface);
+  background: #ffffff;
+  border: 1px solid #dbe5f1;
+  color: #0f172a;
+  box-shadow: 0 3px 12px rgba(15, 23, 42, 0.04);
 }
 
 .amount-summary-card span {
   display: block;
   font-size: 12px;
-  opacity: 0.72;
+  color: var(--color-text-muted);
+  opacity: 1;
   margin-bottom: 7px;
 }
 
 .amount-summary-card h3 {
   margin: 0;
   font-size: 21px;
+  color: #0f172a;
+}
+
+.amount-summary-card > svg {
+  box-sizing: border-box;
+  width: 44px;
+  height: 44px;
+  padding: 8px;
+  flex-shrink: 0;
+  border-radius: 11px;
+  background: #eff6ff;
+  color: #2563eb;
+}
+
+.dark .procurement-overview .amount-summary-card {
+  background: var(--color-surface);
+  border-color: var(--color-border-light);
+  color: var(--color-text-primary);
+  box-shadow: none;
+}
+
+.dark .procurement-overview .amount-summary-card h3 {
+  color: var(--color-text-primary);
+}
+
+.dark .procurement-overview .amount-summary-card > svg {
+  background: rgba(59, 130, 246, 0.16);
+  color: #93c5fd;
 }
 
 /* =========================================================

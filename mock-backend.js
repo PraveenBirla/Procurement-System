@@ -271,6 +271,26 @@ app.post('/requisitions', (req, res) => {
     res.json({ data: newReq });
 });
 
+app.put('/requisitions/:id', (req, res) => {
+    const db = loadDb();
+    const email = getUserEmail(req);
+    const requisition = db.requisitions.find(r => r.id === Number(req.params.id));
+    if (!requisition) return res.status(404).json({ message: 'Requisition not found' });
+    if (requisition.employeeEmail !== email) return res.status(403).json({ message: 'You can edit only your own requisitions' });
+    if (requisition.status !== 'PENDING_MANAGER' && requisition.status !== 'PENDING_MANAGER_APPROVAL') {
+        return res.status(400).json({ message: 'Requisitions can be edited only while awaiting manager approval' });
+    }
+    const items = Array.isArray(req.body.items) ? req.body.items : [];
+    requisition.title = req.body.title;
+    requisition.description = req.body.description;
+    requisition.priority = req.body.priority || requisition.priority || 'NORMAL';
+    requisition.items = items;
+    requisition.totalEstimatedAmount = items.reduce((total, item) => total + Number(item.quantity || 0) * Number(item.unitPrice || 0), 0);
+    requisition.updatedAt = new Date().toISOString();
+    saveDb(db);
+    res.json({ data: requisition });
+});
+
 // --- APPROVAL ROUTES ---
 app.get('/approvals/manager', (req, res) => {
     const db = loadDb();

@@ -6,6 +6,7 @@ import {
 import authService from "../../services/authService";
 import { RequisitionSection } from "./RequisitionSection";
 import { ThemeToggle } from "../ui/ThemeToggle";
+import "../layout/DashboardShared.css";
 
 export const EmployeeDashboard = () => {
   const [activeSection, setActiveSection] = useState("requition");

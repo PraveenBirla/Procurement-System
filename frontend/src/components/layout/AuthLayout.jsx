@@ -1,102 +1,64 @@
-import { Package } from 'lucide-react';
+import { BarChart3, Building2, CircleCheckBig, ClipboardList, FileText, Package, ShieldCheck, ShoppingCart, Store, Truck } from 'lucide-react';
+import './AuthLayout.css';
 
-/**
- * AuthLayout — shared layout for Login and Register pages.
- * Desktop: left branding panel + right form panel.
- * Mobile: single column with compact header.
- */
 export default function AuthLayout({ children, title, subtitle }) {
+  const features = [
+    { icon: ShoppingCart, title: 'Smart Requisition Management', text: 'Create and track purchase requests with ease.' },
+    { icon: ShieldCheck, title: 'Multi-Level Approvals', text: 'Route requests to the right approvers automatically.' },
+    { icon: Store, title: 'Supplier Management', text: 'Manage suppliers, products, and contracts efficiently.' },
+    { icon: BarChart3, title: 'Real-Time Procurement Tracking', text: 'Track requests, approvals, orders, and deliveries.' },
+  ];
+
   return (
-    <div className="min-h-screen flex">
-      {/* ── Left branding panel (hidden on mobile) ── */}
-      <div className="hidden lg:flex lg:w-120 xl:w-[520px] flex-col justify-between bg-gradient-to-br from-primary-700 via-primary-600 to-primary-800 dark:from-slate-800 dark:via-slate-900 dark:to-slate-950 text-white p-10 relative overflow-hidden">
-        {/* Decorative circles */}
-        <div className="absolute -top-24 -right-24 w-64 h-64 rounded-full bg-white/5 dark:bg-primary-500/10 dark:blur-3xl" />
-        <div className="absolute -bottom-32 -left-32 w-80 h-80 rounded-full bg-white/5 dark:bg-primary-600/10 dark:blur-3xl" />
-        <div className="absolute top-1/2 right-10 w-40 h-40 rounded-full bg-white/5 dark:bg-primary-400/5 dark:blur-2xl" />
-
-        {/* Logo */}
-        <div className="relative z-10">
-          <div className="flex items-center gap-3 mb-2">
-            <div className="w-10 h-10 bg-white/15 backdrop-blur-md border border-white/20 dark:border-white/10 rounded-xl flex items-center justify-center shadow-sm">
-              <Package className="h-5 w-5 text-white" />
+    <main className="auth-page">
+      <section className="auth-shell">
+        <aside className="auth-brand-panel">
+          <div className="auth-brand-glow auth-brand-glow-top" />
+          <div className="auth-brand-glow auth-brand-glow-bottom" />
+          <div className="auth-brand-mark"><Package size={25} /><span>ProCure</span></div>
+          <div className="auth-procurement-illustration" aria-hidden="true">
+            <div className="auth-illustration-dashboard"><BarChart3 /><span /><span /></div>
+            <ShoppingCart className="auth-illustration-cart" />
+            <Truck className="auth-illustration-truck" />
+          </div>
+          <div className="auth-brand-copy">
+            <p>WELCOME TO</p>
+            <h1>ProCure</h1>
+            <h2>Smarter Procurement.<br />Simpler Operations.</h2>
+            <span>Manage requisitions, approvals, suppliers, purchase orders, and procurement operations from one secure platform.</span>
+            <div className="auth-feature-grid">
+              {features.map(({ icon: Icon, title: featureTitle, text }) => (
+                <div className="auth-feature" key={featureTitle}>
+                  <Icon aria-hidden="true" />
+                  <div><strong>{featureTitle}</strong><small>{text}</small></div>
+                </div>
+              ))}
             </div>
-            <span className="text-lg font-semibold tracking-tight">
-              ProCure
-            </span>
-          </div>
-          <p className="text-primary-200 text-sm mt-1">
-            Smart Procurement and Purchase Order Management System
-          </p>
-        </div>
-
-        {/* Hero text */}
-        <div className="relative z-10 space-y-6">
-          <h1 className="text-3xl xl:text-4xl font-bold leading-tight tracking-tight">
-            Streamline your procurement workflow
-          </h1>
-          <p className="text-primary-100 text-base leading-relaxed max-w-sm">
-            Manage purchase requisitions, track orders, and collaborate with suppliers - all from one secure platform.
-          </p>
-
-          {/* Feature list */}
-          <div className="space-y-3 pt-2">
-            {[
-              'Role-based access control',
-              'Real-time order tracking',
-              'Supplier management',
-              'Budget monitoring',
-            ].map((feature) => (
-              <div key={feature} className="flex items-center gap-3 text-sm text-primary-100">
-                <div className="w-1.5 h-1.5 rounded-full bg-primary-300 flex-shrink-0" />
-                {feature}
+            <div className="auth-workflow" aria-label="Procurement workflow">
+              <h3>PROCUREMENT WORKFLOW</h3>
+              <div className="auth-workflow-steps">
+                <div><ClipboardList aria-hidden="true" /><span>Request</span></div><i aria-hidden="true" />
+                <div><CircleCheckBig aria-hidden="true" /><span>Approval</span></div><i aria-hidden="true" />
+                <div><FileText aria-hidden="true" /><span>Purchase Order</span></div><i aria-hidden="true" />
+                <div><Building2 aria-hidden="true" /><span>Supplier</span></div><i aria-hidden="true" />
+                <div><Truck aria-hidden="true" /><span>Delivery</span></div>
               </div>
-            ))}
+            </div>
           </div>
-        </div>
-
-        {/* Footer */}
-        <div className="relative z-10">
-          <p className="text-primary-300 text-xs">
-            © {new Date().getFullYear()} ProCure. Secure & Trusted.
-          </p>
-        </div>
-      </div>
-
-      {/* ── Right form panel ── */}
-      <div className="flex-1 flex flex-col min-h-screen bg-page">
-        {/* Mobile header */}
-        <div className="lg:hidden flex items-center gap-2.5 px-6 py-4 border-b border-borderLight bg-surface">
-          <div className="w-8 h-8 bg-primary-600 rounded-lg flex items-center justify-center">
-            <Package className="h-4 w-4 text-white" />
-          </div>
-          <span className="text-base font-semibold text-textPrimary tracking-tight">
-            ProCure
-          </span>
-        </div>
-
-        {/* Form area */}
-        <div className="flex-1 flex items-center justify-center px-6 py-8 sm:py-12">
-          <div className="w-full max-w-[440px] animate-fade-in">
-            {/* Page heading */}
-            {(title || subtitle) && (
-              <div className="mb-8">
-                {title && (
-                  <h1 className="text-2xl font-bold text-textPrimary tracking-tight">
-                    {title}
-                  </h1>
-                )}
-                {subtitle && (
-                  <p className="mt-2 text-sm text-textMuted">{subtitle}</p>
-                )}
-              </div>
-            )}
-
-            {/* Form content */}
+          <div className="auth-security-note"><ShieldCheck aria-hidden="true" /><div><strong>Secure. Reliable. Trusted.</strong><span>Your procurement data is always protected.</span></div></div>
+          <small>© {new Date().getFullYear()} ProCure. Secure & trusted.</small>
+        </aside>
+        <section className="auth-form-panel">
+          <div className="auth-mobile-brand"><Package size={20} /><span>ProCure</span></div>
+          <div className="auth-form-content animate-fade-in-scale">
+            {(title || subtitle) && <div className="auth-form-heading">
+              {title && <h1>{title}</h1>}
+              {subtitle && <p>{subtitle}</p>}
+            </div>}
             {children}
           </div>
-        </div>
-      </div>
-    </div>
+        </section>
+      </section>
+    </main>
   );
 }

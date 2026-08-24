@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import {
   LayoutDashboard,
   Clock3,
@@ -13,9 +13,24 @@ import { OverviewSection } from "./OverviewSection";
 import { PendingSection } from "./PendingSection";
 import { ApprovedSection } from "./ApprovedSection";
 import { RejectedSection } from "./RejectedSection";
+import requisitionService from "../../services/requisitionService";
+import { ThemeToggle } from "../ui/ThemeToggle";
+import "../layout/DashboardShared.css";
 
 export const ManagerDashboard = () => {
   const [activeSection, setActiveSection] = useState("overview");
+  
+  const [urgentCount, setUrgentCount] = useState(0);
+  const [urgentOnly, setUrgentOnly] = useState(false);
+
+  useEffect(() => {
+    requisitionService.getManagerUrgentCount().then(setUrgentCount).catch(() => setUrgentCount(0));
+  }, [activeSection]);
+
+  const openUrgentRequests = () => {
+    setUrgentOnly(true);
+    setActiveSection("pending");
+  };
 
   const menuItems = [
     
@@ -38,17 +53,20 @@ export const ManagerDashboard = () => {
               className={`menu-item ${
                 activeSection === item.id ? "active" : ""
               }`}
-              onClick={() => setActiveSection(item.id)}
+              onClick={() => { setUrgentOnly(false); setActiveSection(item.id); }}
             >
               <item.icon size={18} />
               <span>{item.label}</span>
             </button>
           ))}
         </nav>
+        <div className="mt-auto pb-4 flex flex-col gap-2 px-2">
+          <ThemeToggle />
           <button className="logout-btn" onClick={() => {authService.clearAuth();  window.location.reload();} }>
-        <LogOut size={18} />
-         <span>Logout</span>
-         </button>
+            <LogOut size={18} />
+            <span>Logout</span>
+          </button>
+        </div>
       </aside>
 
      
@@ -57,10 +75,14 @@ export const ManagerDashboard = () => {
            <RequisitionSection/>
         )} */}
         {activeSection === "overview" && (
-           <OverviewSection setActiveSection={setActiveSection} />
+           <OverviewSection
+             setActiveSection={setActiveSection}
+             urgentCount={urgentCount}
+             onViewUrgentRequests={openUrgentRequests}
+           />
         )}
         {activeSection === "pending" && (
-           <PendingSection setActiveSection={setActiveSection} />
+           <PendingSection setActiveSection={setActiveSection} urgentOnly={urgentOnly}/>
         )}
         {activeSection === "approved" && (
            <ApprovedSection setActiveSection={setActiveSection} />

@@ -3,22 +3,14 @@ import { createPortal } from "react-dom";
 import procurementService from "../../services/requisitionService";
 import purchaseOrderService from "../../services/purchaseOrderService";
 import suppliersService from "../../services/suppliersService";
+import { Check, LoaderCircle, Sparkles, Star, Trophy, Truck, WalletCards } from "lucide-react";
+import "./ApprovedRequisitionSection.css";
 
 const APPROVED_STATUS = "APPROVED";
 const PO_GENERATED_STATUS = "PO_GENERATED";
 
 // TODO: confirm against your actual PurchaseOrderStatus enum values.
 const PO_SENT_STATUS = "SENT_TO_SUPPLIER";
-
-const mockApprovedRequisitions = [
-  { id: 2, requisitionNo: "REQ-002", title: "Marketing Software", employeeName: "Bob Jones", departmentName: "Marketing", status: "APPROVED", totalEstimatedAmount: 45000, createdAt: new Date(Date.now() - 172800000).toISOString(), items: [{ productId: 1, productName: "Adobe CC", quantity: 10, unitPrice: 4500, categoryId: 3 }] },
-  { id: 6, requisitionNo: "REQ-006", title: "Cloud Hosting", employeeName: "David Lee", departmentName: "IT", status: "PO_GENERATED", totalEstimatedAmount: 15000, createdAt: new Date(Date.now() - 259200000).toISOString(), items: [{ productId: 2, productName: "AWS EC2 instances", quantity: 1, unitPrice: 15000, categoryId: 4 }] },
-  { id: 7, requisitionNo: "REQ-007", title: "Design Assets", employeeName: "Alice Smith", departmentName: "Engineering", status: "APPROVED", totalEstimatedAmount: 2000, createdAt: new Date(Date.now() - 86400000).toISOString(), items: [{ productId: 3, productName: "Stock Photos Sub", quantity: 1, unitPrice: 2000, categoryId: 3 }] },
-];
-
-const mockPoMap = {
-  6: { id: 101, status: "PO_GENERATED", pdfURL: "https://example.com/po101.pdf", poNumber: "PO-001" }
-};
 
 export const ApprovedRequisitionSection = () => {
   const [requisitions, setRequisitions] = useState([]);
@@ -36,6 +28,10 @@ export const ApprovedRequisitionSection = () => {
   const [suppliers, setSuppliers] = useState([]);
   const [recommendation, setRecommendation] = useState(null);
   const [loadingSuppliers, setLoadingSuppliers] = useState(false);
+  const [loadingRecommendations, setLoadingRecommendations] = useState(false);
+  const [recommendationCategoryId, setRecommendationCategoryId] = useState(null);
+  const [recommendationError, setRecommendationError] = useState("");
+  const [aiSelectedSupplierName, setAiSelectedSupplierName] = useState("");
   const [selectedSupplierId, setSelectedSupplierId] = useState("");
   const [expectedDeliveryDate, setExpectedDeliveryDate] = useState("");
   const [genError, setGenError] = useState("");
@@ -121,9 +117,9 @@ export const ApprovedRequisitionSection = () => {
       }
     } catch (err) {
       console.error(err);
-      setRequisitions(mockApprovedRequisitions);
-      setPoMap(mockPoMap);
-      setError(""); // clear error since we have mock data
+      setRequisitions([]);
+      setPoMap({});
+      setError(getErrorMessage(err));
     } finally {
       setLoading(false);
     }
@@ -140,6 +136,9 @@ export const ApprovedRequisitionSection = () => {
     setExpectedDeliveryDate("");
     setGenError("");
     setRecommendation(null);
+    setRecommendationCategoryId(categoryId || null);
+    setRecommendationError("");
+    setAiSelectedSupplierName("");
 
     if (!categoryId) {
       setGenError("categories not found");
@@ -149,13 +148,8 @@ export const ApprovedRequisitionSection = () => {
     setLoadingSuppliers(true);
     
     try {
-      const [list, ranking] = await Promise.all([
-        suppliersService.getAllVerifiedSuppliersByCategoryId(categoryId),
-        suppliersService.getRecommendations(categoryId),
-      ]);
+      const list = await suppliersService.getAllVerifiedSuppliersByCategoryId(categoryId);
       setSuppliers(list);
-      setRecommendation(ranking);
-      if (ranking?.recommendedVendor) setSelectedSupplierId(String(ranking.recommendedVendor.supplierId));
     } catch (err) {
       setGenError(getErrorMessage(err));
     } finally {
@@ -176,9 +170,47 @@ export const ApprovedRequisitionSection = () => {
     setGenModalReq(null);
     setSuppliers([]);
     setRecommendation(null);
+    setRecommendationCategoryId(null);
+    setRecommendationError("");
+    setAiSelectedSupplierName("");
     setSelectedSupplierId("");
     setExpectedDeliveryDate("");
     setGenError("");
+  };
+
+  const loadRecommendations = async () => {
+    if (!recommendationCategoryId || loadingRecommendations) return;
+
+    setLoadingRecommendations(true);
+    setRecommendationError("");
+    try {
+      const ranking = await suppliersService.getRecommendations(recommendationCategoryId);
+      setRecommendation(ranking);
+    } catch (err) {
+      setRecommendationError("Unable to load AI recommendations. You can still select a supplier manually.");
+    } finally {
+      setLoadingRecommendations(false);
+    }
+  };
+
+  const selectRecommendedSupplier = (vendor) => {
+    if (!vendor?.supplierId) return;
+    setSelectedSupplierId(String(vendor.supplierId));
+    setAiSelectedSupplierName(vendor.supplierName || "Selected supplier");
+  };
+
+  const handleSupplierChange = (supplierId) => {
+    setSelectedSupplierId(supplierId);
+    const selectedRecommendation = recommendation?.vendors?.find(
+      (vendor) => String(vendor.supplierId) === String(supplierId)
+    );
+    setAiSelectedSupplierName(selectedRecommendation?.supplierName || "");
+  };
+
+  const formatRecommendationScore = (score) => {
+    const value = Number(score);
+    if (!Number.isFinite(value)) return "-";
+    return `${Math.round(value <= 1 ? value * 100 : value)}%`;
   };
 
   const handleGenerateSubmit = async (e) => {
@@ -326,6 +358,7 @@ export const ApprovedRequisitionSection = () => {
               <th>Req No</th>
               <th>Title</th>
               <th>Department</th>
+              <th>Priority</th>
               <th>Status</th>
               <th>Amount</th>
               <th>Created</th>
@@ -349,6 +382,7 @@ export const ApprovedRequisitionSection = () => {
                     <td data-label="Req No">{req.requisitionNo}</td>
                     <td data-label="Title">{req.title}</td>
                     <td data-label="Department">{req.departmentName}</td>
+                    <td data-label="Priority"><span className={`priority-badge ${req.priority === "HIGH" ? "high" : "normal"}`}>{req.priority || "NORMAL"}</span></td>
                     <td data-label="Status">
                       <span className={`status-badge ${req.status.toLowerCase()}`}>
                         {req.status.replaceAll("_", " ")}
@@ -421,7 +455,7 @@ export const ApprovedRequisitionSection = () => {
       {genModalReq &&
         createPortal(
           <div className="modal-overlay" onClick={closeGenerateModal}>
-            <div className="modal-content action-modal" onClick={(e) => e.stopPropagation()}>
+            <div className="modal-content action-modal generate-po-modal" onClick={(e) => e.stopPropagation()}>
               <div className="modal-header">
                 <h2>Generate PO - {genModalReq.requisitionNo}</h2>
                 <button
@@ -434,7 +468,9 @@ export const ApprovedRequisitionSection = () => {
                 </button>
               </div>
 
-              <p className="action-summary">
+              <form className="generate-po-form" onSubmit={handleGenerateSubmit} noValidate>
+                <div className="generate-po-modal-body">
+              <p className="po-product-summary">
                 <strong>{genModalReq.title}</strong> - ₹
                 {Number(genModalReq.totalEstimatedAmount).toLocaleString()}
               </p>
@@ -445,22 +481,69 @@ export const ApprovedRequisitionSection = () => {
                 </div>
               )}
 
-              <form onSubmit={handleGenerateSubmit} noValidate>
-                {recommendation?.recommendedVendor ? (
+                <section className="ai-recommendation-section" aria-labelledby="ai-recommendation-title">
+                  <span className="ai-kicker"><Sparkles size={15} aria-hidden="true" /> AI decision support</span>
+                  <h3 id="ai-recommendation-title">AI Vendor Recommendation</h3>
+                  <p className="ai-description">Find the best supplier based on supplier performance, price competitiveness, delivery reliability and eligibility.</p>
+
+                  {!recommendation && !recommendationError && (
+                    <button type="button" className="ai-recommendation-trigger" onClick={loadRecommendations} disabled={loadingRecommendations || !recommendationCategoryId}>
+                      {loadingRecommendations ? <LoaderCircle className="spin" size={17} aria-hidden="true" /> : <Sparkles size={17} aria-hidden="true" />}
+                      {loadingRecommendations ? "Analyzing suppliers…" : "Get AI Recommendations"}
+                    </button>
+                  )}
+                  {recommendationError && <p className="ai-feedback ai-feedback-error">{recommendationError}</p>}
+                  {recommendation && (recommendation.vendors?.length ?? 0) === 0 && (
+                    <p className="ai-feedback">No AI recommendations available. Please verify that active and verified suppliers are available for this product category.</p>
+                  )}
+                  {recommendation?.vendors?.length > 0 && (
+                    <>
+                      <div className="recommendation-results-heading">
+                        <div><h4>Top supplier matches</h4><p>Based on supplier performance and eligibility</p></div>
+                        <button type="button" className="ai-refresh-button" onClick={loadRecommendations} disabled={loadingRecommendations}>Refresh</button>
+                      </div>
+                      <div className="recommendation-list">
+                        {recommendation.vendors.slice(0, 3).map((vendor, index) => {
+                          const isBestMatch = index === 0 || vendor.recommended;
+                          const isSelected = String(selectedSupplierId) === String(vendor.supplierId);
+                          return (
+                            <button type="button" key={vendor.supplierId} className={`recommendation-card ${isBestMatch ? "best-match" : ""} ${isSelected ? "selected" : ""}`} onClick={() => selectRecommendedSupplier(vendor)} aria-pressed={isSelected}>
+                              <div className="recommendation-card-top">
+                                <div className="vendor-rank">{isBestMatch ? <Trophy size={17} aria-hidden="true" /> : <span>{vendor.recommendationRank || index + 1}</span>}<span>{isBestMatch ? "Best match" : `Rank ${vendor.recommendationRank || index + 1}`}</span></div>
+                                <div className="match-score"><strong>{formatRecommendationScore(vendor.recommendationScore)}</strong><span>AI match score</span></div>
+                              </div>
+                              {isBestMatch && <span className="recommended-badge">AI Recommended</span>}
+                              <strong className="vendor-name">{vendor.supplierName}</strong>
+                              <div className="recommendation-metrics">
+                                <span><Star size={14} aria-hidden="true" /> Rating <b>{vendor.rating ?? "—"}</b></span>
+                                <span><WalletCards size={14} aria-hidden="true" /> Price <b>{vendor.priceRating ?? "—"}</b></span>
+                                <span><Truck size={14} aria-hidden="true" /> Delivery <b>{vendor.deliveryRating ?? "—"}</b></span>
+                                <span><Check size={14} aria-hidden="true" /> Verified</span>
+                              </div>
+                              {vendor.recommendationReason && <p>{vendor.recommendationReason}</p>}
+                            </button>
+                          );
+                        })}
+                      </div>
+                      <div className="recommendation-factors"><strong>Recommendation factors</strong><span>Supplier rating 40%</span><span>Price performance 30%</span><span>Delivery performance 20%</span><span>Eligibility 10%</span></div>
+                      <button type="button" className="use-ai-supplier-button" onClick={() => selectRecommendedSupplier(recommendation.vendors[0])}><Sparkles size={17} aria-hidden="true" /> Use AI Recommended Supplier</button>
+                    </>
+                  )}
+                </section>
+                {aiSelectedSupplierName && <p className="ai-selection-confirmation"><Check size={16} aria-hidden="true" /> AI selected: <strong>{aiSelectedSupplierName}</strong></p>}
+                {recommendation?.legacyRecommendedVendor && (
                   <div className="field">
                     <label>AI Vendor Recommendation</label>
                     <p><strong>{recommendation.recommendedVendor.supplierName}</strong> — {recommendation.recommendedVendor.recommendationScore}%</p>
                     <p className="action-summary">{recommendation.recommendedVendor.recommendationReason}</p>
                   </div>
-                ) : !loadingSuppliers && (
-                  <p className="no-data">No verified active vendors are available for this category.</p>
                 )}
                 <div className="field">
                   <label>Supplier</label>
                   {loadingSuppliers ? (
                     <p className="no-data">Loading suppliers…</p>
                   ) : (
-                    <select value={selectedSupplierId} onChange={(e) => setSelectedSupplierId(e.target.value)}>
+                    <select value={selectedSupplierId} onChange={(e) => handleSupplierChange(e.target.value)}>
                       <option value="">Select supplier</option>
                       {suppliers.map((s) => (
                         <option key={s.id} value={s.id}>
@@ -481,7 +564,9 @@ export const ApprovedRequisitionSection = () => {
                   />
                 </div>
 
-                <div className="modal-actions">
+                </div>
+
+                <div className="modal-actions generate-po-modal-footer">
                   <button type="submit" className="approve-btn-lg" disabled={submittingGenerate || loadingSuppliers}>
                     {submittingGenerate ? "Generating…" : "Generate PO"}
                   </button>

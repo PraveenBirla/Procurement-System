@@ -1,7 +1,7 @@
 import { useEffect, useState, useRef } from "react";
 import requisitionService from "../../services/requisitionService";
 import { createPortal } from "react-dom";
-import { Eye, CheckCircle2, XCircle, RefreshCw } from "lucide-react";
+import { Eye, CheckCircle2, XCircle, RefreshCw, RotateCcw } from "lucide-react";
 
 const PENDING_STATUS = "PENDING_FINANCE";
 const STORAGE_KEY = "finance_pending_timers_v1";
@@ -298,6 +298,7 @@ export const PendingSection = () => {
               <th>Title</th>
               <th>Employee</th>
               <th>Department</th>
+              <th>Priority</th>
               <th>Status</th>
               <th>Amount</th>
               <th>Created</th>
@@ -329,6 +330,7 @@ export const PendingSection = () => {
                     <td>{req.title || "-"}</td>
                     <td>{req.employeeName || "-"}</td>
                     <td>{req.departmentName || "-"}</td>
+                    <td><span className={`priority-badge ${req.priority === "HIGH" ? "high" : "normal"}`}>{req.priority || "NORMAL"}</span></td>
                     <td>
                       <span
                         className={`status-badge ${
@@ -360,6 +362,7 @@ export const PendingSection = () => {
                             onClick={() => handleResetDecision(req.id)}
                             disabled={resettingId === req.id}
                           >
+                            <RotateCcw size={14} />
                             {resettingId === req.id ? "Resetting…" : "Reset Decision"}
                           </button>
                         </div>
@@ -441,11 +444,50 @@ export const PendingSection = () => {
                 {selectedRequisition.departmentName || "-"}
               </p>
               <p>
-                <strong>Amount:</strong> ₹
-                {Number(
-                  selectedRequisition.totalEstimatedAmount || 0
-                ).toLocaleString("en-IN")}
+                <strong>Status:</strong>{" "}
+                <span
+                  className={`status-badge ${
+                    selectedRequisition.status?.toLowerCase() || ""
+                  }`}
+                >
+                  {formatStatus(selectedRequisition.status)}
+                </span>
               </p>
+
+              <h3>Products</h3>
+              <div className="table-wrapper">
+                <table className="table">
+                  <thead>
+                    <tr>
+                      <th>Product</th>
+                      <th>Qty</th>
+                      <th>Unit Price</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {selectedRequisition.items?.length > 0 ? (
+                      selectedRequisition.items.map((item) => (
+                        <tr key={item.id}>
+                          <td>{item.productName}</td>
+                          <td>{item.quantity}</td>
+                          <td>
+                            ₹
+                            {Number(item.unitPrice || 0).toLocaleString(
+                              "en-IN"
+                            )}
+                          </td>
+                        </tr>
+                      ))
+                    ) : (
+                      <tr>
+                        <td colSpan="3" className="no-data">
+                          No item details available
+                        </td>
+                      </tr>
+                    )}
+                  </tbody>
+                </table>
+              </div>
 
               <div className="modal-actions">
                 <button

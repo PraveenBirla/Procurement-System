@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import {
  ClipboardList,
   BadgeCheck,
@@ -9,6 +9,7 @@ import {
   Building2
 } from "lucide-react";  
 import authService from "../../services/authService";
+import requisitionService from "../../services/requisitionService";
 import { RequisitionSection } from "./RequisitionSection";
 import { ApprovedRequisitionSection } from "./ApprovedRequisitionSection";
 import { PurchaseOrderSection } from "./PurchaseOrderSection";
@@ -17,8 +18,14 @@ import { CompletedOrderSection } from "./CompletedOrderSection";
 import { SupplierSection } from "../admin/SupplierSection";
 import { OverviewSection } from "./OverviewSection";
 import { ThemeToggle } from "../ui/ThemeToggle";
+import "../layout/DashboardShared.css";
 export const ProcurementDashboard = () => {
   const [activeSection, setActiveSection] = useState("overview");
+  const [urgentCount, setUrgentCount] = useState(0);
+
+  useEffect(() => {
+    requisitionService.getCurrentRoleUrgentCount().then(setUrgentCount).catch(() => setUrgentCount(0));
+  }, [activeSection]);
 
   const menuItems = [ 
      { id: "overview", label: "Overview", icon:ClipboardList },
@@ -68,7 +75,13 @@ export const ProcurementDashboard = () => {
           {activeSection === "suppliers" && <SupplierSection setActiveSection={setActiveSection} /> }
           {activeSection === "DeliveredOrders" && <DeliveredSection setActiveSection={setActiveSection} /> }
           {activeSection === "CompletedOrders" && <CompletedOrderSection setActiveSection={setActiveSection} /> }
-          {activeSection === "overview" && <OverviewSection setActiveSection={setActiveSection} /> }
+          {activeSection === "overview" && (
+            <OverviewSection
+              setActiveSection={setActiveSection}
+              urgentCount={urgentCount}
+              onViewUrgentRequests={() => setActiveSection("requisition")}
+            />
+          )}
       </main>
     </div>
   );
