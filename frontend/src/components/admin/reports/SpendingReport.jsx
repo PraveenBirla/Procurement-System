@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react";
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend } from "recharts";
+import reportService from "../../../services/reportService";
 
 const mockSpendingData = {
   summary: {
@@ -23,12 +24,33 @@ export const SpendingReport = () => {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    // Simulate API call
-    setTimeout(() => {
-      setData(mockSpendingData);
-      setLoading(false);
-    }, 500);
-  }, []);
+
+    const loadReport = async () => {
+
+        try {
+
+            setLoading(true);
+
+            const response = await reportService.getSpendingReport();
+
+            setData(response);
+
+        } catch (error) {
+
+            console.error(
+                "Failed to load spending report:",
+                error
+            );
+
+        } finally {
+
+            setLoading(false);
+        }
+    };
+
+    loadReport();
+
+}, []);
 
   if (loading || !data) return <div>Loading report...</div>;
 
