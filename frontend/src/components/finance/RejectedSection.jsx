@@ -120,6 +120,7 @@ export const  RejectedSection = () => {
               <th>Requisition No</th>
               <th>Title</th>
               <th>Department</th>
+              <th>Priority</th>
               <th>Status</th>
               <th>Amount</th>
               <th>Created</th>
@@ -156,6 +157,10 @@ export const  RejectedSection = () => {
 
                   <td>
                     {req.departmentName || "-"}
+                  </td>
+
+                  <td>
+                    <span className={`priority-badge ${req.priority === "HIGH" ? "high" : "normal"}`}>{req.priority || "NORMAL"}</span>
                   </td>
 
                   <td>

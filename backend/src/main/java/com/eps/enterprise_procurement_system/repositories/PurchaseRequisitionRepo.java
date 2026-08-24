@@ -31,6 +31,8 @@ public interface PurchaseRequisitionRepo extends JpaRepository<PurchaseRequisiti
 
     List<PurchaseRequisition> findByEmployee_Department_IdAndStatusAndPriorityOrderByCreatedAtDesc(Long departmentId, RequisitionStatus status, RequisitionPriority priority);
 
+    long countByStatusAndPriority(RequisitionStatus status, RequisitionPriority priority);
+
     List<PurchaseRequisition> findByStatusOrderByCreatedAtDesc(
             RequisitionStatus status
     );

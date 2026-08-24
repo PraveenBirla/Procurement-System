@@ -8,6 +8,11 @@ import {
   Cell,
   Tooltip,
   Legend,
+  BarChart,
+  Bar,
+  XAxis,
+  YAxis,
+  CartesianGrid,
 } from "recharts";
 
 import {
@@ -18,10 +23,12 @@ import {
   RefreshCw,
   Filter,
   Eye,
+  AlertTriangle,
 } from "lucide-react";
 import { NotificationBell } from "../ui/NotificationBell";
 
 import requisitionService from "../../services/requisitionService";
+import authService from "../../services/authService";
 // import "./FinanceOverviewSection.css";
 
 const PENDING_QUERY = "PENDING_FINANCE";
@@ -40,7 +47,12 @@ const STATUS_COLORS = {
   [BUCKET.REJECTED]: "#ef4444",
 };
 
-export const OverviewSection = ({ setActiveSection: setDashboardSection }) => {
+export const OverviewSection = ({
+  setActiveSection: setDashboardSection,
+  urgentCount,
+  onViewUrgentRequests,
+}) => {
+  const currentUser = authService.getUser();
   const [requisitions, setRequisitions] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
@@ -201,6 +213,25 @@ export const OverviewSection = ({ setActiveSection: setDashboardSection }) => {
     ]
   );
 
+  const priorityData = useMemo(() => {
+    const counts = requisitions.reduce(
+      (totals, req) => {
+        const priority = String(req.priority ?? "").trim().toUpperCase();
+        if (priority === "HIGH") totals.high += 1;
+        if (priority === "NORMAL" || priority === "LOW") totals.normal += 1;
+        return totals;
+      },
+      { high: 0, normal: 0 }
+    );
+
+    return counts.high + counts.normal > 0
+      ? [
+          { name: "HIGH", value: counts.high },
+          { name: "NORMAL", value: counts.normal },
+        ]
+      : [];
+  }, [requisitions]);
+
   const handleChartClick = (data) => {
     const status = data?.payload?.status;
 
@@ -318,7 +349,7 @@ export const OverviewSection = ({ setActiveSection: setDashboardSection }) => {
       <div className="overview-header">
 
         <div>
-          <h2>Finance Overview</h2>
+          <h2>{currentUser?.fullName ? `Welcome, ${currentUser.fullName}` : "Finance Overview"}</h2>
           <p>
             Overview of employee requisitions
             awaiting or completed by Finance.
@@ -455,8 +486,21 @@ export const OverviewSection = ({ setActiveSection: setDashboardSection }) => {
 
           </div>
 
+          {urgentCount > 0 && (
+            <button type="button" className="role-priority-alert" onClick={onViewUrgentRequests}>
+              <span className="role-priority-alert-content">
+                <strong>High Priority Requests</strong>
+                <span className="role-priority-alert-message">
+                  <AlertTriangle size={18} />
+                  {urgentCount} high-priority request{urgentCount === 1 ? "" : "s"} require your attention - View Requests
+                </span>
+              </span>
+            </button>
+          )}
+
           {/* CHART */}
 
+          <div className="dashboard-chart-grid">
           <div className="overview-chart-card">
 
             <div className="chart-header">
@@ -531,6 +575,36 @@ export const OverviewSection = ({ setActiveSection: setDashboardSection }) => {
               )}
             </div>
 
+          </div>
+
+          <div className="overview-chart-card">
+            <div className="chart-header">
+              <div>
+                <h3>Priority Distribution</h3>
+                <p>Priority levels across your requisitions.</p>
+              </div>
+              <Filter size={18} />
+            </div>
+            <div className="overview-chart" style={{ width: "100%", height: "400px", minHeight: "400px" }}>
+              {priorityData.length > 0 ? (
+                <ResponsiveContainer width="100%" height="100%" minWidth={0} minHeight={0}>
+                  <BarChart data={priorityData} margin={{ top: 20, right: 10, left: -20, bottom: 0 }}>
+                    <CartesianGrid strokeDasharray="3 3" vertical={false} />
+                    <XAxis dataKey="name" />
+                    <YAxis allowDecimals={false} label={{ value: "Requests", angle: -90, position: "insideLeft" }} />
+                    <Tooltip />
+                    <Bar dataKey="value" name="Requisitions" radius={[6, 6, 0, 0]}>
+                      {priorityData.map((entry) => (
+                        <Cell key={entry.name} fill={entry.name === "HIGH" ? "#EF4444" : "#6366F1"} />
+                      ))}
+                    </Bar>
+                  </BarChart>
+                </ResponsiveContainer>
+              ) : (
+                <div className="no-chart-data">No priority data available.</div>
+              )}
+            </div>
+          </div>
           </div>
 
           {/* FILTER */}
@@ -641,6 +715,7 @@ export const OverviewSection = ({ setActiveSection: setDashboardSection }) => {
                     <th>Requisition No</th>
                     <th>Title</th>
                     <th>Department</th>
+                    <th>Priority</th>
                     <th>Status</th>
                     <th>Amount</th>
                     <th>Created</th>
@@ -667,6 +742,8 @@ export const OverviewSection = ({ setActiveSection: setDashboardSection }) => {
                         <td>
                           {req.departmentName || "-"}
                         </td>
+
+                        <td><span className={`priority-badge ${req.priority === "HIGH" ? "high" : "normal"}`}>{req.priority || "NORMAL"}</span></td>
 
                         <td>
                           <span
@@ -732,7 +809,7 @@ export const OverviewSection = ({ setActiveSection: setDashboardSection }) => {
 
                     <tr>
                       <td
-                        colSpan="7"
+                        colSpan="8"
                         className="no-data"
                       >
                         No requisitions found.

@@ -8,6 +8,7 @@ import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
@@ -40,6 +41,14 @@ public class PurchaseRequisitionController {
         return ResponseEntity.ok(new ApiResponse<>(service.createRequisition(req, currentUser.get())));
     }
 
+    @PutMapping("/{id}")
+    @PreAuthorize("hasRole('EMPLOYEE')")
+    public ResponseEntity<ApiResponse<PurchaseRequisitionResponseDTO>> updateEmployeeRequisition(
+            @PathVariable Long id, @Valid @RequestBody PurchaseRequisitionRequestDTO req) {
+        return ResponseEntity.ok(new ApiResponse<>(
+                service.updateEmployeeRequisition(id, req, currentUser.get())));
+    }
+
     @GetMapping("/all")
     @PreAuthorize("hasAnyRole('ADMIN', 'MANAGER', 'PROCUREMENT_OFFICER', 'EMPLOYEE')")
     public ResponseEntity<ApiResponse<List<PurchaseRequisitionResponseDTO>>> getAll(){
@@ -68,6 +77,12 @@ public class PurchaseRequisitionController {
     @PreAuthorize("hasRole('MANAGER')")
     public ResponseEntity<ApiResponse<List<PurchaseRequisitionResponseDTO>>> getManagerUrgentRequisitions() {
         return ResponseEntity.ok(new ApiResponse<>(service.getManagerUrgentRequisitions()));
+    }
+
+    @GetMapping("/urgent/count")
+    @PreAuthorize("hasAnyRole('FINANCE', 'PROCUREMENT')")
+    public ResponseEntity<ApiResponse<Long>> getCurrentRoleUrgentCount() {
+        return ResponseEntity.ok(new ApiResponse<>(service.getCurrentRoleUrgentCount()));
     }
 
 
@@ -111,7 +126,7 @@ public class PurchaseRequisitionController {
     }
 
     @PostMapping("/{id}/procurement-decision")
-    @PreAuthorize("hasRole('FINANCE')")
+    @PreAuthorize("hasRole('PROCUREMENT')")
     public ResponseEntity<ApiResponse<PurchaseRequisitionResponseDTO>>  procurement(@PathVariable Long id, @Valid @RequestBody DecisionRequestDTO req) {
         return ResponseEntity.ok(new ApiResponse<>(service.decideRequisition(id, ApprovalType.PROCUREMENT, req, currentUser.get())));
     }

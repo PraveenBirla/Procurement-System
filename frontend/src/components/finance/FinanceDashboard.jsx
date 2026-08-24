@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import {
    LayoutDashboard,
   Clock3,
@@ -8,15 +8,22 @@ import {
   LogOut
 } from "lucide-react";  
 import authService from "../../services/authService";
+import requisitionService from "../../services/requisitionService";
 import { RequisitionSection } from "./RequisitionSection";
 import { RejectedSection } from "./RejectedSection";
 import { ApprovedSection } from "./ApprovedSection";
 import { PendingSection } from "./PendingSection";
 import { OverviewSection } from "./OverviewSection";
 import { ThemeToggle } from "../ui/ThemeToggle";
+import "../layout/DashboardShared.css";
 
 export const FinanceDashboard = () => {
   const [activeSection, setActiveSection] = useState("overview");
+  const [urgentCount, setUrgentCount] = useState(0);
+
+  useEffect(() => {
+    requisitionService.getCurrentRoleUrgentCount().then(setUrgentCount).catch(() => setUrgentCount(0));
+  }, [activeSection]);
 
   const menuItems = [
    
@@ -84,8 +91,12 @@ export const FinanceDashboard = () => {
          {activeSection === "pending" && (
            <PendingSection setActiveSection={setActiveSection} />
         )} 
-         {activeSection === "overview" && (
-           <OverviewSection setActiveSection={setActiveSection} />
+        {activeSection === "overview" && (
+           <OverviewSection
+             setActiveSection={setActiveSection}
+             urgentCount={urgentCount}
+             onViewUrgentRequests={() => setActiveSection("pending")}
+           />
         )} 
          
       </main>

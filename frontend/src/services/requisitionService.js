@@ -52,6 +52,16 @@ const requisitionService = {
       return res.data.data;
      },
 
+     async updateEmployeeRequisition(id, requisition){
+       const res = await api.put(`/requisitions/${id}`, requisition);
+       return res.data.data;
+     },
+
+     async getCurrentRoleUrgentCount(){
+      const res = await api.get("/requisitions/urgent/count");
+      return res.data.data;
+     },
+
 
      async getManagerRequisitionsByStatus(status){
       const res = await api.get("/approvals/manager",{

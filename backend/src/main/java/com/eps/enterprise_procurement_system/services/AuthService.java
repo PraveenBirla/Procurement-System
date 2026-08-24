@@ -98,8 +98,9 @@ public class AuthService {
             LoginResponseDTO responseDTO = LoginResponseDTO.builder()
                 .accessToken(jwtService.generateAceessToken(user))
                 .refreshToken(jwtService.generateRefreshToken(user))
-                .message("Login Successful")
+                    .message("Login Successful")
                     .role(user.getRole())
+                    .fullName(user.getFullName())
                 .build();
             return responseDTO;
             
@@ -123,6 +124,7 @@ public class AuthService {
                     .refreshToken(jwtService.generateRefreshToken(user))
                     .message("Token refreshed successfully")
                     .role(user.getRole())
+                    .fullName(user.getFullName())
                     .build();
         } catch (Exception e) {
             throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Invalid refresh token");

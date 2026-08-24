@@ -1,0 +1,1175 @@
+/* =========================================================
+   PROCURE AUTHENTICATION PAGE
+   Full-screen 60% Blue / 40% White Layout
+   ========================================================= */
+
+.auth-page {
+  width: 100%;
+  min-height: 100vh;
+  min-height: 100dvh;
+  background: #ffffff;
+}
+
+
+/* =========================================================
+   MAIN SHELL
+   ========================================================= */
+
+.auth-shell {
+  width: 100%;
+  height: 100vh;
+  height: 100dvh;
+  min-height: 100vh;
+  min-height: 100dvh;
+
+  display: grid;
+  grid-template-columns: 60% 40%;
+
+  overflow: hidden;
+  background: #ffffff;
+}
+
+
+/* =========================================================
+   LEFT BLUE BRAND PANEL
+   ========================================================= */
+
+.auth-brand-panel {
+  position: relative;
+  z-index: 1;
+
+  display: flex;
+  flex-direction: column;
+
+  min-width: 0;
+  min-height: 0;
+
+  padding: 34px 52px 24px;
+
+  overflow: visible;
+
+  color: #ffffff;
+
+  background:
+    radial-gradient(
+      circle at 42% -5%,
+      rgba(75, 145, 245, 0.25) 0,
+      rgba(75, 145, 245, 0.25) 95px,
+      transparent 96px
+    ),
+    linear-gradient(
+      135deg,
+      #083da9 0%,
+      #064bcc 48%,
+      #0d55d5 100%
+    );
+}
+
+
+/* =========================================================
+   LARGE WHITE CURVED DIVIDER
+   ========================================================= */
+
+.auth-brand-panel::after {
+  content: '';
+
+  position: absolute;
+  z-index: 0;
+
+  top: -8%;
+  right: clamp(-245px, -12vw, -155px);
+
+  width: clamp(300px, 25vw, 470px);
+  height: 116%;
+
+  background: #ffffff;
+
+  /*
+    Large organic curve.
+    This creates the main blue/white transition.
+  */
+  border-radius: 62% 0 0 62%;
+
+  pointer-events: none;
+}
+
+
+/* =========================================================
+   SCALLOPED / SOFT CURVE LAYERS
+   ========================================================= */
+
+.auth-brand-panel::before {
+  content: '';
+
+  position: absolute;
+  z-index: 0;
+
+  top: 7%;
+  right: clamp(-142px, -7vw, -90px);
+
+  width: clamp(175px, 14vw, 275px);
+  height: 86%;
+
+  border-radius: 0 100% 100% 0;
+
+  background:
+    linear-gradient(
+      180deg,
+      rgba(139, 185, 255, 0.55),
+      rgba(46, 119, 230, 0.72)
+    );
+
+  box-shadow:
+    34px 0 0 rgba(180, 211, 255, 0.42),
+    68px 0 0 rgba(255, 255, 255, 0.88);
+
+  pointer-events: none;
+}
+
+
+/* =========================================================
+   CONTENT LAYER
+   ========================================================= */
+
+.auth-brand-panel > *:not(.auth-brand-glow) {
+  position: relative;
+  z-index: 2;
+}
+
+
+/* =========================================================
+   DECORATIVE GLOWS
+   ========================================================= */
+
+.auth-brand-glow {
+  position: absolute;
+  z-index: 0;
+
+  border-radius: 50%;
+
+  pointer-events: none;
+
+  background: rgba(151, 198, 255, 0.19);
+}
+
+.auth-brand-glow-top {
+  width: 205px;
+  height: 205px;
+
+  top: -132px;
+  left: 37%;
+}
+
+.auth-brand-glow-bottom {
+  width: 260px;
+  height: 260px;
+
+  right: 10%;
+  bottom: -150px;
+}
+
+
+/* =========================================================
+   BRAND LOGO
+   ========================================================= */
+
+.auth-brand-mark {
+  display: flex;
+  align-items: center;
+
+  gap: 13px;
+
+  flex-shrink: 0;
+
+  font-size: 30px;
+  font-weight: 800;
+
+  letter-spacing: -1.1px;
+}
+
+.auth-brand-mark svg {
+  width: 54px;
+  height: 54px;
+
+  padding: 11px;
+
+  border: 2px solid rgba(255, 255, 255, 0.78);
+  border-radius: 13px;
+
+  background: rgba(255, 255, 255, 0.06);
+
+  flex-shrink: 0;
+}
+
+
+/* =========================================================
+   PROCUREMENT ILLUSTRATION
+   ========================================================= */
+
+.auth-procurement-illustration {
+  position: absolute !important;
+
+  z-index: 0 !important;
+
+  top: 255px;
+
+  /*
+    Keep illustration toward the unused middle/right
+    portion of the blue panel.
+  */
+  right: clamp(95px, 9vw, 175px);
+
+  width: 300px;
+  height: 245px;
+
+  opacity: 0.11;
+
+  color: #a9ceff;
+
+  pointer-events: none;
+}
+
+
+/* Dashboard */
+
+.auth-illustration-dashboard {
+  position: absolute;
+
+  top: 0;
+  left: 35px;
+
+  display: grid;
+
+  grid-template-columns: 1fr 1fr;
+
+  gap: 12px;
+
+  width: 205px;
+  height: 155px;
+
+  padding: 20px;
+
+  border: 2px solid currentColor;
+  border-radius: 12px;
+}
+
+.auth-illustration-dashboard svg {
+  grid-row: span 2;
+
+  width: 78px;
+  height: 78px;
+}
+
+.auth-illustration-dashboard span {
+  border: 2px solid currentColor;
+  border-radius: 5px;
+}
+
+
+/* Cart */
+
+.auth-illustration-cart {
+  position: absolute;
+
+  bottom: 2px;
+  left: 0;
+
+  width: 78px;
+  height: 78px;
+}
+
+
+/* Truck */
+
+.auth-illustration-truck {
+  position: absolute;
+
+  right: 0;
+  bottom: 18px;
+
+  width: 92px;
+  height: 92px;
+}
+
+
+/* =========================================================
+   MAIN BRAND COPY
+   ========================================================= */
+
+.auth-brand-copy {
+  width: min(100%, 690px);
+
+  margin-top: 76px;
+}
+
+
+/* WELCOME TO */
+
+.auth-brand-copy p {
+  margin: 0 0 10px;
+
+  font-size: 14px;
+  line-height: 1.2;
+
+  letter-spacing: 1.8px;
+
+  font-weight: 800;
+
+  color: #f1f6ff;
+}
+
+
+/* PROCURE */
+
+.auth-brand-copy h1 {
+  margin: 0;
+
+  font-size: clamp(54px, 4vw, 66px);
+
+  line-height: 0.98;
+
+  letter-spacing: -2.8px;
+
+  font-weight: 500;
+
+  color: #ffffff;
+}
+
+
+/* MAIN TAGLINE */
+
+.auth-brand-copy h2 {
+  margin: 20px 0 13px;
+
+  max-width: 600px;
+
+  font-size: clamp(28px, 2vw, 34px);
+
+  line-height: 1.14;
+
+  letter-spacing: -1.1px;
+
+  font-weight: 650;
+
+  color: #ffffff;
+}
+
+
+/* DESCRIPTION */
+
+.auth-brand-copy > span {
+  display: block;
+
+  max-width: 570px;
+
+  color: #e2edff;
+
+  font-size: 16px;
+
+  line-height: 1.55;
+
+  font-weight: 400;
+}
+
+
+/* =========================================================
+   FEATURES
+   ========================================================= */
+
+.auth-feature-grid {
+  display: grid;
+
+  grid-template-columns: 1fr;
+
+  gap: 13px;
+
+  width: min(100%, 700px);
+
+  margin-top: 27px;
+}
+
+
+.auth-feature {
+  display: flex;
+  align-items: center;
+
+  gap: 16px;
+
+  min-height: 54px;
+}
+
+
+/* Feature icon */
+
+.auth-feature > svg {
+  flex: 0 0 auto;
+
+  width: 50px;
+  height: 50px;
+
+  padding: 12px;
+
+  border-radius: 12px;
+
+  color: #ffffff;
+
+  background: rgba(139, 185, 255, 0.27);
+
+  box-shadow:
+    inset 0 0 0 1px rgba(255, 255, 255, 0.05);
+}
+
+
+/* Feature title */
+
+.auth-feature strong,
+.auth-feature small {
+  display: block;
+}
+
+
+.auth-feature strong {
+  color: #ffffff;
+
+  font-size: 16px;
+
+  line-height: 1.25;
+
+  font-weight: 650;
+
+  letter-spacing: -0.1px;
+}
+
+
+/* Feature description */
+
+.auth-feature small {
+  margin-top: 4px;
+
+  color: #dceaff;
+
+  font-size: 13px;
+
+  line-height: 1.35;
+
+  font-weight: 400;
+}
+
+
+/* =========================================================
+   PROCUREMENT WORKFLOW
+   ========================================================= */
+
+.auth-workflow {
+  width: min(100%, 700px);
+
+  margin-top: 27px;
+
+  padding-top: 16px;
+
+  border-top: 1px solid rgba(190, 218, 255, 0.34);
+}
+
+
+/* Workflow title */
+
+.auth-workflow h3 {
+  margin: 0 0 16px;
+
+  font-size: 13px;
+
+  line-height: 1.2;
+
+  letter-spacing: 1.5px;
+
+  font-weight: 800;
+
+  color: #ffffff;
+}
+
+
+/* Workflow container */
+
+.auth-workflow-steps {
+  display: flex;
+
+  align-items: flex-start;
+
+  width: 100%;
+
+  max-width: 700px;
+}
+
+
+/* Individual step */
+
+.auth-workflow-steps > div {
+  display: grid;
+
+  justify-items: center;
+
+  gap: 7px;
+
+  flex: 1 1 0;
+
+  min-width: 0;
+}
+
+
+/* Workflow icon */
+
+.auth-workflow-steps svg {
+  width: 52px;
+  height: 52px;
+
+  padding: 14px;
+
+  border: 2px solid rgba(225, 239, 255, 0.88);
+
+  border-radius: 50%;
+
+  color: #ffffff;
+
+  background: rgba(255, 255, 255, 0.02);
+}
+
+
+/* Workflow label */
+
+.auth-workflow-steps span {
+  color: #ffffff;
+
+  font-size: 11px;
+
+  line-height: 1.25;
+
+  font-weight: 600;
+
+  text-align: center;
+
+  white-space: nowrap;
+}
+
+
+/* Dotted connector */
+
+.auth-workflow-steps i {
+  flex: 1 1 25px;
+
+  min-width: 18px;
+
+  height: 1px;
+
+  margin: 26px 7px 0;
+
+  border-top: 2px dotted rgba(213, 232, 255, 0.65);
+}
+
+
+/* =========================================================
+   SECURITY MESSAGE
+   ========================================================= */
+
+.auth-security-note {
+  display: flex;
+
+  align-items: center;
+
+  gap: 12px;
+
+  margin-top: auto;
+
+  padding-top: 20px;
+}
+
+
+.auth-security-note > svg {
+  width: 46px;
+  height: 46px;
+
+  padding: 10px;
+
+  border: 1px solid rgba(220, 237, 255, 0.75);
+
+  border-radius: 50%;
+
+  flex-shrink: 0;
+}
+
+
+.auth-security-note strong,
+.auth-security-note span {
+  display: block;
+}
+
+
+.auth-security-note strong {
+  font-size: 13px;
+
+  line-height: 1.25;
+
+  font-weight: 700;
+}
+
+
+.auth-security-note span {
+  margin-top: 4px;
+
+  color: #d5e6ff;
+
+  font-size: 12px;
+
+  line-height: 1.3;
+}
+
+
+/* =========================================================
+   FOOTER
+   ========================================================= */
+
+.auth-brand-panel > small {
+  display: block;
+
+  margin-top: 16px;
+
+  color: #e2eeff;
+
+  font-size: 12px;
+
+  line-height: 1.3;
+}
+
+
+/* =========================================================
+   RIGHT WHITE LOGIN PANEL
+   ========================================================= */
+
+.auth-form-panel {
+  display: grid;
+
+  place-items: center;
+
+  min-width: 0;
+
+  overflow-y: auto;
+
+  padding: 52px clamp(42px, 4vw, 76px);
+
+  background: #ffffff;
+}
+
+
+.auth-form-content {
+  position: relative;
+
+  z-index: 2;
+
+  width: min(100%, 480px);
+}
+
+
+/* =========================================================
+   FORM HEADING
+   ========================================================= */
+
+.auth-form-heading {
+  margin-bottom: 36px;
+
+  text-align: center;
+}
+
+
+.auth-form-heading h1 {
+  margin: 0 0 9px;
+
+  color: #06195c;
+
+  font-size: 36px;
+
+  line-height: 1.15;
+
+  letter-spacing: -1.6px;
+
+  font-weight: 600;
+}
+
+
+.auth-form-heading p {
+  margin: 0;
+
+  color: #6c7b99;
+
+  font-size: 16px;
+
+  line-height: 1.4;
+}
+
+
+/* =========================================================
+   FORM ELEMENT SPACING
+   ========================================================= */
+
+.auth-form-content form > * + * {
+  margin-top: 22px;
+}
+
+
+/* Labels */
+
+.auth-form-content label {
+  font-size: 15px;
+
+  color: #15213d;
+}
+
+
+/* Inputs */
+
+.auth-form-content input:not([type='checkbox']),
+.auth-form-content select {
+  min-height: 51px;
+
+  font-size: 16px;
+
+  border-color: #bac9e0;
+}
+
+
+/* Submit */
+
+.auth-form-content button[type='submit'] {
+  min-height: 51px;
+
+  border-radius: 8px;
+
+  background: #0750e6;
+
+  font-size: 17px;
+}
+
+
+/* =========================================================
+   MOBILE BRAND
+   ========================================================= */
+
+.auth-mobile-brand {
+  display: none;
+}
+
+
+/* =========================================================
+   LARGE DESKTOP
+   1600px+
+   ========================================================= */
+
+@media (min-width: 1600px) {
+  .auth-brand-panel {
+    padding-left: 56px;
+    padding-right: 56px;
+  }
+
+  .auth-brand-copy {
+    margin-top: 82px;
+  }
+
+  .auth-brand-copy h1 {
+    font-size: 68px;
+  }
+
+  .auth-brand-copy h2 {
+    font-size: 34px;
+  }
+
+  .auth-brand-copy > span {
+    font-size: 17px;
+    max-width: 590px;
+  }
+
+  .auth-feature-grid {
+    gap: 14px;
+    margin-top: 29px;
+  }
+
+  .auth-feature {
+    min-height: 56px;
+  }
+
+  .auth-feature > svg {
+    width: 52px;
+    height: 52px;
+  }
+
+  .auth-feature strong {
+    font-size: 16px;
+  }
+
+  .auth-feature small {
+    font-size: 14px;
+  }
+
+  .auth-workflow {
+    margin-top: 29px;
+  }
+
+  .auth-workflow-steps svg {
+    width: 54px;
+    height: 54px;
+  }
+}
+
+
+/* =========================================================
+   1200px – 1599px
+   ========================================================= */
+
+@media (max-width: 1599px) {
+  .auth-brand-copy {
+    margin-top: 62px;
+  }
+
+  .auth-brand-copy h1 {
+    font-size: 58px;
+  }
+
+  .auth-brand-copy h2 {
+    font-size: 29px;
+  }
+
+  .auth-brand-copy > span {
+    font-size: 15px;
+    max-width: 510px;
+  }
+
+  .auth-feature-grid {
+    gap: 11px;
+    margin-top: 22px;
+  }
+
+  .auth-feature > svg {
+    width: 46px;
+    height: 46px;
+    padding: 11px;
+  }
+
+  .auth-feature strong {
+    font-size: 14px;
+  }
+
+  .auth-feature small {
+    font-size: 12px;
+  }
+
+  .auth-workflow {
+    margin-top: 22px;
+  }
+
+  .auth-workflow-steps svg {
+    width: 47px;
+    height: 47px;
+    padding: 12px;
+  }
+
+  .auth-workflow-steps i {
+    margin-top: 23px;
+  }
+}
+
+
+/* =========================================================
+   1200px
+   ========================================================= */
+
+@media (max-width: 1200px) {
+  .auth-brand-panel {
+    padding-left: 42px;
+    padding-right: 42px;
+  }
+
+  .auth-brand-copy {
+    margin-top: 48px;
+  }
+
+  .auth-brand-copy h1 {
+    font-size: 52px;
+  }
+
+  .auth-brand-copy h2 {
+    font-size: 26px;
+  }
+
+  .auth-brand-copy > span {
+    font-size: 14px;
+  }
+
+  .auth-procurement-illustration {
+    opacity: 0.07;
+    right: 45px;
+  }
+
+  .auth-feature-grid {
+    gap: 9px;
+  }
+
+  .auth-feature > svg {
+    width: 43px;
+    height: 43px;
+    padding: 10px;
+  }
+
+  .auth-feature strong {
+    font-size: 13px;
+  }
+
+  .auth-feature small {
+    font-size: 11px;
+  }
+
+  .auth-workflow {
+    margin-top: 18px;
+  }
+
+  .auth-workflow-steps svg {
+    width: 43px;
+    height: 43px;
+    padding: 11px;
+  }
+
+  .auth-workflow-steps span {
+    font-size: 9px;
+  }
+
+  .auth-workflow-steps i {
+    margin-top: 21px;
+    margin-left: 4px;
+    margin-right: 4px;
+  }
+
+  .auth-form-heading h1 {
+    font-size: 32px;
+  }
+}
+
+
+/* =========================================================
+   TABLET / SMALL LAPTOP
+   ========================================================= */
+
+@media (max-width: 900px) {
+  .auth-shell {
+    grid-template-columns: 56% 44%;
+  }
+
+  .auth-brand-panel {
+    padding: 30px 34px 20px;
+  }
+
+  .auth-brand-panel::after {
+    right: -160px;
+    width: 310px;
+  }
+
+  .auth-brand-panel::before {
+    right: -92px;
+    width: 175px;
+  }
+
+  .auth-brand-copy {
+    margin-top: 40px;
+  }
+
+  .auth-brand-copy h1 {
+    font-size: 44px;
+  }
+
+  .auth-brand-copy h2 {
+    font-size: 23px;
+  }
+
+  .auth-brand-copy > span {
+    font-size: 13px;
+  }
+
+  .auth-feature-grid {
+    gap: 8px;
+    margin-top: 18px;
+  }
+
+  .auth-feature {
+    gap: 11px;
+  }
+
+  .auth-feature > svg {
+    width: 39px;
+    height: 39px;
+    padding: 9px;
+  }
+
+  .auth-feature strong {
+    font-size: 12px;
+  }
+
+  .auth-feature small {
+    font-size: 10px;
+  }
+
+  .auth-workflow {
+    margin-top: 16px;
+  }
+
+  .auth-workflow-steps > div {
+    min-width: 42px;
+  }
+
+  .auth-workflow-steps svg {
+    width: 39px;
+    height: 39px;
+    padding: 10px;
+  }
+
+  .auth-workflow-steps span {
+    font-size: 8px;
+  }
+
+  .auth-workflow-steps i {
+    min-width: 5px;
+    margin-left: 2px;
+    margin-right: 2px;
+    margin-top: 19px;
+  }
+
+  .auth-procurement-illustration {
+    display: none;
+  }
+
+  .auth-form-panel {
+    padding-left: 32px;
+    padding-right: 32px;
+  }
+}
+
+
+/* =========================================================
+   MOBILE
+   ========================================================= */
+
+@media (max-width: 700px) {
+  .auth-shell {
+    height: auto;
+
+    grid-template-columns: 1fr;
+  }
+
+  .auth-brand-panel {
+    min-height: 220px;
+
+    padding: 28px;
+
+    overflow: hidden;
+  }
+
+  .auth-brand-panel::after,
+  .auth-brand-panel::before,
+  .auth-procurement-illustration {
+    display: none;
+  }
+
+  .auth-brand-copy {
+    margin: 26px 0 0;
+  }
+
+  .auth-brand-copy h1 {
+    font-size: 36px;
+  }
+
+  .auth-brand-copy h2,
+  .auth-brand-copy > span,
+  .auth-feature-grid,
+  .auth-workflow,
+  .auth-security-note,
+  .auth-brand-panel > small {
+    display: none;
+  }
+
+  .auth-form-panel {
+    display: block;
+
+    overflow: visible;
+
+    padding: 36px 26px;
+  }
+
+  .auth-form-content {
+    margin: auto;
+  }
+
+  .auth-form-heading {
+    text-align: left;
+  }
+}
+
+
+/* =========================================================
+   SMALL MOBILE
+   ========================================================= */
+
+@media (max-width: 560px) {
+  .auth-brand-panel {
+    display: none;
+  }
+
+  .auth-form-panel {
+    min-height: 100vh;
+    min-height: 100dvh;
+
+    padding: 30px 20px;
+  }
+
+  .auth-mobile-brand {
+    display: flex;
+
+    align-items: center;
+
+    gap: 8px;
+
+    margin-bottom: 34px;
+
+    color: #1d4ed8;
+
+    font-size: 22px;
+
+    font-weight: 800;
+  }
+
+  .auth-mobile-brand svg {
+    width: 30px;
+    height: 30px;
+
+    padding: 5px;
+
+    border-radius: 8px;
+
+    background: #2563eb;
+
+    color: #ffffff;
+  }
+}
+
+
+/* =========================================================
+   VERY SMALL MOBILE
+   ========================================================= */
+
+@media (max-width: 380px) {
+  .auth-form-panel {
+    padding-left: 16px;
+    padding-right: 16px;
+  }
+
+  .auth-form-heading h1 {
+    font-size: 29px;
+  }
+
+  .auth-form-heading p {
+    font-size: 14px;
+  }
+}
