@@ -10,8 +10,8 @@ import {
   Cell,
   Tooltip,
   Legend,
-  BarChart,
-  Bar,
+  LineChart,
+  Line,
   XAxis,
   YAxis,
   CartesianGrid,
@@ -19,6 +19,8 @@ import {
 
 import requisitionService from "../../services/requisitionService";
 import productService from "../../services/productService";
+import authService from "../../services/authService";
+import toast from "react-hot-toast";
 import "./RequisitionSection.css";
 import { Clock3, Eye } from "lucide-react";
 
@@ -60,6 +62,7 @@ const STATUS_COLORS = [
 ];
 
 export const RequisitionSection = ({ setActiveSection: setDashboardSection }) => {
+  const currentUser = authService.getUser();
   const [requisitions, setRequisitions] = useState([]);
   const [categories, setCategories] = useState([]);
   const [products, setProducts] = useState([]);
@@ -84,6 +87,7 @@ export const RequisitionSection = ({ setActiveSection: setDashboardSection }) =>
   // Create requisition modal
   const [showCreateModal, setShowCreateModal] =
     useState(false);
+  const [editingRequisition, setEditingRequisition] = useState(null);
 
   const [creating, setCreating] = useState(false);
 
@@ -245,6 +249,7 @@ export const RequisitionSection = ({ setActiveSection: setDashboardSection }) =>
   ===================================================== */
 
   const openCreateModal = () => {
+    setEditingRequisition(null);
     setReqForm({
       title: "",
       description: "",
@@ -262,6 +267,42 @@ export const RequisitionSection = ({ setActiveSection: setDashboardSection }) =>
     if (creating) return;
 
     setShowCreateModal(false);
+    setEditingRequisition(null);
+  };
+
+  const openEditModal = async (req) => {
+    if (req.status !== "PENDING_MANAGER") return;
+
+    const categoryId = req.items?.[0]?.categoryId;
+    if (!categoryId) {
+      setError("This requisition cannot be edited because its product category is unavailable.");
+      return;
+    }
+
+    setEditingRequisition(req);
+    setReqForm({
+      title: req.title || "",
+      description: req.description || "",
+      priority: req.priority || "NORMAL",
+      categoryId: String(categoryId),
+      items: req.items.map((item) => ({
+        productId: String(item.productId),
+        quantity: item.quantity,
+        unitPrice: item.unitPrice,
+      })),
+    });
+    setFormErrors({});
+    setSelectedRequisition(null);
+    setShowCreateModal(true);
+    setLoadingProducts(true);
+    try {
+      const result = await productService.getProductsBycategories(categoryId);
+      setProducts(Array.isArray(result) ? result : []);
+    } catch (err) {
+      setError(getErrorMessage(err));
+    } finally {
+      setLoadingProducts(false);
+    }
   };
 
   const handleReqFieldChange = (e) => {
@@ -474,13 +515,23 @@ export const RequisitionSection = ({ setActiveSection: setDashboardSection }) =>
     setCreating(true);
 
     try {
-      await requisitionService.createRequisition(
-        payload
-      );
+      const isEditing = Boolean(editingRequisition);
+
+      if (isEditing) {
+        await requisitionService.updateEmployeeRequisition(editingRequisition.id, payload);
+      } else {
+        await requisitionService.createRequisition(payload);
+      }
 
       setShowCreateModal(false);
+      setEditingRequisition(null);
 
       await loadRequisitions();
+      setError("");
+
+      if (isEditing) {
+        toast.success("Requisition updated successfully.");
+      }
     } catch (err) {
       setError(getErrorMessage(err));
     } finally {
@@ -610,6 +661,20 @@ export const RequisitionSection = ({ setActiveSection: setDashboardSection }) =>
     ];
   }, [requisitions]);
 
+  const dailyTrendData = useMemo(() => {
+    const byDay = requisitions.reduce((days, req) => {
+      if (!req.createdAt) return days;
+      const date = new Date(req.createdAt);
+      if (Number.isNaN(date.getTime())) return days;
+      const key = date.toISOString().slice(0, 10);
+      days[key] = (days[key] || 0) + 1;
+      return days;
+    }, {});
+
+    return Object.entries(byDay).sort(([first], [second]) => first.localeCompare(second)).slice(-7)
+      .map(([date, count]) => ({ date: new Date(`${date}T00:00:00`).toLocaleDateString("en-IN", { day: "numeric", month: "short" }), count }));
+  }, [requisitions]);
+
   /* =====================================================
      METRICS
   ===================================================== */
@@ -668,9 +733,12 @@ export const RequisitionSection = ({ setActiveSection: setDashboardSection }) =>
 
         <div className="section-header">
 
-          <h2 className="section-title">
-            My Requisitions
-          </h2>
+          <div>
+            <h2 className="section-title">
+              {currentUser?.fullName ? `Welcome, ${currentUser.fullName}` : "Loading your dashboard…"}
+            </h2>
+            <p className="section-subtitle">Manage, track, and review your purchase requisitions.</p>
+          </div>
 
           <div className="header-actions">
             <NotificationBell setActiveSection={setDashboardSection} />
@@ -728,7 +796,7 @@ export const RequisitionSection = ({ setActiveSection: setDashboardSection }) =>
         {!loading && (
           <div className="metrics-grid">
 
-            <div className="metric-card">
+            <div className="metric-card metric-total">
 
               <div className="metric-icon purple">
                 📋
@@ -748,7 +816,7 @@ export const RequisitionSection = ({ setActiveSection: setDashboardSection }) =>
 
             </div>
 
-            <div className="metric-card">
+            <div className="metric-card metric-pending">
 
               <div className="metric-icon amber">
                 ⏳
@@ -768,7 +836,7 @@ export const RequisitionSection = ({ setActiveSection: setDashboardSection }) =>
 
             </div>
 
-            <div className="metric-card">
+            <div className="metric-card metric-approved">
 
               <div className="metric-icon green">
                 ✓
@@ -788,7 +856,7 @@ export const RequisitionSection = ({ setActiveSection: setDashboardSection }) =>
 
             </div>
 
-            <div className="metric-card">
+            <div className="metric-card metric-rejected">
 
               <div className="metric-icon red">
                 !
@@ -808,7 +876,7 @@ export const RequisitionSection = ({ setActiveSection: setDashboardSection }) =>
 
             </div>
 
-            <div className="metric-card">
+            <div className="metric-card metric-amount">
 
               <div className="metric-icon blue">
                 ₹
@@ -837,7 +905,7 @@ export const RequisitionSection = ({ setActiveSection: setDashboardSection }) =>
 
             </div>
 
-            <div className="metric-card">
+            <div className="metric-card metric-duplicates">
 
               <div className="metric-icon red">
                 ⚠
@@ -877,7 +945,7 @@ export const RequisitionSection = ({ setActiveSection: setDashboardSection }) =>
                   <div>
 
                     <h3>
-                      Requisition Status
+                      Purchase Request Status Distribution
                     </h3>
 
                     <p>
@@ -947,6 +1015,21 @@ export const RequisitionSection = ({ setActiveSection: setDashboardSection }) =>
 
             
               
+              <div className="chart-card">
+                <div className="chart-header"><div><h3>Daily Procurement Trend</h3><p>Purchase requests created over the last seven active days</p></div></div>
+                <div className="chart-container">
+                  <ResponsiveContainer width="100%" height={300}>
+                    <LineChart data={dailyTrendData} margin={{ top: 12, right: 12, left: -18, bottom: 0 }}>
+                      <CartesianGrid strokeDasharray="3 3" vertical={false} />
+                      <XAxis dataKey="date" />
+                      <YAxis allowDecimals={false} />
+                      <Tooltip />
+                      <Line type="monotone" dataKey="count" name="Requests" stroke="#6366f1" strokeWidth={3} dot={{ r: 4, fill: "#6366f1" }} activeDot={{ r: 6 }} />
+                    </LineChart>
+                  </ResponsiveContainer>
+                </div>
+              </div>
+
               {/* DUPLICATE CHART */}
 
               <div className="chart-card duplicate-chart">
@@ -1116,6 +1199,8 @@ export const RequisitionSection = ({ setActiveSection: setDashboardSection }) =>
 
                 <th>Department</th>
 
+                <th>Priority</th>
+
                 <th>Status</th>
 
                 <th>Amount</th>
@@ -1134,7 +1219,7 @@ export const RequisitionSection = ({ setActiveSection: setDashboardSection }) =>
                 <tr>
 
                   <td
-                    colSpan="7"
+                    colSpan="8"
                     className="no-data"
                   >
                     Loading requisitions…
@@ -1175,6 +1260,10 @@ export const RequisitionSection = ({ setActiveSection: setDashboardSection }) =>
 
                       <td data-label="Department">
                         {req.departmentName}
+                      </td>
+
+                      <td data-label="Priority">
+                        <span className={`priority-badge ${req.priority?.toLowerCase() || "normal"}`}>{req.priority || "NORMAL"}</span>
                       </td>
 
                       <td data-label="Status">
@@ -1253,6 +1342,12 @@ export const RequisitionSection = ({ setActiveSection: setDashboardSection }) =>
                               : "Track"}
                           </button>
 
+                          {req.status === "PENDING_MANAGER" && (
+                            <button className="edit-btn" onClick={() => openEditModal(req)}>
+                              Edit
+                            </button>
+                          )}
+
                         </div>
 
                       </td>
@@ -1267,7 +1362,7 @@ export const RequisitionSection = ({ setActiveSection: setDashboardSection }) =>
                 <tr>
 
                   <td
-                    colSpan="7"
+                    colSpan="8"
                     className="no-data"
                   >
                     No Requisitions Found
@@ -1671,7 +1766,7 @@ export const RequisitionSection = ({ setActiveSection: setDashboardSection }) =>
               <div className="modal-header">
 
                 <h2>
-                  Create Requisition
+                  {editingRequisition ? "Edit Requisition" : "Create Requisition"}
                 </h2>
 
                 <button
@@ -2002,7 +2097,7 @@ export const RequisitionSection = ({ setActiveSection: setDashboardSection }) =>
                   >
                     {creating
                       ? "Submitting…"
-                      : "Submit Requisition"}
+                      : editingRequisition ? "Save Changes" : "Submit Requisition"}
                   </button>
 
                   <button

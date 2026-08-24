@@ -7,13 +7,6 @@ const PENDING_STATUS = "PENDING_PROCUREMENT";
 const PROCUREMENT_DECIDED = ["APPROVED", "REJECTED"];
 const STORAGE_KEY = "procurement_pending_timers_v1";
 
-const mockRequisitions = [
-  { id: 1, requisitionNo: "REQ-001", title: "Office Laptops", employeeName: "Alice Smith", departmentName: "Engineering", status: "PENDING_PROCUREMENT", totalEstimatedAmount: 125000, createdAt: new Date(Date.now() - 86400000).toISOString(), isDuplicate: false, description: "Need 5 new laptops for the engineering team." },
-  { id: 2, requisitionNo: "REQ-002", title: "Marketing Software", employeeName: "Bob Jones", departmentName: "Marketing", status: "APPROVED", totalEstimatedAmount: 45000, createdAt: new Date(Date.now() - 172800000).toISOString(), isDuplicate: false, description: "Annual subscription for Adobe Creative Cloud." },
-  { id: 3, requisitionNo: "REQ-003", title: "Office Chairs", employeeName: "Charlie Brown", departmentName: "HR", status: "REJECTED", totalEstimatedAmount: 15000, createdAt: new Date(Date.now() - 259200000).toISOString(), isDuplicate: false, description: "Ergonomic chairs for new hires." },
-  { id: 4, requisitionNo: "REQ-005", title: "Office Supplies", employeeName: "Eva White", departmentName: "Operations", status: "PENDING_PROCUREMENT", totalEstimatedAmount: 5000, createdAt: new Date(Date.now() - 43200000).toISOString(), isDuplicate: true, description: "Pens, paper, and staplers." },
-];
-
 export const RequisitionSection = () => {
   const [requisitions, setRequisitions] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -185,23 +178,8 @@ export const RequisitionSection = () => {
       setError("");
     } catch (err) {
       console.error(err);
-      const storedTimers = getStoredTimers();
-      const now = Date.now();
-      const mappedMock = mockRequisitions.map((req) => {
-        const timerInfo = storedTimers[req.id];
-        if (timerInfo && typeof timerInfo === "object" && timerInfo.expiresAt > now) {
-          scheduleExpiration(req.id, timerInfo.expiresAt, timerInfo.decision, timerInfo.remarks);
-          return {
-            ...req,
-            status: timerInfo.decision === "approved" ? "APPROVED" : "REJECTED",
-            localExpiresAt: timerInfo.expiresAt,
-          };
-        }
-        return { ...req, localExpiresAt: null };
-      });
-
-      setRequisitions(mappedMock);
-      setError(""); 
+      setRequisitions([]);
+      setError(err?.response?.data?.message || err?.message || "Unable to load procurement requisitions.");
     } finally {
       setLoading(false);
     }
@@ -364,6 +342,7 @@ export const RequisitionSection = () => {
               <th>Req No</th>
               <th>Title</th>
               <th>Department</th>
+              <th>Priority</th>
               <th>Status</th>
               <th>Amount</th>
               <th>Created</th>
@@ -398,6 +377,7 @@ export const RequisitionSection = () => {
                     </td>
                     <td data-label="Title">{req.title}</td>
                     <td data-label="Department">{req.departmentName}</td>
+                    <td data-label="Priority"><span className={`priority-badge ${req.priority === "HIGH" ? "high" : "normal"}`}>{req.priority || "NORMAL"}</span></td>
                     <td data-label="Status">
                       <span className={`status-badge ${req.status ? req.status.toLowerCase() : ""}`}>
                         {req.status ? req.status.replaceAll("_", " ") : "-"}

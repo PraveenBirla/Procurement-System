@@ -252,6 +252,51 @@ public class PurchaseRequisitionService {
     }
 
     @Transactional
+    public PurchaseRequisitionResponseDTO updateEmployeeRequisition(Long requisitionId,
+            PurchaseRequisitionRequestDTO dto, User employee) {
+        PurchaseRequisition requisition = reqRepo.findById(requisitionId)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Requisition not found"));
+
+        if (!requisition.getEmployee().getId().equals(employee.getId())) {
+            throw new ResponseStatusException(HttpStatus.FORBIDDEN,
+                    "You can edit only your own requisitions");
+        }
+        if (requisition.getStatus() != RequisitionStatus.PENDING_MANAGER) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST,
+                    "Requisitions can be edited only while awaiting manager approval");
+        }
+
+        DuplicateCheckService.Result duplicate = duplicateCheckService.check(employee, dto.getItems(), requisitionId);
+        requisition.setTitle(dto.getTitle());
+        requisition.setDescription(dto.getDescription());
+        requisition.setPriority(dto.getPriority() == null ? RequisitionPriority.NORMAL : dto.getPriority());
+        requisition.setIsDuplicate(duplicate.isDuplicate());
+        requisition.getItems().clear();
+
+        BigDecimal total = BigDecimal.ZERO;
+        for (var itemDTO : dto.getItems()) {
+            Product product = productRepo.findById(itemDTO.getProductId())
+                    .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Product not found"));
+            BigDecimal itemTotal = itemDTO.getUnitPrice().multiply(BigDecimal.valueOf(itemDTO.getQuantity()));
+            requisition.getItems().add(RequisitionItem.builder()
+                    .requisition(requisition)
+                    .product(product)
+                    .quantity(itemDTO.getQuantity())
+                    .unitPrice(itemDTO.getUnitPrice())
+                    .totalPrice(itemTotal)
+                    .build());
+            total = total.add(itemTotal);
+        }
+        requisition.setTotalEstimatedAmount(total);
+        requisition.setUpdatedAt(LocalDateTime.now());
+
+        PurchaseRequisition saved = reqRepo.save(requisition);
+        auditService.log("PurchaseRequisition", saved.getId(), "UPDATE", employee,
+                "Requisition updated before manager approval");
+        return mapToDto(saved);
+    }
+
+    @Transactional
     public PurchaseRequisitionResponseDTO decideRequisition(Long requisitionId, ApprovalType approvalType,DecisionRequestDTO dto, User approver
     ) {
 
@@ -377,6 +422,17 @@ public class PurchaseRequisitionService {
         return reqRepo.findByEmployee_Department_IdAndStatusAndPriorityOrderByCreatedAtDesc(
                         currentUser.get().getDepartment().getId(), RequisitionStatus.PENDING_MANAGER, RequisitionPriority.HIGH)
                 .stream().map(this::mapToDto).toList();
+    }
+
+    /** Counts only high-priority requisitions at the current user's workflow step. */
+    public long getCurrentRoleUrgentCount() {
+        RequisitionStatus pendingStatus = switch (currentUser.get().getRole()) {
+            case FINANCE -> RequisitionStatus.PENDING_FINANCE;
+            case PROCUREMENT -> RequisitionStatus.PENDING_PROCUREMENT;
+            default -> throw new ResponseStatusException(HttpStatus.FORBIDDEN,
+                    "High-priority requests are not available for this role");
+        };
+        return reqRepo.countByStatusAndPriority(pendingStatus, RequisitionPriority.HIGH);
     }
 
     public List<PurchaseRequisitionResponseDTO> getEmployeeRequisitions(Long employeeId) {

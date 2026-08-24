@@ -5,7 +5,6 @@ import {
   CheckCircle2,
   XCircle,
   Package,
-  AlertTriangle,
   LogOut
 } from "lucide-react";  
 import authService from "../../services/authService";
@@ -15,6 +14,8 @@ import { PendingSection } from "./PendingSection";
 import { ApprovedSection } from "./ApprovedSection";
 import { RejectedSection } from "./RejectedSection";
 import requisitionService from "../../services/requisitionService";
+import { ThemeToggle } from "../ui/ThemeToggle";
+import "../layout/DashboardShared.css";
 
 export const ManagerDashboard = () => {
   const [activeSection, setActiveSection] = useState("overview");
@@ -59,24 +60,26 @@ export const ManagerDashboard = () => {
             </button>
           ))}
         </nav>
+        <div className="mt-auto pb-4 flex flex-col gap-2 px-2">
+          <ThemeToggle />
           <button className="logout-btn" onClick={() => {authService.clearAuth();  window.location.reload();} }>
-        <LogOut size={18} />
-         <span>Logout</span>
-         </button>
+            <LogOut size={18} />
+            <span>Logout</span>
+          </button>
+        </div>
       </aside>
 
      
       <main className="main-content animate-fade-in">
-        {activeSection === "overview" && urgentCount > 0 && (
-          <button type="button" className="error-box" onClick={openUrgentRequests}>
-            <AlertTriangle size={18} /> <span><strong>High Priority Requests</strong><br />{urgentCount} request{urgentCount === 1 ? "" : "s"} require your immediate attention - View Requests</span>
-          </button>
-        )}
         {/* {activeSection === "requition" && (
            <RequisitionSection/>
         )} */}
         {activeSection === "overview" && (
-           <OverviewSection setActiveSection={setActiveSection} />
+           <OverviewSection
+             setActiveSection={setActiveSection}
+             urgentCount={urgentCount}
+             onViewUrgentRequests={openUrgentRequests}
+           />
         )}
         {activeSection === "pending" && (
            <PendingSection setActiveSection={setActiveSection} urgentOnly={urgentOnly}/>

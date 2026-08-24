@@ -49,7 +49,8 @@ export default function LoginPage() {
       const accessToken = response.accessToken;
       const refreshToken = response.refreshToken;
       const userData = {
-        role: response.role  
+        role: response.role,
+        fullName: response.fullName,
       };
      
       login(userData, accessToken,  refreshToken); 

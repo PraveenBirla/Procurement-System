@@ -30,6 +30,7 @@ import {
 import { NotificationBell } from "../ui/NotificationBell";
 
 import requisitionService from "../../services/requisitionService";
+import authService from "../../services/authService";
 import purchaseOrderService from "../../services/purchaseOrderService";
  
 import './OverviewSection.css';
@@ -104,22 +105,12 @@ const formatCurrency = (value) => {
   return `₹${Number(value || 0).toLocaleString("en-IN")}`;
 };
 
-const mockRequisitions = [
-  { id: 1, requisitionNo: "REQ-001", title: "Office Laptops", employeeName: "Alice Smith", departmentName: "Engineering", status: "PENDING_PROCUREMENT", totalEstimatedAmount: 125000, createdAt: new Date(Date.now() - 86400000).toISOString(), isDuplicate: false },
-  { id: 2, requisitionNo: "REQ-002", title: "Marketing Software", employeeName: "Bob Jones", departmentName: "Marketing", status: "APPROVED", totalEstimatedAmount: 45000, createdAt: new Date(Date.now() - 172800000).toISOString(), isDuplicate: false },
-  { id: 3, requisitionNo: "REQ-003", title: "Office Chairs", employeeName: "Charlie Brown", departmentName: "HR", status: "PROCUREMENT_REJECTED", totalEstimatedAmount: 15000, createdAt: new Date(Date.now() - 259200000).toISOString(), isDuplicate: false },
-  { id: 4, requisitionNo: "REQ-004", title: "Server Hardware", employeeName: "David Lee", departmentName: "IT", status: "PO_GENERATED", totalEstimatedAmount: 250000, createdAt: new Date(Date.now() - 345600000).toISOString(), isDuplicate: false },
-  { id: 5, requisitionNo: "REQ-005", title: "Office Supplies", employeeName: "Eva White", departmentName: "Operations", status: "PENDING_PROCUREMENT", totalEstimatedAmount: 5000, createdAt: new Date(Date.now() - 43200000).toISOString(), isDuplicate: true },
-];
-
-const mockOrders = [
-  { id: 1, poNumber: "PO-001", requisitionNo: "REQ-004", supplierName: "Tech Corp", status: "IN_DELIVERY", totalAmount: 250000, expectedDeliveryDate: new Date(Date.now() + 172800000).toISOString(), createdAt: new Date(Date.now() - 86400000).toISOString() },
-  { id: 2, poNumber: "PO-002", requisitionNo: "REQ-010", supplierName: "Office Depot", status: "DELIVERED", totalAmount: 12000, expectedDeliveryDate: new Date(Date.now() - 86400000).toISOString(), createdAt: new Date(Date.now() - 432000000).toISOString() },
-  { id: 3, poNumber: "PO-003", requisitionNo: "REQ-011", supplierName: "Soft Solutions", status: "COMPLETED", totalAmount: 85000, expectedDeliveryDate: new Date(Date.now() - 172800000).toISOString(), createdAt: new Date(Date.now() - 864000000).toISOString() },
-  { id: 4, poNumber: "PO-004", requisitionNo: "REQ-012", supplierName: "Global IT", status: "PO_GENERATED", totalAmount: 150000, expectedDeliveryDate: new Date(Date.now() + 432000000).toISOString(), createdAt: new Date().toISOString() },
-];
-
-export const OverviewSection = ({ setActiveSection: setDashboardSection }) => {
+export const OverviewSection = ({
+  setActiveSection: setDashboardSection,
+  urgentCount,
+  onViewUrgentRequests,
+}) => {
+  const currentUser = authService.getUser();
   /* =========================================================
      STATE
   ========================================================= */
@@ -242,17 +233,13 @@ export const OverviewSection = ({ setActiveSection: setDashboardSection }) => {
         loadPurchaseOrders(),
       ]);
 
-      if (requisitionData.length === 0 && purchaseOrderData.length === 0) {
-        setRequisitions(mockRequisitions);
-        setOrders(mockOrders);
-      } else {
-        setRequisitions(requisitionData);
-        setOrders(purchaseOrderData);
-      }
+      setRequisitions(requisitionData);
+      setOrders(purchaseOrderData);
     } catch (err) {
       console.error(err);
-      setRequisitions(mockRequisitions);
-      setOrders(mockOrders);
+      setRequisitions([]);
+      setOrders([]);
+      setError(err?.response?.data?.message || err?.message || "Unable to load the procurement dashboard.");
     } finally {
       setLoading(false);
     }
@@ -354,6 +341,25 @@ export const OverviewSection = ({ setActiveSection: setDashboardSection }) => {
     ).filter(
       (item) => item.value > 0
     );
+  }, [requisitions]);
+
+  const priorityData = useMemo(() => {
+    const counts = requisitions.reduce(
+      (totals, req) => {
+        const priority = String(req.priority ?? "").trim().toUpperCase();
+        if (priority === "HIGH") totals.high += 1;
+        if (priority === "NORMAL" || priority === "LOW") totals.normal += 1;
+        return totals;
+      },
+      { high: 0, normal: 0 }
+    );
+
+    return counts.high + counts.normal > 0
+      ? [
+          { name: "HIGH", value: counts.high },
+          { name: "NORMAL", value: counts.normal },
+        ]
+      : [];
   }, [requisitions]);
 
   /* =========================================================
@@ -566,7 +572,7 @@ export const OverviewSection = ({ setActiveSection: setDashboardSection }) => {
 
         <div>
           <h2>
-            Procurement Overview
+            {currentUser?.fullName ? `Welcome, ${currentUser.fullName}` : "Procurement Overview"}
           </h2>
 
           <p>
@@ -876,6 +882,18 @@ export const OverviewSection = ({ setActiveSection: setDashboardSection }) => {
         </div>
       )}
 
+      {urgentCount > 0 && !loading && (
+        <button type="button" className="role-priority-alert" onClick={onViewUrgentRequests}>
+          <span className="role-priority-alert-content">
+            <strong>High Priority Requests</strong>
+            <span className="role-priority-alert-message">
+              <AlertTriangle size={18} />
+              {urgentCount} high-priority request{urgentCount === 1 ? "" : "s"} require your attention - View Requests
+            </span>
+          </span>
+        </button>
+      )}
+
       {/* =====================================================
           MAIN CHART GRID
       ===================================================== */}
@@ -970,6 +988,38 @@ export const OverviewSection = ({ setActiveSection: setDashboardSection }) => {
                 </div>
               )}
 
+            </div>
+
+          </div>
+
+          <div className="overview-card">
+
+            <div className="overview-card-header">
+              <div>
+                <h3>Priority Distribution</h3>
+                <p>Priority levels across your requisitions.</p>
+              </div>
+              <Filter size={18} />
+            </div>
+
+            <div className="overview-chart">
+              {priorityData.length > 0 ? (
+                <ResponsiveContainer width="100%" height={370}>
+                  <BarChart data={priorityData} margin={{ top: 20, right: 10, left: -20, bottom: 0 }}>
+                    <CartesianGrid strokeDasharray="3 3" vertical={false} />
+                    <XAxis dataKey="name" />
+                    <YAxis allowDecimals={false} label={{ value: "Requests", angle: -90, position: "insideLeft" }} />
+                    <Tooltip />
+                    <Bar dataKey="value" name="Requisitions" radius={[6, 6, 0, 0]}>
+                      {priorityData.map((entry) => (
+                        <Cell key={entry.name} fill={entry.name === "HIGH" ? "#EF4444" : "#6366F1"} />
+                      ))}
+                    </Bar>
+                  </BarChart>
+                </ResponsiveContainer>
+              ) : (
+                <div className="chart-empty">No priority data available</div>
+              )}
             </div>
 
           </div>
@@ -1365,6 +1415,10 @@ export const OverviewSection = ({ setActiveSection: setDashboardSection }) => {
                     </th>
 
                     <th>
+                      Priority
+                    </th>
+
+                    <th>
                       Status
                     </th>
 
@@ -1421,6 +1475,12 @@ export const OverviewSection = ({ setActiveSection: setDashboardSection }) => {
                             </td>
 
                             <td>
+                              <span className={`priority-badge ${req.priority === "HIGH" ? "high" : "normal"}`}>
+                                {req.priority || "NORMAL"}
+                              </span>
+                            </td>
+
+                            <td>
 
                               <span
                                 className={`overview-status ${req.status?.toLowerCase()}`}
@@ -1466,7 +1526,7 @@ export const OverviewSection = ({ setActiveSection: setDashboardSection }) => {
                     <tr>
 
                       <td
-                        colSpan="7"
+                        colSpan="8"
                         className="overview-no-data"
                       >
                         No requisitions found
