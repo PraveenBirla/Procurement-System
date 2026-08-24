@@ -12,7 +12,7 @@ import { RequisitionSection } from "./RequisitionSection";
 import { SupplierProfileSection } from "./SupplierProfileSection"; 
 import { OrderSection } from "./OrderSection";
 import { AcceptedOrderSection } from "./AcceptedOrderSection";
-import { InDeliverySection } from "./IndeliverySection";
+import { InDeliverySection } from "./InDeliverySection";
 import { CompletedOrderSection } from "./CompletedOrderSection";
 import { DeliveredOrderSection } from "./DeliveredOrderSection";
 import authService from "../../services/authService";
