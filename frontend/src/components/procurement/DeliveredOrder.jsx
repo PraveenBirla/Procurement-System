@@ -265,26 +265,27 @@ export const DeliveredSection = () => {
     };
 
     const handleAfterGoodsReceipt = (po, gr) => {
-      if (!gr) {
-          return;
-      }
 
-      const hasIssues =
-          gr.items?.some(
-              (item) =>
-                  Number(item.rejectedQuantity || 0) > 0 ||
-                  Number(item.shortageQuantity || 0) > 0 ||
-                  Number(item.extraQuantity || 0) > 0
-          ) ||
-          gr.qualityStatus === "FAIL";
-      if (hasIssues) {
-          return;
-      }
+        if (!gr) {
+            return;
+        }
 
-      if (gr.qualityStatus === "PASS") {
-          return;
-      }
-  };
+        const hasIssues =
+            (gr.items || []).some((item) =>
+                Number(item.receivedQuantity) !== Number(item.expectedQuantity) ||
+                Number(item.rejectedQuantity || 0) > 0 ||
+                Number(item.shortageQuantity || 0) > 0 ||
+                Number(item.extraQuantity || 0) > 0
+            );
+
+        if (hasIssues || gr.qualityStatus === "FAIL") {
+            return;
+        }
+
+        if (gr.qualityStatus === "PASS") {
+            openRatingModal(po);
+        }
+    };
 
     const updateInspectionItem = (itemId, field, value) => {
       setInspectionItems((prev) =>
@@ -397,14 +398,14 @@ export const DeliveredSection = () => {
         inspectionItems.length > 0 &&
         inspectionItems.every(
             (item) =>
+                Number(item.receivedQuantity) !== Number(item.acceptedQuantity) ||
                 Number(item.rejectedQuantity || 0) === 0 &&
                 Number(item.shortageQuantity || 0) === 0 &&
                 Number(item.extraQuantity || 0) === 0 &&
                 Number(item.receivedQuantity || 0) === Number(item.orderedQuantity || 0)
         );
 
-    const handleGenerateGoodsReceipt =
-        async () => {
+    const handleGenerateGoodsReceipt = async () => {
 
             if (!inspectionPO) {
                 return;
@@ -412,10 +413,7 @@ export const DeliveredSection = () => {
 
             if (!allItemsInspected) {
 
-                setError(
-                    "Please inspect every item before generating the Goods Receipt."
-                );
-
+                setError("Please inspect every item before generating the Goods Receipt.");
                 return;
             }
 
@@ -427,7 +425,6 @@ export const DeliveredSection = () => {
                 let existingGR = null;
 
                 try {
-
                     existingGR = await goodsReceiptService.getByPurchaseOrder(inspectionPO.id);
 
                 } catch (err) {
@@ -444,24 +441,17 @@ export const DeliveredSection = () => {
                         })
                     );
 
-                    const currentPO =
-                        inspectionPO;
+                    const currentPO = inspectionPO;
 
                     setInspectionPO(null);
                     setInspectionItems([]);
 
-                    handleAfterGoodsReceipt(
-                        currentPO,
-                        existingGR
-                    );
+                    handleAfterGoodsReceipt(currentPO, existingGR);
 
                     return;
                 }
 
-                const qualityStatus =
-                    allGoodsPerfect
-                        ? "PASS"
-                        : "FAIL";
+                const qualityStatus = allGoodsPerfect? "PASS": "FAIL";
 
                 const request = {
 
@@ -493,9 +483,9 @@ export const DeliveredSection = () => {
 
                                 rejectedQuantity: Number(item.rejectedQuantity),
 
-                                shortageQuantity: Number(item.shortageQuantity || 0),
+                                shortageQuantity: Number(item.acceptedQuantity) - Number(item.receivedQuantity) || 0,
 
-                                extraQuantity: Number(item.extraQuantity || 0),
+                                extraQuantity: Number(item.receivedQuantity) - Number(item.acceptedQuantity) || 0,
 
                                 remarks: item.remarks || null
                             })
@@ -517,10 +507,21 @@ export const DeliveredSection = () => {
                 setInspectionPO(null);
                 setInspectionItems([]);
 
-                handleAfterGoodsReceipt(
-                    currentPO,
-                    createdGR
-                );
+                const hasIssues =
+                    createdGR.items?.some((item) =>
+                        Number(item.receivedQuantity) !== Number(item.expectedQuantity) ||
+                        Number(item.rejectedQuantity || 0) > 0 ||
+                        Number(item.shortageQuantity || 0) > 0 ||
+                        Number(item.extraQuantity || 0) > 0
+                    );
+
+                if (!hasIssues && createdGR.qualityStatus === "PASS") {
+                    openRatingModal(currentPO);
+                }
+                // handleAfterGoodsReceipt(
+                //     currentPO,
+                //     createdGR
+                // );
 
             } catch (err) {
 
@@ -647,101 +648,87 @@ export const DeliveredSection = () => {
         }
     };
 
-    const openReturnReplacementModal =
-        (po, gr) => {
+    const openReturnReplacementModal = (po, gr) => {
 
-            const discrepancyItems =
-                (gr.items || [])
-                    .filter(
-                        (item) =>
-                            Number(
-                                item.rejectedQuantity ||
-                                0
-                            ) > 0 ||
-                            Number(
-                                item.shortageQuantity ||
-                                0
-                            ) > 0 ||
-                            Number(
-                                item.extraQuantity ||
-                                0
-                            ) > 0
-                    )
-                    .map((item) => {
+        if (!gr) {
+            setError("Goods Receipt is not available.");
+            return;
+        }
 
-                        let issueType = "DEFECTIVE";
+        const discrepancyItems = (gr.items || [])
+            .filter((item) => {
+                // console.log(item);
+                const rejected = Number(item.expectedQuantity) > Number(item.acceptedQuantity) || 0;
+                const shortage = Number(item.expectedQuantity) > Number(item.receivedQuantity) || 0;
+                const extra = Number(item.acceptedQuantity) < Number(item.receivedQuantity) || 0;
 
-                        const rejectedQuantity = Number(item.rejectedQuantity || 0);
+                return (rejected > 0 || shortage > 0 || extra > 0);
+            })
+            .map((item) => {
 
-                        const shortageQuantity = Number(item.shortageQuantity || 0);
+                const rejected = Number(item.expectedQuantity) - Number(item.acceptedQuantity)|| 0;
 
-                        const extraQuantity = Number(item.extraQuantity || 0);
+                const shortage = Number(item.expectedQuantity) - Number(item.receivedQuantity) || 0;
 
-                        if (extraQuantity > 0) {
-                            issueType = "EXTRA";
-                        } else if (shortageQuantity > 0) {
-                            issueType = "SHORTAGE";
-                        } else if (rejectedQuantity > 0) {
-                            issueType = "DEFECTIVE";
-                        }
-                        return {
+                const extra = Number(item.receivedQuantity) - Number(item.acceptedQuantity) || 0;
 
-                            goodsReceiptItemId:
-                                item.id,
+                let issueType;
+                // console.log(shortage, extra, rejected);
+                if (extra > 0) {
+                    issueType = "EXTRA_QUANTITY";
+                } else if (shortage > 0) {
+                    issueType = "SHORTAGE";
+                } else {
+                    issueType = "DEFECTIVE";
+                }
 
-                            productName:
-                                item.productName ||
-                                item.product?.name ||
-                                "-",
+                return {
+                    goodsReceiptItemId: item.id,
 
-                            expectedQuantity:
-                                Number(
-                                    item.orderedQuantity ||
-                                    0
-                                ),
+                    productName:
+                        item.productName ||
+                        item.product?.name ||
+                        "-",
 
-                            receivedQuantity:
-                                Number(
-                                    item.receivedQuantity ||
-                                    0
-                                ),
+                    expectedQuantity:
+                        Number(item.orderedQuantity || 0),
 
-                            acceptedQuantity:
-                                Number(
-                                    item.acceptedQuantity ||
-                                    0
-                                ),
+                    receivedQuantity:
+                        Number(item.receivedQuantity || 0),
 
-                            defectiveQuantity:
-                                Number(
-                                    item.rejectedQuantity ||
-                                    0
-                                ),
+                    acceptedQuantity:
+                        Number(item.acceptedQuantity || 0),
 
-                            shortageQuantity:
-                                Number(
-                                    item.shortageQuantity ||
-                                    0
-                                ),
+                    defectiveQuantity:
+                        rejected,
 
-                            extraQuantity:
-                                Number(
-                                    item.extraQuantity ||
-                                    0
-                                ),
+                    shortageQuantity:
+                        shortage,
 
-                            issueType,
+                    extraQuantity:
+                        extra,
 
-                            remarks:
-                                item.remarks || ""
-                        };
-                    });
+                    issueType,
 
-            setReturnPO(po);
-            setReturnGR(gr);
-            setReturnItems(discrepancyItems);
-            setReturnReason("");
-        };
+                    remarks:
+                        item.remarks || ""
+                };
+            });
+
+        if (discrepancyItems.length === 0) {
+
+            setError(
+                "No discrepancies were found in the Goods Receipt."
+            );
+
+            return;
+        }
+
+        setReturnPO(po);
+        setReturnGR(gr);
+        setReturnItems(discrepancyItems);
+        setReturnReason("");
+    };
 
     const updateReturnItem = (
         itemId,
@@ -1086,9 +1073,10 @@ export const DeliveredSection = () => {
 
                                 const hasDiscrepancy = !!existingGR &&
                                 (
-                                    existingGR.qualityStatus === "FAIL" ||
+                                    // existingGR.qualityStatus === "FAIL" ||
                                     existingGR.items?.some(
                                         (item) =>
+                                            Number(item.receivedQuantity) !== Number(item.expectedQuantity) ||
                                             Number(item.rejectedQuantity || 0) > 0 ||
                                             Number(item.shortageQuantity || 0) > 0 ||
                                             Number(item.extraQuantity || 0) > 0
@@ -1252,7 +1240,7 @@ export const DeliveredSection = () => {
                                                     </button>
                                                 )}
                                                 
-                                                {hasDiscrepancy && !returnRequest && (
+                                                {canViewGR && hasDiscrepancy && !returnRequest && (
 
                                                   <button
                                                       className="reject-btn"
@@ -1266,6 +1254,21 @@ export const DeliveredSection = () => {
                                                       Raise Return / Replacement
                                                   </button>
                                               )}
+
+                                                {returnRequest && (
+
+                                                    <button
+                                                        className="reject-btn"
+                                                        onClick={() =>
+                                                            openReturnReplacementModal(
+                                                                po,
+                                                                existingGR
+                                                            )
+                                                        }
+                                                    >
+                                                        View Return / Replacement
+                                                    </button>
+                                                )}
                                                 {canConfirm && !returnRequest && (
 
                                                     <button

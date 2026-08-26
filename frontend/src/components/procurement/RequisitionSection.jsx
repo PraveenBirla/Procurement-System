@@ -1,10 +1,9 @@
 import { useEffect, useState, useRef } from "react";
+import requisitionService from "../../services/requisitionService";
 import { createPortal } from "react-dom";
-import procurementService from "../../services/requisitionService";
-import { Clock3, Eye, RotateCcw } from "lucide-react";
+import { Eye, CheckCircle2, XCircle, RefreshCw, RotateCcw, Clock3 } from "lucide-react";
 
 const PENDING_STATUS = "PENDING_PROCUREMENT";
-const PROCUREMENT_DECIDED = ["APPROVED", "REJECTED"];
 const STORAGE_KEY = "procurement_pending_timers_v1";
 
 export const RequisitionSection = () => {
@@ -13,25 +12,35 @@ export const RequisitionSection = () => {
   const [error, setError] = useState("");
 
   const [selectedRequisition, setSelectedRequisition] = useState(null);
+  const [actionModal, setActionModal] = useState(null);
 
+  const [remarks, setRemarks] = useState("");
+  const [remarkError, setRemarkError] = useState("");
+  const [submittingAction, setSubmittingAction] = useState(false);
+  const [resettingId, setResettingId] = useState(null);
+
+  // Track and History Modal states
   const [showTrackModal, setShowTrackModal] = useState(false);
   const [history, setHistory] = useState([]);
   const [trackedReq, setTrackedReq] = useState(null);
   const [trackingId, setTrackingId] = useState(null);
   const [loadingHistory, setLoadingHistory] = useState(false);
 
-  const [actionModal, setActionModal] = useState(null);
-  const [remarks, setRemarks] = useState("");
-  const [remarkError, setRemarkError] = useState("");
-  const [submittingAction, setSubmittingAction] = useState(false);
-  const [resettingId, setResettingId] = useState(null);
-
   const [tick, setTick] = useState(0);
   const timeoutsRef = useRef({});
 
+  const getErrorMessage = (err) => {
+    return (
+      err?.response?.data?.error?.message ||
+      err?.response?.data?.message ||
+      err?.message ||
+      "Something went wrong"
+    );
+  };
+
   const getStoredTimers = () => {
     try {
-      const data = sessionStorage.getItem(STORAGE_KEY);
+      const data = localStorage.getItem(STORAGE_KEY);
       return data ? JSON.parse(data) : {};
     } catch {
       return {};
@@ -42,7 +51,7 @@ export const RequisitionSection = () => {
     try {
       const timers = getStoredTimers();
       timers[id] = timerData; 
-      sessionStorage.setItem(STORAGE_KEY, JSON.stringify(timers));
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(timers));
     } catch (e) {
       console.error(e);
     }
@@ -52,7 +61,7 @@ export const RequisitionSection = () => {
     try {
       const timers = getStoredTimers();
       delete timers[id];
-      sessionStorage.setItem(STORAGE_KEY, JSON.stringify(timers));
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(timers));
     } catch (e) {
       console.error(e);
     }
@@ -75,14 +84,14 @@ export const RequisitionSection = () => {
     };
 
     try {
-      if (procurementService.procurementUpdate) {
-        await procurementService.procurementUpdate(id, payload);
+      if (requisitionService.procurementUpdate) {
+        await requisitionService.procurementUpdate(id, payload);
       }
       setRequisitions((prev) => prev.filter((r) => r.id !== id));
       removeStoredTimer(id);
     } catch (err) {
       console.error("Failed to commit delayed procurement decision:", err);
-      setError(err?.response?.data?.message || err?.message || "Failed to commit decision");
+      setError(getErrorMessage(err));
     }
   };
 
@@ -98,68 +107,24 @@ export const RequisitionSection = () => {
     }, delay);
   };
 
-  useEffect(() => {
-    const interval = setInterval(() => {
-      setTick((prev) => prev + 1);
-    }, 1000);
-
-    return () => {
-      clearInterval(interval);
-      Object.values(timeoutsRef.current).forEach(clearTimeout);
-    };
-  }, []);
-
-  useEffect(() => {
-    loadRequisitions();
-  }, []);
-
-  useEffect(() => {
-    const anyOpen = !!selectedRequisition || showTrackModal || !!actionModal;
-    document.body.style.overflow = anyOpen ? "hidden" : "";
-
-    const handleKey = (e) => {
-      if (e.key === "Escape") {
-        setSelectedRequisition(null);
-        closeTrackModal();
-        closeActionModal();
-      }
-    };
-
-    document.addEventListener("keydown", handleKey);
-    return () => {
-      document.body.style.overflow = "";
-      document.removeEventListener("keydown", handleKey);
-    };
-  }, [selectedRequisition, showTrackModal, actionModal]);
-
-  const loadRequisitions = async () => {
+  const loadPending = async () => {
     setLoading(true);
     try {
-      const pending = await procurementService.getRequisitionsByStatus(PENDING_STATUS);
-
-      const processed = await Promise.all(
-        PROCUREMENT_DECIDED.map(async (status) => {
-          try {
-            if (procurementService.getProcurementRequisitionsByStatus) {
-              return await procurementService.getProcurementRequisitionsByStatus(status);
-            }
-            return [];
-          } catch {
-            return [];
-          }
-        })
+      const result = await requisitionService.getRequisitionsByStatus(
+        PENDING_STATUS
       );
 
-      const merged = [...(Array.isArray(pending) ? pending : []), ...processed.flat()];
-      const unique = Array.from(new Map(merged.map((r) => [r.id, r])).values());
-      
       const storedTimers = getStoredTimers();
       const now = Date.now();
 
-      const mappedData = unique.map((req) => {
+      const data = Array.isArray(result) ? [...result] : [];
+
+      const mappedData = data.map((req) => {
         const timerInfo = storedTimers[req.id];
+
         if (timerInfo && typeof timerInfo === "object" && timerInfo.expiresAt > now) {
           scheduleExpiration(req.id, timerInfo.expiresAt, timerInfo.decision, timerInfo.remarks);
+
           return {
             ...req,
             status: timerInfo.decision === "approved" ? "APPROVED" : "REJECTED",
@@ -173,19 +138,29 @@ export const RequisitionSection = () => {
         }
       });
 
-      mappedData.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
       setRequisitions(mappedData);
       setError("");
     } catch (err) {
-      console.error(err);
-      setRequisitions([]);
-      setError(err?.response?.data?.message || err?.message || "Unable to load procurement requisitions.");
+      setError(getErrorMessage(err));
     } finally {
       setLoading(false);
     }
   };
 
-  const handleView = (req) => setSelectedRequisition(req);
+  useEffect(() => {
+    const interval = setInterval(() => {
+      setTick((prev) => prev + 1);
+    }, 1000);
+
+    return () => {
+      clearInterval(interval);
+      Object.values(timeoutsRef.current).forEach(clearTimeout);
+    };
+  }, []);
+
+  useEffect(() => {
+    loadPending();
+  }, []);
 
   const openActionModal = (req, type) => {
     setActionModal({ req, type });
@@ -200,43 +175,40 @@ export const RequisitionSection = () => {
     setRemarkError("");
   };
 
-  const getRemainingSeconds = (localExpiresAt) => {
-    if (!localExpiresAt) return 0;
-    return Math.max(0, Math.ceil((localExpiresAt - Date.now()) / 1000));
-  };
-
   const handleSubmitAction = (e) => {
     e.preventDefault();
+    if (!actionModal) return;
 
     if (!remarks.trim()) {
-      setRemarkError("Remarks required");
+      setRemarkError("Remarks are required");
       return;
     }
-
-    const { req, type } = actionModal;
-    const trimmedRemarks = remarks.trim();
-    const expiresAt = Date.now() + 60 * 1000;
 
     try {
       setSubmittingAction(true);
 
-      storeTimer(req.id, {
+      const expiresAt = Date.now() + 60 * 1000;
+      const decisionType = actionModal.type;
+      const trimmedRemarks = remarks.trim();
+      const reqId = actionModal.req.id;
+
+      storeTimer(reqId, {
         expiresAt,
-        decision: type,
+        decision: decisionType,
         remarks: trimmedRemarks,
       });
 
-      scheduleExpiration(req.id, expiresAt, type, trimmedRemarks);
+      scheduleExpiration(reqId, expiresAt, decisionType, trimmedRemarks);
 
-      const newStatus = type === "approved" ? "APPROVED" : "REJECTED";
+      const newStatus = decisionType === "approved" ? "APPROVED" : "REJECTED";
 
       setRequisitions((prev) =>
         prev.map((r) =>
-          r.id === req.id
+          r.id === reqId
             ? {
                 ...r,
                 status: newStatus,
-                pendingDecision: type,
+                pendingDecision: decisionType,
                 pendingRemarks: trimmedRemarks,
                 localExpiresAt: expiresAt,
               }
@@ -244,15 +216,17 @@ export const RequisitionSection = () => {
         )
       );
 
-      closeActionModal();
+      setActionModal(null);
+      setRemarks("");
+      setRemarkError("");
     } catch (err) {
-      setError(err?.message || "Failed to update decision");
+      setError(getErrorMessage(err));
     } finally {
       setSubmittingAction(false);
     }
   };
 
-  const handleResetDecision = async (requisitionId) => {
+  const handleResetDecision = (requisitionId) => {
     try {
       setResettingId(requisitionId);
       removeStoredTimer(requisitionId);
@@ -270,22 +244,10 @@ export const RequisitionSection = () => {
             : r
         )
       );
+
       setError("");
     } catch (err) {
-      removeStoredTimer(requisitionId);
-      setRequisitions((prev) =>
-        prev.map((r) =>
-          r.id === requisitionId
-            ? {
-                ...r,
-                status: PENDING_STATUS,
-                pendingDecision: null,
-                pendingRemarks: null,
-                localExpiresAt: null,
-              }
-            : r
-        )
-      );
+      setError(getErrorMessage(err));
     } finally {
       setResettingId(null);
     }
@@ -299,14 +261,14 @@ export const RequisitionSection = () => {
     setHistory([]);
 
     try {
-      if (procurementService.getRequisitionHistory) {
-        const res = await procurementService.getRequisitionHistory(req.id);
+      if (requisitionService.getRequisitionHistory) {
+        const res = await requisitionService.getRequisitionHistory(req.id);
         setHistory(res || []);
       } else {
         setHistory([]);
       }
     } catch (err) {
-      setError(err.message);
+      setError(getErrorMessage(err));
       setShowTrackModal(false);
     } finally {
       setLoadingHistory(false);
@@ -320,18 +282,38 @@ export const RequisitionSection = () => {
     setShowTrackModal(false);
   };
 
+  const formatStatus = (status) => {
+    return status ? status.replaceAll("_", " ") : "-";
+  };
+
+  const getRemainingSeconds = (localExpiresAt) => {
+    if (!localExpiresAt) return 0;
+    return Math.max(0, Math.ceil((localExpiresAt - Date.now()) / 1000));
+  };
+
   return (
     <div className="admin-requisition-section">
       <div className="section-header">
-        <h2 className="section-title">Procurement Requisitions</h2>
+        <div>
+          <h2 className="section-title">Procurement Requisitions</h2>
+          <p className="section-subtitle">
+            Requisitions waiting for procurement review and decision.
+          </p>
+        </div>
+        <button
+          className="refresh-btn"
+          onClick={loadPending}
+          disabled={loading}
+        >
+          <RefreshCw size={16} className={loading ? "spin" : ""} />
+          {loading ? "Refreshing..." : "Refresh"}
+        </button>
       </div>
 
       {error && (
         <div className="error-box">
           <span>{error}</span>
-          <button className="error-dismiss" onClick={() => setError("")} aria-label="Dismiss error">
-            ×
-          </button>
+          <button onClick={() => setError("")}>×</button>
         </div>
       )}
 
@@ -339,8 +321,9 @@ export const RequisitionSection = () => {
         <table className="table">
           <thead>
             <tr>
-              <th>Req No</th>
+              <th>Requisition No</th>
               <th>Title</th>
+              <th>Employee</th>
               <th>Department</th>
               <th>Priority</th>
               <th>Status</th>
@@ -349,94 +332,93 @@ export const RequisitionSection = () => {
               <th>Action</th>
             </tr>
           </thead>
-
           <tbody>
             {loading ? (
               <tr>
-                <td colSpan="7" className="no-data">
-                  Loading…
+                <td colSpan="9" className="no-data">
+                  Loading requisitions...
                 </td>
               </tr>
             ) : requisitions.length > 0 ? (
               requisitions.map((req) => {
                 const remaining = getRemainingSeconds(req.localExpiresAt);
                 const isDecidedRecently = Boolean(req.localExpiresAt && remaining > 0);
-                const isPending = req.status === PENDING_STATUS && !isDecidedRecently;
 
                 return (
                   <tr key={req.id}>
-                    <td data-label="Req No">
+                    <td>
                       <div className="req-number-cell">
                         {req.requisitionNo}
                         {req.isDuplicate && (
-                          <span className="duplicate-badge" title="Potential duplicate requisition detected">
-                            Duplicate
-                          </span>
+                          <span className="duplicate-badge">Duplicate</span>
                         )}
                       </div>
                     </td>
-                    <td data-label="Title">{req.title}</td>
-                    <td data-label="Department">{req.departmentName}</td>
-                    <td data-label="Priority"><span className={`priority-badge ${req.priority === "HIGH" ? "high" : "normal"}`}>{req.priority || "NORMAL"}</span></td>
-                    <td data-label="Status">
-                      <span className={`status-badge ${req.status ? req.status.toLowerCase() : ""}`}>
-                        {req.status ? req.status.replaceAll("_", " ") : "-"}
+                    <td>{req.title || "-"}</td>
+                    <td>{req.employeeName || "-"}</td>
+                    <td>{req.departmentName || "-"}</td>
+                    <td><span className={`priority-badge ${req.priority === "HIGH" ? "high" : "normal"}`}>{req.priority || "NORMAL"}</span></td>
+                    <td>
+                      <span
+                        className={`status-badge ${
+                          req.status?.toLowerCase() || ""
+                        }`}
+                      >
+                        {formatStatus(req.status)}
                       </span>
                     </td>
-                    <td data-label="Amount">₹{Number(req.totalEstimatedAmount || 0).toLocaleString()}</td>
-                    <td data-label="Created">{req.createdAt ? new Date(req.createdAt).toLocaleDateString() : "-"}</td>
-                    <td data-label="Action">
-                      <div className="action-group">
-                        <button className="view-btn" onClick={() => handleView(req)}>
-                          <Eye size={14} />
-                          View
-                        </button>
-
-                        {isDecidedRecently ? (
-                          <div
-                            className="inline-reset-container"
-                            style={{
-                              display: "flex",
-                              alignItems: "center",
-                              gap: "8px",
-                            }}
+                    <td>
+                      ₹
+                      {Number(req.totalEstimatedAmount || 0).toLocaleString(
+                        "en-IN"
+                      )}
+                    </td>
+                    <td>
+                      {req.createdAt
+                        ? new Date(req.createdAt).toLocaleDateString()
+                        : "-"}
+                    </td>
+                    <td>
+                      {isDecidedRecently ? (
+                        <div className="inline-reset-container" style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                          <span style={{ fontSize: '13px', color: '#b58100', fontWeight: 'bold' }}>
+                            Reset in {remaining}s
+                          </span>
+                          <button
+                            className="reset-btn"
+                            onClick={() => handleResetDecision(req.id)}
+                            disabled={resettingId === req.id}
                           >
-                            <span
-                              style={{
-                                fontSize: "13px",
-                                color: "#b58100",
-                                fontWeight: "bold",
-                              }}
-                            >
-                              Reset in {remaining}s
-                            </span>
-                            <button
-                              className="reset-btn"
-                              onClick={() => handleResetDecision(req.id)}
-                              disabled={resettingId === req.id}
-                            >
-                              <RotateCcw size={14} />
-                              {resettingId === req.id ? "Resetting…" : "Reset Decision"}
-                            </button>
-                          </div>
-                        ) : isPending ? (
-                          <>
-                            <button className="approve-btn" onClick={() => openActionModal(req, "approved")}>
-                              Approve
-                            </button>
-                            <button className="reject-btn" onClick={() => openActionModal(req, "rejected")}>
-                              Reject
-                            </button>
-                            <button
-                              className="track-btn"
-                              onClick={() => handleTrack(req)}
-                              disabled={trackingId === req.id}
-                            >
-                              <Clock3 size={14} />
-                              {trackingId === req.id ? "…" : "Track"}
-                            </button>
-                          </>
-                        ) : (
+                            <RotateCcw size={14} />
+                            {resettingId === req.id ? "Resetting…" : "Reset Decision"}
+                          </button>
+                        </div>
+                      ) : (
+                        <div className="action-group">
+                          <button
+                            className="view-btn"
+                            onClick={() => setSelectedRequisition(req)}
+                          >
+                            <Eye size={14} />
+                            View
+                          </button>
+
+                          <button
+                            className="approve-btn"
+                            onClick={() => openActionModal(req, "approved")}
+                          >
+                            <CheckCircle2 size={14} />
+                            Approve
+                          </button>
+
+                          <button
+                            className="reject-btn"
+                            onClick={() => openActionModal(req, "rejected")}
+                          >
+                            <XCircle size={14} />
+                            Reject
+                          </button>
+
                           <button
                             className="track-btn"
                             onClick={() => handleTrack(req)}
@@ -445,16 +427,16 @@ export const RequisitionSection = () => {
                             <Clock3 size={14} />
                             {trackingId === req.id ? "…" : "Track"}
                           </button>
-                        )}
-                      </div>
+                        </div>
+                      )}
                     </td>
                   </tr>
                 );
               })
             ) : (
               <tr>
-                <td colSpan="7" className="no-data">
-                  No Requisitions Found
+                <td colSpan="9" className="no-data">
+                  No Procurement Requisitions Found
                 </td>
               </tr>
             )}
@@ -462,39 +444,49 @@ export const RequisitionSection = () => {
         </table>
       </div>
 
-      {/* View Modal */}
+      {/* VIEW MODAL */}
       {selectedRequisition &&
         createPortal(
-          <div className="modal-overlay" onClick={() => setSelectedRequisition(null)}>
-            <div className="modal-content" onClick={(e) => e.stopPropagation()}>
+          <div
+            className="modal-overlay"
+            onClick={() => setSelectedRequisition(null)}
+          >
+            <div
+              className="modal-content"
+              onClick={(e) => e.stopPropagation()}
+            >
               <div className="modal-header">
                 <h2>{selectedRequisition.requisitionNo}</h2>
                 <button
                   className="modal-close"
                   onClick={() => setSelectedRequisition(null)}
-                  aria-label="Close"
                 >
                   ×
                 </button>
               </div>
 
               <p>
-                <strong>Title:</strong> {selectedRequisition.title}
+                <strong>Title:</strong> {selectedRequisition.title || "-"}
               </p>
               <p>
-                <strong>Description:</strong> {selectedRequisition.description}
-              </p> 
+                <strong>Description:</strong>{" "}
+                {selectedRequisition.description || "-"}
+              </p>
               <p>
-                <strong>Employee:</strong>{" "}
-                {selectedRequisition.employeeName || "-"}
-              </p> 
+                <strong>Employee:</strong> {selectedRequisition.employeeName || "-"}
+              </p>
               <p>
-                <strong>Department:</strong> {selectedRequisition.departmentName}
+                <strong>Department:</strong>{" "}
+                {selectedRequisition.departmentName || "-"}
               </p>
               <p>
                 <strong>Status:</strong>{" "}
-                <span className={`status-badge ${selectedRequisition.status ? selectedRequisition.status.toLowerCase() : ""}`}>
-                  {selectedRequisition.status ? selectedRequisition.status.replaceAll("_", " ") : "-"}
+                <span
+                  className={`status-badge ${
+                    selectedRequisition.status?.toLowerCase() || ""
+                  }`}
+                >
+                  {formatStatus(selectedRequisition.status)}
                 </span>
               </p>
 
@@ -509,12 +501,17 @@ export const RequisitionSection = () => {
                     </tr>
                   </thead>
                   <tbody>
-                    {selectedRequisition.items && selectedRequisition.items.length > 0 ? (
+                    {selectedRequisition.items?.length > 0 ? (
                       selectedRequisition.items.map((item) => (
                         <tr key={item.id}>
-                          <td data-label="Product">{item.productName}</td>
-                          <td data-label="Qty">{item.quantity}</td>
-                          <td data-label="Unit Price">₹{item.unitPrice}</td>
+                          <td>{item.productName}</td>
+                          <td>{item.quantity}</td>
+                          <td>
+                            ₹
+                            {Number(item.unitPrice || 0).toLocaleString(
+                              "en-IN"
+                            )}
+                          </td>
                         </tr>
                       ))
                     ) : (
@@ -529,7 +526,10 @@ export const RequisitionSection = () => {
               </div>
 
               <div className="modal-actions">
-                <button className="close-btn" onClick={() => setSelectedRequisition(null)}>
+                <button
+                  className="close-btn"
+                  onClick={() => setSelectedRequisition(null)}
+                >
                   Close
                 </button>
               </div>
@@ -538,7 +538,7 @@ export const RequisitionSection = () => {
           document.body
         )}
 
-      {/* Track Modal */}
+      {/* TRACK MODAL */}
       {showTrackModal &&
         createPortal(
           <div className="modal-overlay" onClick={closeTrackModal}>
@@ -586,30 +586,27 @@ export const RequisitionSection = () => {
           document.body
         )}
 
-      {/* Approve / Reject Modal */}
+      {/* ACTION MODAL */}
       {actionModal &&
         createPortal(
           <div className="modal-overlay" onClick={closeActionModal}>
-            <div className="modal-content action-modal" onClick={(e) => e.stopPropagation()}>
+            <div
+              className="modal-content action-modal"
+              onClick={(e) => e.stopPropagation()}
+            >
               <div className="modal-header">
                 <h2>
-                  {actionModal.type === "approved" ? "Approve Procurement" : "Reject Procurement"} -{" "}
+                  {actionModal.type === "approved" ? "Approve" : "Reject"} -{" "}
                   {actionModal.req.requisitionNo}
                 </h2>
                 <button
                   className="modal-close"
                   onClick={closeActionModal}
-                  aria-label="Close"
                   disabled={submittingAction}
                 >
                   ×
                 </button>
               </div>
-
-              <p className="action-summary">
-                <strong>{actionModal.req.title}</strong> - ₹
-                {Number(actionModal.req.totalEstimatedAmount || 0).toLocaleString()}
-              </p>
 
               <form onSubmit={handleSubmitAction} noValidate>
                 <div className="field">
@@ -618,29 +615,35 @@ export const RequisitionSection = () => {
                     value={remarks}
                     onChange={(e) => {
                       setRemarks(e.target.value);
-                      if (remarkError) setRemarkError("");
+                      if (remarkError) {
+                        setRemarkError("");
+                      }
                     }}
                     placeholder={
                       actionModal.type === "approved"
-                        ? "Approval remarks…"
-                        : "Reason for rejection…"
+                        ? "Add a note for this approval..."
+                        : "Reason for rejection..."
                     }
                     rows={4}
                     className={remarkError ? "input-error" : ""}
                   />
-                  {remarkError && <span className="field-error">{remarkError}</span>}
+                  {remarkError && (
+                    <span className="field-error">{remarkError}</span>
+                  )}
                 </div>
 
                 <div className="modal-actions">
                   <button
                     type="submit"
-                    className={actionModal.type === "approved" ? "approve-btn-lg" : "reject-btn-lg"}
+                    className={
+                      actionModal.type === "approved"
+                        ? "approve-btn-lg"
+                        : "reject-btn-lg"
+                    }
                     disabled={submittingAction}
                   >
-                    {submittingAction
-                      ? "Submitting…"
-                      : actionModal.type === "approved"
-                      ? "Confirm Approval"
+                    {submittingAction ? "Submitting..." : actionModal.type === "approved"
+                      ? "Confirm Approve"
                       : "Confirm Reject"}
                   </button>
                   <button

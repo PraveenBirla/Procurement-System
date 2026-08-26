@@ -191,6 +191,10 @@ public class GoodsReceiptService {
                             i.setRejectedQuantity(item.getRejectedQuantity());
 
                             i.setRemarks(item.getRemarks());
+                            
+                            i.setShortageQuantity(item.getShortageQuantity());
+                                        
+                            i.setExtraQuantity(item.getExtraQuantity());
 
                             return i;
                         })

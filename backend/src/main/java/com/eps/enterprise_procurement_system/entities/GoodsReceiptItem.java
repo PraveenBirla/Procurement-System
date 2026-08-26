@@ -36,6 +36,14 @@ public class GoodsReceiptItem {
     @Builder.Default
     private Integer rejectedQuantity = 0;
 
+    @Column(name = "shortage_quantity", nullable = false)
+    @Builder.Default
+    private Integer shortageQuantity = 0;
+
+    @Column(name = "extra_quantity", nullable = false)
+    @Builder.Default
+    private Integer extraQuantity = 0;
+
     @Column(name="ordered_quantity")
     private Integer orderedQuantity;
 

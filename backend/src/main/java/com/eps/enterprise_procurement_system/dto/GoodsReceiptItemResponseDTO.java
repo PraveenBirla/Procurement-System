@@ -19,5 +19,9 @@ public class GoodsReceiptItemResponseDTO {
 
     private Integer rejectedQuantity;
 
+    private Integer shortageQuantity;
+    
+    private Integer extraQuantity;
+
     private String remarks;
 }

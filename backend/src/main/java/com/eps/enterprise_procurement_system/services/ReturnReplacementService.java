@@ -129,9 +129,7 @@ public class ReturnReplacementService {
                         "Invalid extra quantity");
             }
 
-            if (received < 0 ||
-                    accepted < 0 ||
-                    defective < 0) {
+            if (received < 0 || accepted < 0 || defective < 0) {
 
                 throw new RuntimeException(
                         "Quantities cannot be negative");
@@ -147,10 +145,7 @@ public class ReturnReplacementService {
                         "Accepted and defective quantity cannot exceed received quantity");
             }
 
-            if (defective == 0 &&
-                    shortage == 0 &&
-                    extra == 0) {
-
+            if (defective == 0 && shortage == 0 && extra == 0) {
                 throw new RuntimeException(
                         "No return or replacement issue found for this item");
             }
