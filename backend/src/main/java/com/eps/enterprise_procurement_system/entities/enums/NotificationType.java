@@ -6,5 +6,5 @@ public enum NotificationType {
     BUDGET,
     PURCHASE_ORDER,
     DELIVERY,
-    RETURN
+    RETURN_REPLACEMENT
 }

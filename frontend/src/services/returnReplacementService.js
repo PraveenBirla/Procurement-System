@@ -9,6 +9,13 @@ const returnReplacementService = {
         return response.data?.data || response.data;
     },
 
+    getPOPendingReturns: async(id) => {
+
+        const res = await api.get("/return-replacements/po/pending");
+
+        return res.data?.data || response.data;
+    },
+
     updateSupplierStatus: async (id, status) => {
 
         const response = await api.put(`/return-replacements/${id}/supplier-status`,

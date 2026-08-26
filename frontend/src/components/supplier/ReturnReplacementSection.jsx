@@ -113,8 +113,7 @@ export const ReturnReplacementSection = () => {
 
         try {
 
-            const updated =
-                await returnReplacementService
+            const updated = await returnReplacementService
                     .updateSupplierStatus(
                         requestId,
                         status

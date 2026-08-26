@@ -6,7 +6,8 @@ import {
   Truck,
   PackageCheck,
   LogOut,
-  Package
+  Package,
+  Replace,
 } from "lucide-react";  
 import { RequisitionSection } from "./RequisitionSection";
 import { SupplierProfileSection } from "./SupplierProfileSection"; 
@@ -17,6 +18,7 @@ import { CompletedOrderSection } from "./CompletedOrderSection";
 import { DeliveredOrderSection } from "./DeliveredOrderSection";
 import authService from "../../services/authService";
 import { ThemeToggle } from "../ui/ThemeToggle";
+import ReturnReplacementSection from "./ReturnReplacementSection";
 
 export const  SupplierDashboard  = () => {
   const [activeSection, setActiveSection] = useState("profile");
@@ -27,6 +29,7 @@ export const  SupplierDashboard  = () => {
      { id: "acceptedorders", label: "Accepted Orders", icon: CheckCircle},
       {id: "indelivery", label: "Indelivery Orders", icon: Truck},
        {id: "delivered", label: "Delivered Orders", icon: PackageCheck},
+       {id: "issues in delivery", label: "Delivered Issues", icon: Replace },
         {id: "completed", label: "Completed Orders", icon: CheckCircle}
   ];
 
@@ -64,8 +67,9 @@ export const  SupplierDashboard  = () => {
          {activeSection === "orders" &&  <OrderSection setActiveSection={setActiveSection} /> }
          {activeSection === "acceptedorders" && <AcceptedOrderSection setActiveSection={setActiveSection} />}
          {activeSection === "indelivery" && <InDeliverySection setActiveSection={setActiveSection} />}
-         {activeSection === "delivered" && <DeliveredOrderSection setActiveSection={setActiveSection} />}
-         {activeSection === "completed" && <CompletedOrderSection setActiveSection={setActiveSection} />}
+        {activeSection === "delivered" && <DeliveredOrderSection setActiveSection={setActiveSection} />}
+        {activeSection === "issues in delivery" && <ReturnReplacementSection setActiveSection={setActiveSection} />}
+        {activeSection === "completed" && <CompletedOrderSection setActiveSection={setActiveSection} />}
       </main>
     </div>
   );

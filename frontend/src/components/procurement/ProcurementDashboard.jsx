@@ -6,7 +6,8 @@ import {
   Truck,
   PackageCheck,
   LogOut,
-  Building2
+  Building2,
+  Replace
 } from "lucide-react";  
 import authService from "../../services/authService";
 import requisitionService from "../../services/requisitionService";
@@ -19,6 +20,8 @@ import { SupplierSection } from "../admin/SupplierSection";
 import { OverviewSection } from "./OverviewSection";
 import { ThemeToggle } from "../ui/ThemeToggle";
 import "../layout/DashboardShared.css";
+import ReturnReplacementSection from "./ReturnReplacementSection";
+
 export const ProcurementDashboard = () => {
   const [activeSection, setActiveSection] = useState("overview");
   const [urgentCount, setUrgentCount] = useState(0);
@@ -32,7 +35,7 @@ export const ProcurementDashboard = () => {
     { id: "requisition", label: "Requisition", icon:ClipboardList },
      { id: "ApprovedRequisition", label: "Approved Requisition", icon: BadgeCheck }, 
      { id: "PurchaseOrders", label: "Purchase Orders", icon: ShoppingCart },
-     
+    {id: "issues in delivery", label: "Delivered Issues", icon: Replace },
      { id: "DeliveredOrders", label: "Delivered Orders", icon: Truck},
      { id: "CompletedOrders", label: "Completed Orders", icon: PackageCheck},
       { id: "suppliers", label: "Suppliers", icon: Building2 }
@@ -73,7 +76,8 @@ export const ProcurementDashboard = () => {
           {activeSection === "ApprovedRequisition" &&  <ApprovedRequisitionSection setActiveSection={setActiveSection} /> }
           {activeSection === "PurchaseOrders" && <PurchaseOrderSection setActiveSection={setActiveSection} /> }
           {activeSection === "suppliers" && <SupplierSection setActiveSection={setActiveSection} /> }
-          {activeSection === "DeliveredOrders" && <DeliveredSection setActiveSection={setActiveSection} /> }
+        {activeSection === "DeliveredOrders" && <DeliveredSection setActiveSection={setActiveSection} />}
+        {activeSection === "issues in delivery" && <ReturnReplacementSection setActiveSection={setActiveSection} />}
           {activeSection === "CompletedOrders" && <CompletedOrderSection setActiveSection={setActiveSection} /> }
           {activeSection === "overview" && (
             <OverviewSection
