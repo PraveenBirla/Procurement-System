@@ -1,25 +1,31 @@
 import { useState, useEffect } from "react";
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Cell } from "recharts";
-
-const mockInventoryData = [
-  { id: 1, product: "ThinkPad T14", category: "Laptops", qtyOnHand: 15, underInspection: 2, quarantined: 0, warehouse: "WH-East", lastPo: "PO-001", lastUpdated: "2023-10-15" },
-  { id: 2, product: "Dell Monitor 27\"", category: "Peripherals", qtyOnHand: 4, underInspection: 0, quarantined: 1, warehouse: "WH-West", lastPo: "PO-008", lastUpdated: "2023-10-10" },
-  { id: 3, product: "Ergonomic Chair", category: "Furniture", qtyOnHand: 45, underInspection: 5, quarantined: 0, warehouse: "WH-East", lastPo: "PO-012", lastUpdated: "2023-09-20" },
-  { id: 4, product: "Wireless Mouse", category: "Peripherals", qtyOnHand: 8, underInspection: 0, quarantined: 0, warehouse: "WH-Central", lastPo: "PO-015", lastUpdated: "2023-10-14" },
-  { id: 5, product: "MacBook Pro", category: "Laptops", qtyOnHand: 2, underInspection: 0, quarantined: 0, warehouse: "WH-West", lastPo: "PO-003", lastUpdated: "2023-08-11" },
-];
+import inventoryService from "../../../services/inventoryService";
 
 export const InventoryReport = () => {
   const [data, setData] = useState([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    // Simulate API fetch
-    setTimeout(() => {
-      setData(mockInventoryData);
-      setLoading(false);
-    }, 400);
+    loadData();
   }, []);
+
+  const loadData = async () => {
+    setLoading(true);
+    try {
+      const items = await inventoryService.getAllInventory();
+      if (items && items.length > 0) {
+        setData(items);
+      } else {
+        setData([]);
+      }
+    } catch (err) {
+      console.error("Failed to load inventory", err);
+      setData([]);
+    } finally {
+      setLoading(false);
+    }
+  };
 
   if (loading) return <div>Loading report...</div>;
 
@@ -33,22 +39,28 @@ export const InventoryReport = () => {
       </div>
 
       <div className="report-charts-grid">
-        <div className="report-chart-card">
+        <div className="report-chart-card" style={{ gridColumn: '1 / -1' }}>
           <div className="report-chart-title">Current Stock Levels (Highlighted &lt; 10 items)</div>
-          <div className="report-chart-wrapper">
-            <ResponsiveContainer width="100%" height="100%">
-              <BarChart data={data}>
-                <CartesianGrid strokeDasharray="3 3" vertical={false} />
-                <XAxis dataKey="product" tick={{fontSize: 12}} interval={0} angle={-45} textAnchor="end" height={80} />
-                <YAxis />
-                <Tooltip />
-                <Bar dataKey="qtyOnHand" name="Quantity on Hand">
-                  {data.map((entry, index) => (
-                    <Cell key={`cell-${index}`} fill={entry.qtyOnHand < 10 ? '#ef4444' : '#10b981'} />
-                  ))}
-                </Bar>
-              </BarChart>
-            </ResponsiveContainer>
+          <div className="report-chart-wrapper" style={{ height: '400px' }}>
+            {data.length === 0 ? (
+              <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100%', color: 'var(--color-text-muted)' }}>
+                No inventory data available.
+              </div>
+            ) : (
+              <ResponsiveContainer width="100%" height="100%">
+                <BarChart data={data} margin={{ top: 20, right: 30, left: 20, bottom: 55 }}>
+                  <CartesianGrid strokeDasharray="3 3" vertical={false} />
+                  <XAxis dataKey="productName" tick={{fontSize: 12}} interval={0} angle={-45} textAnchor="end" height={80} />
+                  <YAxis />
+                  <Tooltip />
+                  <Bar dataKey="quantityOnHand" name="Quantity on Hand">
+                    {data.map((entry, index) => (
+                      <Cell key={`cell-${index}`} fill={entry.quantityOnHand < 10 ? '#ef4444' : '#10b981'} />
+                    ))}
+                  </Bar>
+                </BarChart>
+              </ResponsiveContainer>
+            )}
           </div>
         </div>
       </div>
@@ -69,19 +81,19 @@ export const InventoryReport = () => {
           </thead>
           <tbody>
             {data.map((item) => (
-              <tr key={item.id} style={{ backgroundColor: item.qtyOnHand < 10 ? '#fef2f2' : 'transparent' }}>
-                <td style={{fontWeight: 600, color: "var(--color-text-primary)"}}>{item.product}</td>
-                <td>{item.category}</td>
+              <tr key={item.id} style={{ backgroundColor: item.quantityOnHand < 10 ? '#fef2f2' : 'transparent' }}>
+                <td style={{fontWeight: 600, color: "var(--color-text-primary)"}}>{item.productName}</td>
+                <td>{item.category || "-"}</td>
                 <td>
-                  <span style={{ fontWeight: 600, color: item.qtyOnHand < 10 ? '#dc2626' : '#16a34a'}}>
-                    {item.qtyOnHand} {item.qtyOnHand < 10 && "(Low)"}
+                  <span style={{ fontWeight: 600, color: item.quantityOnHand < 10 ? '#dc2626' : '#16a34a'}}>
+                    {item.quantityOnHand} {item.quantityOnHand < 10 && "(Low)"}
                   </span>
                 </td>
-                <td>{item.underInspection}</td>
-                <td style={{ color: item.quarantined > 0 ? '#dc2626' : 'inherit' }}>{item.quarantined}</td>
-                <td>{item.warehouse}</td>
-                <td>{item.lastPo}</td>
-                <td>{item.lastUpdated}</td>
+                <td>{item.underInspection || "0"}</td>
+                <td style={{ color: item.quarantined > 0 ? '#dc2626' : 'inherit' }}>{item.quarantined || "0"}</td>
+                <td>{item.warehouseLocation || "-"}</td>
+                <td>{item.purchaseOrderNo || "-"}</td>
+                <td>{item.updatedAt ? new Date(item.updatedAt).toLocaleDateString() : "-"}</td>
               </tr>
             ))}
           </tbody>

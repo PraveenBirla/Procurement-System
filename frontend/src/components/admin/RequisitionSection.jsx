@@ -278,13 +278,15 @@ export const RequisitionSection = () => {
           All Requisitions
         </h2>
 
-        <button
-          className="refresh-btn"
-          onClick={loadRequisitions}
-          disabled={loading}
-        >
-          {loading ? "Refreshing..." : "Refresh"}
-        </button>
+        <div className="header-actions" style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
+          <button
+            className="refresh-btn"
+            onClick={loadRequisitions}
+            disabled={loading}
+          >
+            {loading ? "Refreshing..." : "Refresh"}
+          </button>
+        </div>
       </div>
 
       {/* =================================================

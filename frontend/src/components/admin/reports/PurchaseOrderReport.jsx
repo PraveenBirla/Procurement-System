@@ -2,12 +2,7 @@ import { useState, useEffect } from "react";
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from "recharts";
 import purchaseOrderService from "../../../services/purchaseOrderService";
 
-const mockFallbackData = [
-  { id: 1, poNumber: "PO-2023-001", reqNumber: "REQ-001", supplierName: "TechCorp", createdAt: "2023-10-01", expectedDelivery: "2023-10-15", actualDelivery: "2023-10-14", status: "DELIVERED", totalAmount: 15000 },
-  { id: 2, poNumber: "PO-2023-002", reqNumber: "REQ-002", supplierName: "OfficeSupplies Inc", createdAt: "2023-10-05", expectedDelivery: "2023-10-12", actualDelivery: null, status: "SENT TO SUPPLIER", totalAmount: 3200 },
-  { id: 3, poNumber: "PO-2023-003", reqNumber: "REQ-005", supplierName: "Global IT", createdAt: "2023-10-10", expectedDelivery: "2023-10-20", actualDelivery: null, status: "GENERATED", totalAmount: 45000 },
-  { id: 4, poNumber: "PO-2023-004", reqNumber: "REQ-008", supplierName: "TechCorp", createdAt: "2023-10-12", expectedDelivery: "2023-10-25", actualDelivery: null, status: "APPROVED", totalAmount: 8500 },
-];
+
 
 export const PurchaseOrderReport = () => {
   const [data, setData] = useState([]);
@@ -24,10 +19,10 @@ export const PurchaseOrderReport = () => {
       if (pos && pos.length > 0) {
         setData(pos);
       } else {
-        setData(mockFallbackData); // fallback for UI demo
+        setData([]); 
       }
     } catch (err) {
-      setData(mockFallbackData);
+      setData([]);
     } finally {
       setLoading(false);
     }
@@ -57,18 +52,24 @@ export const PurchaseOrderReport = () => {
       </div>
 
       <div className="report-charts-grid">
-        <div className="report-chart-card">
+        <div className="report-chart-card" style={{ gridColumn: '1 / -1' }}>
           <div className="report-chart-title">Total Spend by Supplier</div>
-          <div className="report-chart-wrapper">
-            <ResponsiveContainer width="100%" height="100%">
-              <BarChart data={chartData}>
-                <CartesianGrid strokeDasharray="3 3" vertical={false} />
-                <XAxis dataKey="supplier" />
-                <YAxis />
-                <Tooltip formatter={(value) => `₹${value.toLocaleString()}`} />
-                <Bar dataKey="amount" fill="#3b82f6" radius={[4, 4, 0, 0]} />
-              </BarChart>
-            </ResponsiveContainer>
+          <div className="report-chart-wrapper" style={{ height: '400px' }}>
+            {chartData.length === 0 ? (
+              <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100%', color: 'var(--color-text-muted)' }}>
+                No purchase order data available.
+              </div>
+            ) : (
+              <ResponsiveContainer width="100%" height="100%">
+                <BarChart data={chartData} margin={{ top: 20, right: 30, left: 20, bottom: 5 }}>
+                  <CartesianGrid strokeDasharray="3 3" vertical={false} />
+                  <XAxis dataKey="supplier" />
+                  <YAxis />
+                  <Tooltip formatter={(value) => `₹${value.toLocaleString()}`} />
+                  <Bar dataKey="amount" fill="#3b82f6" name="Total Amount" />
+                </BarChart>
+              </ResponsiveContainer>
+            )}
           </div>
         </div>
       </div>

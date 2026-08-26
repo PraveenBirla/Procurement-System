@@ -330,7 +330,7 @@ export const OverviewSection = ({
           <p>Review and action requisitions assigned to your department.</p>
         </div>
 
-        <div className="header-actions">
+        <div className="header-actions" style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
           <NotificationBell setActiveSection={setDashboardSection} />
           <button
             type="button"

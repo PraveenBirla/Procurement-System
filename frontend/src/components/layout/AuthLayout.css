@@ -8,6 +8,7 @@
   min-height: 100vh;
   min-height: 100dvh;
   background: #ffffff;
+  overflow-x: hidden;
 }
 
 
@@ -30,6 +31,7 @@
 }
 
 
+
 /* =========================================================
    LEFT BLUE BRAND PANEL
    ========================================================= */
@@ -44,7 +46,7 @@
   min-width: 0;
   min-height: 0;
 
-  padding: 34px 52px 24px;
+  padding: clamp(20px, 3vh, 34px) 52px clamp(12px, 2vh, 24px);
 
   overflow: visible;
 
@@ -299,7 +301,7 @@
 .auth-brand-copy {
   width: min(100%, 690px);
 
-  margin-top: 76px;
+  margin-top: clamp(24px, 5vh, 76px);
 }
 
 
@@ -324,7 +326,7 @@
 .auth-brand-copy h1 {
   margin: 0;
 
-  font-size: clamp(54px, 4vw, 66px);
+  font-size: clamp(42px, 6vh, 66px);
 
   line-height: 0.98;
 
@@ -339,11 +341,11 @@
 /* MAIN TAGLINE */
 
 .auth-brand-copy h2 {
-  margin: 20px 0 13px;
+  margin: clamp(12px, 2vh, 20px) 0 clamp(8px, 1.5vh, 13px);
 
   max-width: 600px;
 
-  font-size: clamp(28px, 2vw, 34px);
+  font-size: clamp(24px, 3.5vh, 34px);
 
   line-height: 1.14;
 
@@ -381,11 +383,11 @@
 
   grid-template-columns: 1fr;
 
-  gap: 13px;
+  gap: clamp(8px, 1.5vh, 13px);
 
   width: min(100%, 700px);
 
-  margin-top: 27px;
+  margin-top: clamp(16px, 3vh, 27px);
 }
 
 
@@ -395,7 +397,7 @@
 
   gap: 16px;
 
-  min-height: 54px;
+  min-height: clamp(40px, 5vh, 54px);
 }
 
 
@@ -463,9 +465,9 @@
 .auth-workflow {
   width: min(100%, 700px);
 
-  margin-top: 27px;
+  margin-top: clamp(16px, 3vh, 27px);
 
-  padding-top: 16px;
+  padding-top: clamp(10px, 2vh, 16px);
 
   border-top: 1px solid rgba(190, 218, 255, 0.34);
 }
@@ -579,7 +581,7 @@
 
   margin-top: auto;
 
-  padding-top: 20px;
+  padding-top: clamp(12px, 2vh, 20px);
 }
 
 
@@ -630,7 +632,7 @@
 .auth-brand-panel > small {
   display: block;
 
-  margin-top: 16px;
+  margin-top: clamp(8px, 1.5vh, 16px);
 
   color: #e2eeff;
 
@@ -1173,3 +1175,32 @@
     font-size: 14px;
   }
 }
+/* =========================================================
+   CLEAN SCALING FOR LAPTOP SCREENS (max-height: 850px)
+   Hides secondary text to keep primary text large and readable
+   ========================================================= */
+@media (max-height: 850px) {
+  .auth-brand-copy > span {
+    display: none;
+  }
+  .auth-feature small {
+    display: none;
+  }
+  .auth-brand-copy {
+    margin-top: clamp(20px, 4vh, 40px);
+  }
+  .auth-feature-grid {
+    margin-top: clamp(15px, 3vh, 25px);
+  }
+  .auth-workflow {
+    margin-top: clamp(15px, 3vh, 25px);
+  }
+  .auth-feature {
+    min-height: 40px;
+  }
+  .auth-brand-panel {
+    padding-top: clamp(20px, 3vh, 34px);
+    padding-bottom: clamp(15px, 2vh, 24px);
+  }
+}
+

@@ -1,32 +1,30 @@
 package com.eps.enterprise_procurement_system.services;
 
-import com.eps.enterprise_procurement_system.dto.SpendingReportResponseDTO;
-import com.eps.enterprise_procurement_system.entities.PurchaseOrder;
-import com.eps.enterprise_procurement_system.entities.enums.PurchaseOrderStatus;
-import com.eps.enterprise_procurement_system.repositories.PurchaseOrderRepo;
-
-import lombok.RequiredArgsConstructor;
-
+import com.eps.enterprise_procurement_system.dto.report.SpendingReportDTO;
+import com.eps.enterprise_procurement_system.entities.PurchaseRequisition;
+import com.eps.enterprise_procurement_system.entities.enums.RequisitionStatus;
+import com.eps.enterprise_procurement_system.repositories.PurchaseRequisitionRepo;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
 import java.util.ArrayList;
-import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.stream.Collectors;
 
 @Service
-@RequiredArgsConstructor
 public class ReportService {
 
-    private final PurchaseOrderRepo purchaseOrderRepo;
+    private final PurchaseRequisitionRepo requisitionRepository;
 
-    @Transactional(readOnly = true)
-    public SpendingReportResponseDTO getSpendingReport() {
+    @Autowired
+    public ReportService(PurchaseRequisitionRepo requisitionRepository) {
+        this.requisitionRepository = requisitionRepository;
+    }
 
-        List<PurchaseOrder> purchaseOrders =
-                purchaseOrderRepo.findAll();
+    public SpendingReportDTO getSpendingReport() {
+        List<PurchaseRequisition> allReqs = requisitionRepository.findAll();
 
         BigDecimal total = BigDecimal.ZERO;
         BigDecimal approved = BigDecimal.ZERO;
@@ -34,118 +32,52 @@ public class ReportService {
         BigDecimal rejected = BigDecimal.ZERO;
         BigDecimal completed = BigDecimal.ZERO;
 
-        Map<String, SpendingReportResponseDTO.DepartmentSpending>
-                departmentMap = new LinkedHashMap<>();
-
-        for (PurchaseOrder po : purchaseOrders) {
-
-            BigDecimal amount =
-                    po.getTotalAmount() != null
-                            ? po.getTotalAmount()
-                            : BigDecimal.ZERO;
-
+        for (PurchaseRequisition req : allReqs) {
+            BigDecimal amount = req.getTotalEstimatedAmount() != null ? req.getTotalEstimatedAmount() : BigDecimal.ZERO;
             total = total.add(amount);
 
-            PurchaseOrderStatus status = po.getStatus();
-
-            String departmentName =
-                    po.getRequisition() != null &&
-                    po.getRequisition().getEmployee().getDepartment() != null
-                            ? po.getRequisition()
-                                .getEmployee().getDepartment()
-                                .getDepartmentName()
-                            : "Unknown";
-
-            SpendingReportResponseDTO.DepartmentSpending department =
-                    departmentMap.computeIfAbsent(
-                            departmentName,
-                            name -> new SpendingReportResponseDTO
-                                    .DepartmentSpending(
-                                            name,
-                                            BigDecimal.ZERO,
-                                            BigDecimal.ZERO,
-                                            BigDecimal.ZERO
-                                    )
-                    );
-
-            if (status == null) {
-                continue;
+            if (req.getStatus() == RequisitionStatus.APPROVED) {
+                approved = approved.add(amount);
+            } else if (isPending(req.getStatus())) {
+                pending = pending.add(amount);
+            } else if (isRejected(req.getStatus())) {
+                rejected = rejected.add(amount);
             }
-
-            switch (status) {
-
-                /*
-                 * Completed procurement
-                 */
-                case COMPLETED -> {
-
-                    completed = completed.add(amount);
-
-                    approved = approved.add(amount);
-
-                    department.setApproved(
-                            department.getApproved().add(amount)
-                    );
-                }
-
-                /*
-                 * Approved / active procurement states
-                 */
-                case PO_GENERATED,
-                     GENERATED,
-                     SENT_TO_SUPPLIER,
-                     PO_RECEIVED,
-                     IN_DELIVERY,
-                     DELIVERED,
-                     RETURN_INITIATED,
-                     REPLACEMENT_PENDING,
-                     REPLACEMENT_RECEIVED,
-                     PARTIALLY_RECEIVED,
-                     PROCUREMENT_ACCEPTED -> {
-
-                    approved = approved.add(amount);
-
-                    department.setApproved(
-                            department.getApproved().add(amount)
-                    );
-                }
-
-                case CANCELLED -> {
-
-                    rejected = rejected.add(amount);
-
-                    department.setRejected(
-                            department.getRejected().add(amount)
-                    );
-                }
-
-                default -> {
-
-                    pending = pending.add(amount);
-
-                    department.setPending(
-                            department.getPending().add(amount)
-                    );
-                }
+            if (req.getStatus() == RequisitionStatus.COMPLETED) {
+                completed = completed.add(amount);
             }
         }
 
-        pending = total
-                .subtract(approved)
-                .subtract(rejected);
+        Map<String, List<PurchaseRequisition>> byDept = allReqs.stream()
+                .filter(r -> r.getEmployee() != null && r.getEmployee().getDepartment() != null)
+                .collect(Collectors.groupingBy(r -> r.getEmployee().getDepartment().getDepartmentName()));
 
-        SpendingReportResponseDTO.Summary summary =
-                new SpendingReportResponseDTO.Summary(
-                        total,
-                        approved,
-                        pending,
-                        rejected,
-                        completed
-                );
+        List<SpendingReportDTO.DepartmentSpending> deptSpending = new ArrayList<>();
+        for (Map.Entry<String, List<PurchaseRequisition>> entry : byDept.entrySet()) {
+            BigDecimal deptApproved = BigDecimal.ZERO;
+            BigDecimal deptPending = BigDecimal.ZERO;
+            BigDecimal deptRejected = BigDecimal.ZERO;
 
-        return new SpendingReportResponseDTO(
-                summary,
-                new ArrayList<>(departmentMap.values())
+            for (PurchaseRequisition r : entry.getValue()) {
+                BigDecimal amount = r.getTotalEstimatedAmount() != null ? r.getTotalEstimatedAmount() : BigDecimal.ZERO;
+                if (r.getStatus() == RequisitionStatus.APPROVED) deptApproved = deptApproved.add(amount);
+                else if (isPending(r.getStatus())) deptPending = deptPending.add(amount);
+                else if (isRejected(r.getStatus())) deptRejected = deptRejected.add(amount);
+            }
+            deptSpending.add(new SpendingReportDTO.DepartmentSpending(entry.getKey(), deptApproved, deptPending, deptRejected));
+        }
+
+        return new SpendingReportDTO(
+                new SpendingReportDTO.Summary(total, approved, pending, rejected, completed),
+                deptSpending
         );
+    }
+    
+    private boolean isPending(RequisitionStatus status) {
+        return status == RequisitionStatus.PENDING_MANAGER || status == RequisitionStatus.PENDING_FINANCE || status == RequisitionStatus.PENDING_ADMIN || status == RequisitionStatus.PENDING_PROCUREMENT;
+    }
+    
+    private boolean isRejected(RequisitionStatus status) {
+        return status == RequisitionStatus.MANAGER_REJECTED || status == RequisitionStatus.FINANCE_REJECTED || status == RequisitionStatus.PROCUREMENT_REJECTED || status == RequisitionStatus.ADMIN_REJECTED;
     }
 }

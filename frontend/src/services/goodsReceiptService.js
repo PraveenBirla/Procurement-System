@@ -20,12 +20,7 @@ const goodsReceiptService = {
   async createReturnReplacement(data) {
     const res = await api.post("/return-replacements", data);
     return res.data.data;
-  },
-
-  async getReturnReplacementsByPurchaseOrder(poId) {
-    const res = await api.get(`/return-replacements/purchase-order/${poId}`);
-      return res.data.data;
-  },
+  }
 
 };
 

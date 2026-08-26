@@ -2,55 +2,25 @@ import { useState, useEffect } from "react";
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend } from "recharts";
 import reportService from "../../../services/reportService";
 
-const mockSpendingData = {
-  summary: {
-    total: 1250000,
-    approved: 850000,
-    pending: 250000,
-    rejected: 150000,
-    completed: 650000
-  },
-  byDepartment: [
-    { name: "Engineering", approved: 350000, pending: 100000, rejected: 50000 },
-    { name: "Marketing", approved: 120000, pending: 50000, rejected: 20000 },
-    { name: "Operations", approved: 200000, pending: 80000, rejected: 30000 },
-    { name: "HR", approved: 80000, pending: 20000, rejected: 10000 },
-    { name: "Sales", approved: 100000, pending: 0, rejected: 40000 }
-  ]
-};
-
 export const SpendingReport = () => {
   const [data, setData] = useState(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
+    loadData();
+  }, []);
 
-    const loadReport = async () => {
-
-        try {
-
-            setLoading(true);
-
-            const response = await reportService.getSpendingReport();
-
-            setData(response);
-
-        } catch (error) {
-
-            console.error(
-                "Failed to load spending report:",
-                error
-            );
-
-        } finally {
-
-            setLoading(false);
-        }
-    };
-
-    loadReport();
-
-}, []);
+  const loadData = async () => {
+    setLoading(true);
+    try {
+      const report = await reportService.getSpendingReport();
+      setData(report);
+    } catch (err) {
+      console.error("Failed to load spending report", err);
+    } finally {
+      setLoading(false);
+    }
+  };
 
   if (loading || !data) return <div>Loading report...</div>;
 
@@ -86,18 +56,24 @@ export const SpendingReport = () => {
         <div className="report-chart-card" style={{ gridColumn: '1 / -1' }}>
           <div className="report-chart-title">Spending Breakdown by Department</div>
           <div className="report-chart-wrapper" style={{ height: '400px' }}>
-            <ResponsiveContainer width="100%" height="100%">
-              <BarChart data={data.byDepartment} margin={{ top: 20, right: 30, left: 20, bottom: 5 }}>
-                <CartesianGrid strokeDasharray="3 3" vertical={false} />
-                <XAxis dataKey="name" />
-                <YAxis />
-                <Tooltip formatter={(value) => `₹${value.toLocaleString()}`} />
-                <Legend />
-                <Bar dataKey="approved" stackId="a" fill="#10b981" name="Approved" />
-                <Bar dataKey="pending" stackId="a" fill="#f59e0b" name="Pending" />
-                <Bar dataKey="rejected" stackId="a" fill="#ef4444" name="Rejected" />
-              </BarChart>
-            </ResponsiveContainer>
+            {(!data.byDepartment || data.byDepartment.length === 0) ? (
+              <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100%', color: 'var(--color-text-muted)' }}>
+                No spending data available.
+              </div>
+            ) : (
+              <ResponsiveContainer width="100%" height="100%">
+                <BarChart data={data.byDepartment} margin={{ top: 20, right: 30, left: 20, bottom: 5 }}>
+                  <CartesianGrid strokeDasharray="3 3" vertical={false} />
+                  <XAxis dataKey="name" />
+                  <YAxis />
+                  <Tooltip formatter={(value) => `₹${value.toLocaleString()}`} />
+                  <Legend />
+                  <Bar dataKey="approved" stackId="a" fill="#10b981" name="Approved" />
+                  <Bar dataKey="pending" stackId="a" fill="#f59e0b" name="Pending" />
+                  <Bar dataKey="rejected" stackId="a" fill="#ef4444" name="Rejected" />
+                </BarChart>
+              </ResponsiveContainer>
+            )}
           </div>
         </div>
       </div>
