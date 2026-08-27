@@ -7,6 +7,7 @@ import { Clock3 } from "lucide-react";
 
 const DELIVERED_STATUS = "DELIVERED";
 const COMPLETED_STATUS = "COMPLETED";
+const RETURN_INITIATED = "RETURN_INITIATED";
 
 const ISSUE_TYPES = [
     "DEFECTIVE",
@@ -483,9 +484,15 @@ export const DeliveredSection = () => {
 
                                 rejectedQuantity: Number(item.rejectedQuantity),
 
-                                shortageQuantity: Number(item.acceptedQuantity) - Number(item.receivedQuantity) || 0,
+                              shortageQuantity: Math.max(
+    Number(item.orderedQuantity) - Number(item.receivedQuantity),
+    0
+),
 
-                                extraQuantity: Number(item.receivedQuantity) - Number(item.acceptedQuantity) || 0,
+extraQuantity: Math.max(
+    Number(item.receivedQuantity) - Number(item.orderedQuantity),
+    0
+),
 
                                 remarks: item.remarks || null
                             })
@@ -658,19 +665,41 @@ export const DeliveredSection = () => {
         const discrepancyItems = (gr.items || [])
             .filter((item) => {
                 console.log(item);
-                const rejected = Number(item.receivedQuantity) > Number(item.acceptedQuantity) || 0;
-                const shortage = Number(item.orderedQuantity) > Number(item.receivedQuantity) || 0;
-                const extra = Number(item.receivedQuantity) > Number(item.orderedQuantity) || 0;
+              const rejected = Math.max(
+    Number(item.receivedQuantity) - Number(item.acceptedQuantity),
+    0
+);
 
+const shortage = Math.max(
+    Number(item.orderedQuantity) - Number(item.receivedQuantity),
+    0
+);
+
+const extra = Math.max(
+    Number(item.receivedQuantity) - Number(item.orderedQuantity),
+    0
+);
                 return (rejected > 0 || shortage > 0 || extra > 0);
             })
             .map((item) => {
 
-                const rejected = Number(item.receivedQuantity) - Number(item.acceptedQuantity)|| 0;
+                 const rejected = Math.max(
+        Number(item.receivedQuantity) -
+        Number(item.acceptedQuantity),
+        0
+    );
 
-                const shortage = Number(item.orderedQuantity) - Number(item.receivedQuantity) || 0;
+    const shortage = Math.max(
+        Number(item.orderedQuantity) -
+        Number(item.receivedQuantity),
+        0
+    );
 
-                const extra = Number(item.receivedQuantity) - Number(item.orderedQuantity)  || 0;
+    const extra = Math.max(
+        Number(item.receivedQuantity) -
+        Number(item.orderedQuantity),
+        0
+    );
 
                 let issueType;
                 console.log(shortage, extra, rejected);
@@ -844,27 +873,23 @@ export const DeliveredSection = () => {
                     )
             };
 
-          const created = await goodsReceiptService.createReturnReplacement(request);
-            // const supplier = await supplierService.postReturnAcceptance(request);
-            await purchaseOrderService
-                .updateStatus(
-                    ratingPO.id,
-                    {
-                        status: RETURN_INITIATED
-                    }
-                );
+          await goodsReceiptService.createReturnReplacement(request);
 
-            setReturnMap(
-                (prev) => ({
-                    ...prev,
-                    [returnPO.id]:
-                        created
-                })
-            );
+await purchaseOrderService.updateStatus(
+    returnPO.id,
+    {
+        status: RETURN_INITIATED
+    }
+);
 
-            closeReturnModal();
+setReturnMap((prev) => {
+    const updated = { ...prev };
+    delete updated[returnPO.id];
+    return updated;
+});
 
-            await loadOrders();
+closeReturnModal();
+await loadOrders();
 
         } catch (err) {
 
