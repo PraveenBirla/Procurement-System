@@ -1,4 +1,4 @@
-# Enterprise Procurement System
+# DEVELOPMENT OF SMART PROCUREMENT & PURCHASE ORDER MANAGEMENT SYSTEM    
 
 A web-based enterprise procurement management system designed to manage the complete procurement lifecycle, from purchase requisition creation and approval through supplier selection, purchase order generation, goods receipt, inventory updates, supplier performance evaluation, and return/replacement handling.
 
