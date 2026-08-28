@@ -828,7 +828,7 @@ The main database areas visible in the diagram are:
  
 
  
-![Database ER Diagram](agile-documents/db_er_diagram.pdf)
+![Database ER Diagram](agile-documents/db_diagram.png)
  
 
  
